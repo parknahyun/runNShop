@@ -1,0 +1,13 @@
+spring:
+  application:
+    name: runNshop-api
+
+server:
+  port: 8080
+
+# CORS 설정 (프로토타입용)
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health

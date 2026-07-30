@@ -1,0 +1,23 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx next *)",
+      "Bash(curl -s http://localhost:3001 --max-time 8 -o /dev/null -w \"%{http_code}\\\\n\")",
+      "Bash(curl -s http://localhost:3001 --max-time 8)",
+      "Bash(grep -n \"detail-modal__body\" -A5 \"/Users/fepest/Documents/AI활용/runNshop/apps/runNshop-admin/src/display/section/tabs/FieldsTab.tsx\" | grep -A5 \"SectionTypePickerModal\\\\|detail-modal__body\" | head -20 *)",
+      "Read(//Users/fepest/Documents/AI활용/runNshop/apps/runNshop-admin/src/display/section/tabs/**)",
+      "Bash(curl -s \"http://localhost:3001/api/spec?file=product/brand/BrandPage.spec.md\" --max-time 8)",
+      "Bash(curl -s \"http://localhost:3001/api/spec?file=product/category-std/StandardCategoryPage.spec.md\" --max-time 8)",
+      "Bash(curl -s \"http://localhost:3001/api/spec?file=product/category-display/DisplayCategoryPage.spec.md\" --max-time 8)",
+      "Bash(curl -s \"http://localhost:3001/api/spec?file=product/category-std/StandardCategoryPage.spec.md\" --max-time 8 -o /dev/null -w \"spec:%{http_code}\\\\n\")",
+      "Bash(curl -s \"http://localhost:3001/api/spec?file=product/category-display/DisplayCategoryPage.spec.md\" --max-time 8 -o /dev/null -w \"spec:%{http_code}\\\\n\")",
+      "Bash(curl -s http://localhost:3001 --max-time 8 -o /dev/null -w \"home:%{http_code}\\\\n\")",
+      "Bash(curl -s \"http://localhost:3001/api/spec?file=product/product-list/ProductListPage.spec.md\" --max-time 8 -o /dev/null -w \"product-list spec:%{http_code}\\\\n\")",
+      "Bash(curl -s \"http://localhost:3001/api/spec?file=product/product-review/ProductReviewPage.spec.md\" --max-time 8 -o /dev/null -w \"product-review spec:%{http_code}\\\\n\")",
+      "Bash(curl -s \"http://localhost:3001/api/spec?file=product/product-list/ProductListPage.spec.md\" --max-time 8 -o /dev/null -w \"spec:%{http_code}\\\\n\")",
+      "Bash(curl -s \"http://localhost:3001/api/spec?file=product/product-review/ProductReviewPage.spec.md\" --max-time 8 -o /dev/null -w \"review-spec:%{http_code}\\\\n\")",
+      "Bash(curl -s \"http://localhost:3001/api/spec?file=product/product-list/ProductListPage.spec.md\" --max-time 8 -o /dev/null -w \"list-spec:%{http_code}\\\\n\")",
+      "Bash(tee /private/tmp/claude-501/-Users-fepest-Documents-AI---runNshop/bac60d7e-0b5b-43e8-b7a4-149225ba3175/scratchpad/tsc_out.txt)"
+    ]
+  }
+}

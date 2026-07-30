@@ -1,0 +1,12 @@
+{
+  "code": "SUCCESS",
+  "data": {
+    "items": [
+      { "type": "SHIPPING_PENDING", "label": "출고 대기 주문", "count": 5, "link": "/orders?status=PAYMENT_COMPLETED" },
+      { "type": "CLAIM_RETURN", "label": "반품 수거 대기", "count": 2, "link": "/claims/returns" },
+      { "type": "CLAIM_EXCHANGE", "label": "교환 수거 대기", "count": 1, "link": "/claims/exchanges" },
+      { "type": "QNA_ANSWER", "label": "QnA 답변 대기", "count": 7, "link": "/community/qna" },
+      { "type": "PRODUCT_REJECTED", "label": "상품 반려 (재심사 필요)", "count": 1, "link": "/products?status=REJECTED" }
+    ]
+  }
+}

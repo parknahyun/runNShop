@@ -1,0 +1,20 @@
+{
+  "code": "SUCCESS",
+  "data": {
+    "exhibition_code": "SUMMER2026",
+    "title": "여름 러닝 페스티벌",
+    "banner_url": "https://placehold.co/360x200/FF4D00/fff?text=SUMMER+RUNNING+FESTIVAL",
+    "description": "무더운 여름에도 달리는 러너를 위한 특별 할인! 쿨링 의류부터 경량화까지.",
+    "status": "ACTIVE",
+    "start_date": "2026-06-01",
+    "end_date": "2026-07-31",
+    "products": [
+      { "product_id": 101, "product_name": "나이키 페가수스 41", "brand": "Nike", "image_url": "https://placehold.co/360x360/f5f5f5/333?text=Pegasus+41", "price_original": 179000, "price_sale": 152000, "discount_rate": 15, "rating": 4.7, "review_count": 324 },
+      { "product_id": 103, "product_name": "나이키 드라이핏 ADV 러닝 티셔츠", "brand": "Nike", "image_url": "https://placehold.co/360x360/f5f5f5/333?text=DryFit", "price_original": 79000, "price_sale": 59000, "discount_rate": 25, "rating": 4.3, "review_count": 89 },
+      { "product_id": 201, "product_name": "아디다스 아디제로 보스턴 13", "brand": "Adidas", "image_url": "https://placehold.co/360x360/f5f5f5/333?text=Boston+13", "price_original": 189000, "price_sale": 159000, "discount_rate": 16, "rating": 4.5, "review_count": 156 },
+      { "product_id": 202, "product_name": "온 클라우드서퍼 2", "brand": "On", "image_url": "https://placehold.co/360x360/f5f5f5/333?text=Cloudsurfer+2", "price_original": 209000, "price_sale": 179000, "discount_rate": 14, "rating": 4.4, "review_count": 98 },
+      { "product_id": 105, "product_name": "나이키 런닝 캡 드라이핏", "brand": "Nike", "image_url": "https://placehold.co/360x360/f5f5f5/333?text=Running+Cap", "price_original": 35000, "price_sale": 29000, "discount_rate": 17, "rating": 4.1, "review_count": 45 },
+      { "product_id": 301, "product_name": "살로몬 센스 프로 5", "brand": "Salomon", "image_url": "https://placehold.co/360x360/f5f5f5/333?text=Sense+Pro+5", "price_original": 189000, "price_sale": 159000, "discount_rate": 16, "rating": 4.6, "review_count": 67 }
+    ]
+  }
+}

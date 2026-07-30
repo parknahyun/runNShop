@@ -1,0 +1,10 @@
+{
+  "code": "SUCCESS",
+  "data": {
+    "on_sale": 87,
+    "sold_out": 12,
+    "under_review": 3,
+    "rejected": 1,
+    "draft": 5
+  }
+}

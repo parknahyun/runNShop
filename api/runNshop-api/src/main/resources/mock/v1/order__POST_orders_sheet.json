@@ -1,0 +1,115 @@
+{
+  "code": "SUCCESS",
+  "data": {
+    "order_sheet_id": "OS-20260626-001",
+    "orderer": {
+      "name": "홍길동",
+      "phone": "010-1234-5678",
+      "email": "runner@runNshop.com"
+    },
+    "addresses": [
+      {
+        "address_id": 1,
+        "recipient": "홍길동",
+        "phone": "010-1234-5678",
+        "zip_code": "06234",
+        "address": "서울특별시 강남구 테헤란로 123",
+        "address_detail": "런앤샵타워 5층",
+        "is_default": true
+      },
+      {
+        "address_id": 2,
+        "recipient": "홍길동",
+        "phone": "010-1234-5678",
+        "zip_code": "13529",
+        "address": "경기도 성남시 분당구 판교로 456",
+        "address_detail": "판교테크원 3층",
+        "is_default": false
+      }
+    ],
+    "orders": [
+      {
+        "vendor_id": 10,
+        "vendor_name": "나이키코리아",
+        "items": [
+          {
+            "product_id": 101,
+            "product_name": "나이키 페가수스 41",
+            "image_url": "https://placehold.co/80x80/f5f5f5/333?text=Pegasus41",
+            "color": "블랙",
+            "size": "265",
+            "price_sale": 152000,
+            "quantity": 1
+          },
+          {
+            "product_id": 105,
+            "product_name": "나이키 드라이핏 ADV 러닝 티셔츠",
+            "image_url": "https://placehold.co/80x80/f5f5f5/333?text=DryFit",
+            "color": "네이비",
+            "size": "L",
+            "price_sale": 59000,
+            "quantity": 2
+          }
+        ]
+      },
+      {
+        "vendor_id": 20,
+        "vendor_name": "아식스코리아",
+        "items": [
+          {
+            "product_id": 102,
+            "product_name": "아식스 젤카야노 31",
+            "image_url": "https://placehold.co/80x80/f5f5f5/333?text=Kayano31",
+            "color": "화이트",
+            "size": "270",
+            "price_sale": 199000,
+            "quantity": 1
+          }
+        ]
+      }
+    ],
+    "coupons": {
+      "available_count": 2,
+      "items": [
+        {
+          "coupon_id": "CPN-001",
+          "name": "신규회원 10% 할인",
+          "discount_type": "RATE",
+          "discount_value": 10,
+          "max_discount": 20000,
+          "min_order": 50000
+        },
+        {
+          "coupon_id": "CPN-002",
+          "name": "여름 러닝 5,000원 할인",
+          "discount_type": "FIXED",
+          "discount_value": 5000,
+          "max_discount": 5000,
+          "min_order": 30000
+        }
+      ]
+    },
+    "point": {
+      "balance": 5200,
+      "usable": 5200,
+      "min_use": 1000
+    },
+    "payment_methods": [
+      { "type": "CARD", "label": "신용카드" }
+    ],
+    "price_summary": {
+      "total_product_price": 469000,
+      "product_discount": -48000,
+      "cart_discount": -3000,
+      "coupon_discount": 0,
+      "point_used": 0,
+      "shipping_fee": 0,
+      "total_payment": 418000
+    },
+    "terms": [
+      { "term_id": "T001", "title": "구매조건 확인 및 결제 진행에 동의", "required": true },
+      { "term_id": "T002", "title": "개인정보 제3자 제공 동의", "required": true },
+      { "term_id": "T003", "title": "결제대행 서비스 이용약관 동의", "required": true }
+    ]
+  }
+}

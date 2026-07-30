@@ -1,0 +1,72 @@
+{
+  "code": "SUCCESS",
+  "data": {
+    "total_count": 3,
+    "vendors": [
+      {
+        "vendor_id": 10,
+        "vendor_name": "나이키코리아",
+        "shipping_fee": 3000,
+        "free_threshold": 50000,
+        "items": [
+          {
+            "cart_item_id": 1,
+            "product_id": 101,
+            "product_name": "나이키 페가수스 41",
+            "image_url": "https://placehold.co/80x80/f5f5f5/333?text=Pegasus41",
+            "color": "블랙",
+            "size": "265",
+            "price_original": 179000,
+            "price_sale": 152000,
+            "quantity": 1,
+            "stock": 7,
+            "status": "ON_SALE"
+          },
+          {
+            "cart_item_id": 2,
+            "product_id": 105,
+            "product_name": "나이키 드라이핏 ADV 러닝 티셔츠",
+            "image_url": "https://placehold.co/80x80/f5f5f5/333?text=DryFit",
+            "color": "네이비",
+            "size": "L",
+            "price_original": 79000,
+            "price_sale": 59000,
+            "quantity": 2,
+            "stock": 12,
+            "status": "ON_SALE"
+          }
+        ]
+      },
+      {
+        "vendor_id": 20,
+        "vendor_name": "아식스코리아",
+        "shipping_fee": 3000,
+        "free_threshold": 50000,
+        "items": [
+          {
+            "cart_item_id": 3,
+            "product_id": 102,
+            "product_name": "아식스 젤카야노 31",
+            "image_url": "https://placehold.co/80x80/f5f5f5/333?text=Kayano31",
+            "color": "화이트",
+            "size": "270",
+            "price_original": 229000,
+            "price_sale": 199000,
+            "quantity": 1,
+            "stock": 3,
+            "status": "ON_SALE"
+          }
+        ]
+      }
+    ],
+    "summary": {
+      "total_product_price": 469000,
+      "total_discount": -48000,
+      "cart_discount": -3000,
+      "total_shipping_fee": 0,
+      "total_payment": 418000,
+      "point_balance": 5200,
+      "coupon_benefit_text": "사용 가능 쿠폰 2장"
+    }
+  }
+}

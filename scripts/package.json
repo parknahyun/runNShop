@@ -1,0 +1,9 @@
+{
+  "name": "runnshop-scripts",
+  "version": "1.0.0",
+  "private": true,
+  "description": "새 화면 스캐폴딩/컨벤션 검사/런타임 점검 하네스 (apps/runNshop-admin, apps/runNshop-partner 공용)",
+  "dependencies": {
+    "playwright": "^1.61.1"
+  }
+}
