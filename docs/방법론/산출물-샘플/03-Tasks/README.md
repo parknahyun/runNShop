@@ -18,7 +18,7 @@ Scope: RACI는 Initiative, DoD템플릿은 Project, 리스크대응계획은 Ini
 | 항목 | 출처 |
 |---|---|
 | RACI 역할 구조 | `docs_ai/00-proposal/03-이해관계자맵.md`(방법론 역할 정의 참조) |
-| WBS Time-box 기준(반나절~1일) | `AI활용_개발공정_가이드_v2.2` 부록 A |
+| WBS Time-box 기준(반나절~1일) | `AI활용_개발공정_지침서_v2.2` 부록 A |
 | 나머지(리스크 대응·의존성맵·DoD 세부) | 이 샘플에서 신규 작성 |
 
 ## Human Review 필요 항목

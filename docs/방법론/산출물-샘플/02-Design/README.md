@@ -6,7 +6,7 @@ Domain, 나머지(세부유스케이스·시퀀스·화면레이아웃·클래�
 
 | 파일 | Scope |
 |---|---|
-| 01-컴포넌트.md | Project |
+| 01-컴포넌트.md | Project (모듈 구조 + **앱별 메뉴구조**) |
 | 02-상위유스케이스.md | Domain |
 | 03-도메인ERD.md | Domain(현행화: Bolt) |
 | 04-상태머신.md | Domain(현행화: Bolt) |
@@ -24,6 +24,7 @@ Domain, 나머지(세부유스케이스·시퀀스·화면레이아웃·클래�
 |---|---|
 | 재고 선점 시점(ADR-011) | `runNshop_ai_collaboration_process_v1_0.md` 결정 이력 #3 |
 | Outbox 패턴, 도메인 경계 규칙 | `runNshop_modular_monolith_v1_0.md`(원본 언급, 본 샘플에서 재적용) |
+| 앱별 메뉴구조 | 프로토타입 구현 실사(admin Sidebar·constants.ts, partner Sidebar, mobile BottomNav) |
 | 나머지(ERD 상세 컬럼, 시퀀스 등) | 이 샘플에서 신규 작성 — 실제 정책서·ERD 대조 필요(Human Review) |
 
 ## Human Review 필요 항목

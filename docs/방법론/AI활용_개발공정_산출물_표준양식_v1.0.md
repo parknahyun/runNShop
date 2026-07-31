@@ -1,7 +1,7 @@
 # AI 활용 개발 공정 — 산출물 표준양식 (전 공정 40종)
 
 **버전: 1.0 (초안)**
-**관련 문서**: `AI활용_개발공정_가이드_v2.2` 6장(공정별 산출물 상세), `AI활용_개발공정_프롬프트_라이브러리_v2.0.md`(40종 전체 프롬프트 샘플 수록)
+**관련 문서**: `AI활용_개발공정_지침서_v2.2` 6장(공정별 산출물 상세), `AI활용_개발공정_프롬프트_라이브러리_v2.0.md`(40종 전체 프롬프트 샘플 수록)
 **목적**: 6장이 정의한 "입력자료·AI초안·휴먼결정포인트"에 더해, 각 산출물이 **구체적으로 어떤 항목(구조)에
 어떤 내용을 담아야 하는가**를 정의한다. 6장과 중복하지 않도록, 여기서는 **필수 항목(표준양식)**만 다룬다.
 
@@ -57,8 +57,8 @@
 | 용어집 | Project(현행화: Bolt) | 용어-정의 표[용어·정의·동의어·충돌여부], 신규 용어 발견 시 별도 표기, 버전 이력 | `.md` (표) |
 | 제약사항 | Project | 제약 표[제약ID·카테고리(법무/보안/기술/벤더계약)·내용·적용범위·예외승인여부] | `.md` (표) |
 | 비기능요구(NFR) | Project+Domain | 품질특성별 표[특성(성능/가용성/보안 등)·기준치·측정방법·근거]. 안정화 단계에서 실측 기준으로 현행화 | `.md` (표) |
-| 기능요구(EARS) | Bolt | 요구사항ID(`REQ-{DOM}-{SEQ}`) + EARS 5패턴(Ubiquitous/Event-driven/State-driven/Optional/Unwanted) 중 해당 패턴으로 "WHEN [트리거], THE [시스템] SHALL [동작]" 문장 + 출처(정책서 챕터·화면 영역) + 우선순위(P1/P2/P3) | `.md` (요구사항ID 표) |
-| 수용기준(GWT) | Bolt | 시나리오ID(`AC-{DOM}-{SEQ}`) + Given/When/Then + 카테고리(정상/경계값/예외) + 대응 EARS ID(요구사항 100% 커버 확인) | `.md` (표) — 테스트 자동화 연동 시 `.feature`(Gherkin) 추출 |
+| 기능요구(EARS) | Bolt | 요구사항ID(`REQ-{DOM}-{SEQ}`, **Platform Bolt는 `REQ-PLT-{SEQ}`**) + EARS 5패턴(Ubiquitous/Event-driven/State-driven/Optional/Unwanted) 중 해당 패턴으로 "WHEN [트리거], THE [시스템] SHALL [동작]" 문장 + 출처(정책서 챕터·화면 영역) + 우선순위(P1/P2/P3) | `.md` (요구사항ID 표) |
+| 수용기준(GWT) | Bolt | 시나리오ID(`AC-{DOM}-{SEQ}`, **Platform Bolt는 `AC-PLT-{SEQ}`**) + Given/When/Then + 카테고리(정상/경계값/예외) + 대응 EARS ID(요구사항 100% 커버 확인) | `.md` (표) — 테스트 자동화 연동 시 `.feature`(Gherkin) 추출 |
 | 인터페이스 명세 | Bolt | OpenAPI 3.0 형식: endpoint(method/path/auth/role), request/response 필드표, 공통 응답구조, error_catalog, cross_field_rules | `.md` (yaml 블록 내장) — Swagger 등 도구 연동 시 `.yaml`/`.json` 추출 |
 
 *프롬프트 샘플: Spec 전 6종 — `AI활용_개발공정_프롬프트_라이브러리_v2.0.md` 7~12절*
@@ -69,15 +69,15 @@
 
 | 산출물 | Scope | 필수 항목(표준양식) | 파일 형식(권장) |
 |---|---|---|---|
-| 컴포넌트 | Project | 모듈/서비스 목록 + 책임 정의 + 배포·책임 경계 + 의존관계 다이어그램 | `.md` (plantuml component 블록) |
-| 상위 유스케이스 | Domain | 액터 정의 + 액터-유스케이스 관계도(다이어그램) + 권한 범위 + **업무그룹**(조건부 — 도메인정의서의 책임 목록 기준으로 유스케이스를 대분류 소제목으로 묶음. Bolt 후보가 6개 넘으면 중분류까지 추가) | `.md` (plantuml usecase 블록) |
+| 컴포넌트 | Project | 모듈/서비스 목록 + 책임 정의 + 배포·책임 경계 + 의존관계 다이어그램 + **앱별 메뉴구조**(전체 네비게이션 트리 — 앱별 1depth/2depth/화면 계층, 셸 구조(NavBar/Sidebar/BottomNav), 상위 유스케이스의 선행자료로 활용) | `.md` (plantuml component 블록) |
+| 상위 유스케이스 | Domain(**Platform Bolt는 Project 직속**) | 액터 정의 + 액터-유스케이스 관계도(다이어그램) + 권한 범위 + **업무그룹**(조건부 — 도메인정의서의 책임 목록 기준으로 유스케이스를 대분류 소제목으로 묶음. Bolt 후보가 6개 넘으면 중분류까지 추가). Platform Bolt의 경우: 앱 셸 유스케이스(로그인·메뉴접근·탭관리·공통UI) | `.md` (plantuml usecase 블록) |
 | 도메인·ERD | Domain(현행화: Bolt) | DBML 형식: 테이블별 컬럼(타입/nullable/default) + PK/FK + 인덱스 + **불변식(invariants)** + 상태전이 필드 있으면 명시 + soft delete 정책 + 감사컬럼 + 유스케이스/화면 대응 주석 | `.md` (dbml 블록 내장) — dbdiagram.io 연동 시 `.dbml` 추출 |
 | 상태머신 | Domain(현행화: Bolt) | 상태 목록 + 허용 전이표 + **forbidden_transitions**(금지 전이 + 사유) + 전이 트리거 조건 | `.md` (plantuml state 블록) |
 | 비즈니스 프로세스 | Domain | 액티비티 다이어그램(스윔레인, PlantUML) + 시작/종료조건 + 예외흐름(E1, E2...) | `.md` (plantuml activity/스윔레인 블록) |
 | 이벤트 플로우 | Domain 간 | 이벤트 카탈로그[이벤트명·발행도메인·구독도메인·스키마·동기/비동기] | `.md` (표) |
 | 세부 유스케이스 | Bolt | 버튼/메뉴 단위 액터 행위 분해 + 상위 유스케이스와의 연결 | `.md` (표) |
 | 시퀀스 | Bolt | PlantUML 다이어그램 + **트랜잭션 경계**(rect 블록) + **이벤트 발행 타이밍**(BEFORE/AFTER COMMIT) + 실패 분기(alt/opt) + wrong_patterns | `.md` (plantuml 블록 내장) — 별도 렌더링 필요 시 `.puml` 추출 |
-| 화면 레이아웃(확정) | Bolt | 와이어프레임 + 컴포넌트-API 매핑표 + 프론트 검증규칙 + 상태(state) 소스·refresh trigger + loading/optimistic 패턴 | `.md` (+ 와이어프레임은 `.png`/Figma 링크) |
+| 화면 레이아웃(확정) | Bolt | 와이어프레임 + 컴포넌트-API 매핑표 + 프론트 검증규칙 + 상태(state) 소스·refresh trigger + loading/optimistic 패턴 + **채널별 완성 경로**(admin/partner: md→tsx 직행, mobile: md→Figma시안→tsx) + mobile 해당 시 **Figma 시안 필수 항목**(Figma 링크·디자인 토큰·컴포넌트 명세·상태별 시안·인터랙션 스펙·핸드오프 체크리스트) | `.md` (+ 와이어프레임은 `.png`/Figma 링크) |
 | ADR | Domain/Bolt | 제목 + 상태(제안/승인/폐기) + Context(배경) + Decision(결정) + Alternatives(대안+트레이드오프) + Consequences(결과) | `.md` (ADR 1건=1파일 권장, `adr/NNNN-제목.md`) |
 | 클래스 설계 | Bolt(현행화) | 클래스 다이어그램(속성/메서드/관계) + 책임 분배 + 상속/합성 구조 | `.md` (plantuml classDiagram 블록) |
 
@@ -185,3 +185,21 @@ v1.0 개정 3 (2026-07-28): "상위 유스케이스" 필수 항목에 **업무�
 주문결제 외에 배송관리·클레임처리도 포함하는데 겉으로 안 드러남)를 해결하기 위함. 공식 Scope
 단위(3.4절 Initiative/Project/Domain/Bolt)를 건드리지 않고, 상위 유스케이스 문서 안의 구조화용
 소제목으로만 추가 — 상세 규칙(조건부 3단 기준)은 작성가이드 참고.
+v1.0 개정 4 (2026-07-30): "컴포넌트" 필수 항목에 **앱별 메뉴구조**(전체 네비게이션 트리) 추가 —
+페페 확인. 메뉴구조도는 Project Scope(앱 전체 조감)이며, 상위 유스케이스(Domain)의 선행자료로
+활용된다. 독립 산출물(41번째)로 만들지 않고, 컴포넌트 산출물의 필수 항목으로 포함시켜 40종 체계를
+유지한다. 앱별(admin/partner/mobile) 셸 구조(NavBar/Sidebar/BottomNav)와 메뉴 계층(1depth→2depth
+→화면)을 확정하고, 이후 상위 유스케이스에서 업무그룹·Bolt가 메뉴 경로와 대응하는지 대조한다.
+
+v1.0 개정 5 (2026-07-30): "화면 레이아웃(확정)" 필수 항목에 **채널별 완성 경로** 추가 —
+페페 확인. admin/partner는 md→tsx 직행(시니어 Dev + AI), mobile은 md→Figma→tsx(기획자→디자이너
+→Dev). 작업 순서도 규정: admin/partner 선행(API 계약 확정) → mobile 후행(확정된 API 참조).
+역할 분리: mobile md 스펙은 기획자(R)→Dev 검토·승인, Figma 시안은 디자이너/기획자(R)→PM 승인.
+Figma 필수 항목(링크·디자인 토큰·컴포넌트 명세·상태별 시안·인터랙션 스펙·핸드오프 체크리스트)도
+명시. 40종 체계 유지(독립 산출물 추가 없음).
+
+v1.0 개정 6 (2026-07-30): **Platform Bolt** 개념 도입 — Bolt를 Platform Bolt(앱 셸/프레임,
+Project 직속, 도메인 무관)와 Domain Bolt(업무화면, 도메인 소속)로 유형 분류. 40종 산출물 체계 및
+Scope 4단계는 변경 없음. 컴포넌트 산출물에서 Platform Bolt를 식별하고, 의존성맵·WBS에서
+"Platform Bolt → Domain Bolt" 선후행을 Phase 0으로 배치하는 규칙 신규. 상위 유스케이스 Scope에
+"Platform Bolt는 Project 직속" 예외 명시.

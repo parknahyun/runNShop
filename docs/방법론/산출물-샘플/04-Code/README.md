@@ -17,7 +17,7 @@
 | 항목 | 출처 |
 |---|---|
 | Controller→Service→MockLoader 패턴, 파일 위치 | `.kiro/steering/coding-standards.md`, `mock-data-rules.md` |
-| 프로토타입 단계 제약(실 DB 미연동) | `AI활용_개발공정_가이드_v2.2` 6.5절, `runNshop_policy_v1_2.md` 20장 |
+| 프로토타입 단계 제약(실 DB 미연동) | `AI활용_개발공정_지침서_v2.2` 6.5절, `runNshop_policy_v1_2.md` 20장 |
 
 ## Human Review 필요 항목
 
