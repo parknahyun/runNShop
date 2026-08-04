@@ -1,6 +1,9 @@
 {
   "permissions": {
     "allow": [
+      "Read(//Users/fepest/Documents/AI활용/runNshop/docs/**)",
+      "Edit(//Users/fepest/Documents/AI활용/runNshop/docs/**)",
+      "Write(//Users/fepest/Documents/AI활용/runNshop/docs/**)",
       "Bash(npx next *)",
       "Bash(curl -s http://localhost:3001 --max-time 8 -o /dev/null -w \"%{http_code}\\\\n\")",
       "Bash(curl -s http://localhost:3001 --max-time 8)",

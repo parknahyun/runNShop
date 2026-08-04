@@ -23,13 +23,13 @@
 
 | 도메인 | 파일 | 영역 | REQ 수 | 상태 |
 |---|---|---|---|---|
-| Order | `01-Order-Cart.md` | 장바구니 + 주문서 | 25 | DRAFT-v2 |
+| Order | `01-Order-Cart.md` | 장바구니 + 주문서 | 28 | DRAFT-v2.3 |
 | Order | `01-Order-OrderPayment.md` | 주문결제 + 연동 | 25 | DRAFT-v2 |
 | Order | `01-Order-Delivery.md` | 배송관리 | 23 | DRAFT-v2 |
 | Order | `01-Order-Claim.md` | 클레임처리 | 27 | DRAFT-v2 |
-| **Order 소계** | | | **100** | |
-| Payment | `04-Payment.md` | 전체 | 33 | DRAFT-v1.2 |
-| **1차 파트 합계** | | | **133** | |
+| **Order 소계** | | | **103** | |
+| Payment | `04-Payment.md` | 전체 | 33 | DRAFT-v1.3 |
+| **1차 파트 합계** | | | **136** | |
 
 ### 2~4차 파트 — 미착수
 
