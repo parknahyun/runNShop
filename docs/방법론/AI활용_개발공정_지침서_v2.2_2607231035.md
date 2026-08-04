@@ -28,13 +28,22 @@
 
 본 방법론은 **공정(Process), 산출물(Artifact), 자산활용(Asset Utilization)**의 세 가지 핵심 요소와 이를 뒷받침하는 기반 정의(Scope 단위, 역할)로 구성됩니다. 이들은 각각 독립적인 개념이 아니라 하나의 실행 체계를 구성하며, 프로젝트 수행 과정에서 유기적으로 연결되어 산출물 생성과 자산 축적을 반복하는 선순환 구조를 형성합니다.
 
-```
-        Asset
-          │
-          ▼
-AI + 자산활용 ──▶ 공정(Process) ──▶ 산출물(Artifact) ──▶ 다음 공정
-  ▲                                                        │
-  └────────────── 프로젝트 수행을 통해 자산 축적 ───────────┘
+```plantuml
+@startuml
+skinparam backgroundColor transparent
+title 핵심 요소 선순환 구조
+
+rectangle "Asset\n(자산)" as Asset
+rectangle "AI + 자산활용" as AI
+rectangle "공정(Process)" as Process
+rectangle "산출물(Artifact)" as Artifact
+
+Asset -down-> AI
+AI -right-> Process
+Process -right-> Artifact
+Artifact -down-> AI : 프로젝트 수행을 통해\n자산 축적
+
+@enduml
 ```
 
 프로젝트가 반복될수록 자산이 증가하고, 자산을 활용한 AI 초안의 품질과 생산성이 함께 향상되는 선순환 구조를 지향합니다. 아래에서 세 가지 핵심 요소(3.1~3.3)와 기반 정의(3.4~3.5)를 정의합니다.
@@ -100,6 +109,15 @@ Scope 계층 관계: Initiative ⊃ Project ⊃ Domain ⊃ Bolt
 > * 하나의 Initiative는 하나 이상의 Project를 포함할 수 있다 (예: "플랫폼 리뉴얼" Initiative 아래 "고객웹 Project", "어드민 Project" 등).
 > * 소규모 Initiative는 Project와 1:1로 대응될 수 있다.
 
+**Bolt의 두 유형**: Bolt는 소속에 따라 두 가지로 나뉩니다.
+
+| 유형 | 소속 | 범위 | 수량 |
+| :---: | ----- | ----- | ----- |
+| **Platform Bolt** | Project 직속 (Domain 없음) | 앱 셸(레이아웃·네비게이션·MDI 탭관리·인증 셸·공통 UI 컴포넌트) | 앱당 1~2개 |
+| **Domain Bolt** | Domain 소속 | 업무화면(주문목록, 상품상세 등) | 도메인별 다수 |
+
+Platform Bolt는 **모든 Domain Bolt의 선행 조건**이며, 컴포넌트(6.3) 작성 시 앱별 메뉴구조를 정의하는 과정에서 식별됩니다.
+
 ### **3.5 역할 정의 (초안)**
 
 본 방법론에서 사용하는 역할(Role)과 책임 범위는 다음과 같습니다.
@@ -133,10 +151,26 @@ AI 활용 공정은 프로젝트 수행 과정에서 **AI Agent가 각 공정을
 
 각 공정은 다음의 실행 Cycle로 수행됩니다. Human Review에서 반려(Reject)가 발생하면 AI Generation으로 복귀하여 피드백을 반영한 재생성을 수행합니다.
 
-```
-Asset Selection → AI Generation → Human Review ──(Pass)──→ Artifact Finalization → Asset Management
-                       ▲                    │
-                       └───(Reject/보완)────┘
+```plantuml
+@startuml
+skinparam backgroundColor transparent
+title 실행 Cycle (기본)
+
+|실행 Cycle|
+start
+:Asset Selection\n기존 Asset + 이전 Artifact 탐색;
+:AI Generation\n산출물 초안 생성;
+if (Human Review) then (Pass)
+  :Artifact Finalization\n공식 산출물 확정;
+  :Asset Management\n자산 등록 및 현행화;
+  stop
+else (Reject/보완)
+  :반려 사유를\nAI 입력에 포함;
+  -> AI Generation으로 복귀;
+  detach
+endif
+
+@enduml
 ```
 
 | 단계 | 수행 내용 | 주체 | 진입 조건 | 종료 조건 |
@@ -157,11 +191,32 @@ Asset Selection → AI Generation → Human Review ──(Pass)──→ Artifac
 
 Code 공정은 AI 자율도가 가장 높고(4.2 참조, High) 할루시네이션(존재하지 않는 API 호출)·보안 취약점 리스크가 다른 공정보다 크므로, Human Review 이전에 자동 검증 단계를 추가합니다.
 
-```
-Asset Selection → AI Generation → Automated Verification ──(Pass)──→ Human Review ──(Pass)──→ Artifact Finalization → Asset Management
-                       ▲                       │                            │
-                       │                       └──(Fail: 자동 반송)─────────┘
-                       └─────────────────────(Reject/보완)──────────────────┘
+```plantuml
+@startuml
+skinparam backgroundColor transparent
+title 실행 Cycle — Code 공정 예외 (자동 검증 추가)
+
+|Code 실행 Cycle|
+start
+:Asset Selection;
+:AI Generation\n코드 초안 생성;
+if (Automated Verification\n컴파일/Lint/SAST) then (Pass)
+  if (Human Review\n로직·설계 적합성) then (Pass)
+    :Artifact Finalization;
+    :Asset Management;
+    stop
+  else (Reject/보완)
+    :반려 사유를\nAI 입력에 포함;
+    -> AI Generation으로 복귀;
+    detach
+  endif
+else (Fail: 자동 반송)
+  :실패 원인을\nAI 입력에 포함;
+  -> AI Generation으로 즉시 반송;
+  detach
+endif
+
+@enduml
 ```
 
 > * **Automated Verification 항목**: 컴파일/빌드 성공, 정적 분석(Lint) 통과, 보안 스캔(SAST) 통과, 존재하지 않는 API·라이브러리 호출 여부 검증
@@ -398,7 +453,7 @@ AI가 생성·재생성하는 산출물의 이력을 관리하는 정책입니�
 
 | 순서 | 산출물 | 구분 | 범위(Scope) | 입력자료 | AI가 정리하는 초안 | 휴먼 의사결정 포인트 |
 | :---: | ----- | ----- | ----- | ----- | ----- | ----- |
-| 1 | 컴포넌트 | 신규(Project) | Project | 기존 아키텍처 문서, 기술스택 결정 | 모듈 경계 초안 | 배포/책임 경계 확정 |
+| 1 | 컴포넌트 | 신규(Project) | Project | 기존 아키텍처 문서, 기술스택 결정, 화면정의서 | 모듈 경계 초안 + 앱별 메뉴구조(네비게이션 트리) 초안 | 배포/책임 경계 확정, 메뉴 계층 확정(Platform Bolt 식별 포함) |
 | 2 | 상위 유스케이스 | 자산활용 | Domain | 화면정의서, 정책서 해당 챕터, 기능요구사항, 액터 정의 | 액터-유스케이스 관계도 초안 | 실제 액터 범위/권한 확정 |
 | 3 | 도메인·ERD | 자산활용(최초) / 현행화(Bolt) | Domain | 화면정의서, 용어집, 기능요구사항, 기존 스키마 | 엔티티/관계 초안(DBML) | 정규화 수준, 컬럼/제약조건 확정 |
 | 4 | 상태머신 | 자산활용(최초) / 현행화(Bolt) | Domain | 화면정의서, ERD, 상태 문구 | 상태-전이 후보 초안 | 상태 단순화 여부, 비정상 전이 허용 여부 |
@@ -965,3 +1020,9 @@ v2.2 보완 4 (2026-07-28): 부록 B "파트 구성(runNshop 예시)" 표의 파
 변경 — **"사용자 참여" → "회원"**, **"플랫폼 운영" → "운영"**. 표 본문·각주(Search 배치 사유)
 모두 갱신. 도메인 구성(Member·Community·Notification / Search·Config·Audit)과 인원·근거
 서술은 그대로 유지.
+
+v2.2 보완 5 (2026-07-31): 표준양식·작성가이드에는 이미 반영돼 있었으나 이 문서엔 누락돼 있던
+두 가지를 정합성 점검 후 보완 — ① 3.4절에 **Platform Bolt/Domain Bolt** 분류(Bolt가 Project
+직속 앱 셸 vs Domain 소속 업무화면으로 나뉘며, Platform Bolt가 모든 Domain Bolt의 선행 조건이라는
+관계) 신설, ② 6.3 컴포넌트 행의 입력자료·AI 초안·의사결정 포인트에 "화면정의서"·"앱별 메뉴구조
+(네비게이션 트리) 초안"·"메뉴 계층 확정"을 추가해 표준양식·작성가이드와 동기화.
