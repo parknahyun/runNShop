@@ -1,9 +1,11 @@
-# AI 활용 개발 공정 — 산출물 표준양식 (전 공정 40종)
+# AI 활용 개발 공정 — 산출물 표준양식
 
-**버전: 1.0 (초안)**
-**관련 문서**: `AI활용_개발공정_지침서_v2.2` 6장(공정별 산출물 상세), `AI활용_개발공정_프롬프트_라이브러리_v2.0.md`(40종 전체 프롬프트 샘플 수록)
-**목적**: 6장이 정의한 "입력자료·AI초안·휴먼결정포인트"에 더해, 각 산출물이 **구체적으로 어떤 항목(구조)에
-어떤 내용을 담아야 하는가**를 정의한다. 6장과 중복하지 않도록, 여기서는 **필수 항목(표준양식)**만 다룬다.
+**버전: 1.1**
+**관련 문서**: `AI활용_개발공정_지침서_v2.3.md`(7단계·산출물 상세 — 6장),
+`AI활용_개발공정_산출물_작성가이드_v1.0.md`(산출물별 **어떤 순서로, 어떤 기준으로** 작성하는지),
+`AI활용_개발공정_프롬프트_라이브러리_v2.0.md`(**어떤 프롬프트**로 AI 초안을 뽑을지)
+**목적**: 각 산출물이 **구체적으로 어떤 항목(구조)에 어떤 내용을 담아야 하는가**를 정의한다.
+6장과 중복하지 않고 **필수 항목(표준양식)**만 다룬다.
 
 ---
 
@@ -35,119 +37,112 @@
 
 ---
 
-## 1. Proposal (Initiative 단위, 6종)
+## 1. 착수 (Project 단위, 6종)
 
-이미 `docs_ai/00-proposal/`에 6종 전체가 실제 작성됨 — 아래는 그 실제 구조를 표준양식으로 요약한 것.
-
-| 산출물 | Scope | 필수 항목(표준양식) | 파일 형식(권장) | 실제 사례 |
+| 산출물 | 문서종류 | Scope | 필수 항목(표준양식) | 파일 형식(권장) |
 |---|---|---|---|---|
-| 문제정의서 | Initiative | **BPIO 4단**(Background·Problem·Impact·Opportunity, 각 2~5문장) + 근거출처매핑 + Human Review 목록 + 5.1 자가평가 | `.md` | `01-문제정의서.md` |
-| 목표·KPI | Initiative | Objective(정성 목표) N개 + 각 Objective의 KR(정량 목표수치) 목록, KR마다 [목표수치/출처/비고] | `.md` (표) | `02-목표KPI.md` |
-| 이해관계자맵 | Initiative | 이해관계자 표[이름·역할·관심사/영향력·근거] + 방법론 역할(PM/TL/DE/QA/AI CoE/AM/Dev) 매핑표 | `.md` (표) | `03-이해관계자맵.md` |
-| 범위(Scope) | Initiative | In-Scope(확정/검토중)·Out-of-Scope 표 + **제외 항목 리스크 수용 여부**(휴먼결정포인트 직결) | `.md` (표) | `04-범위(Scope).md` |
-| 대안비교 | Initiative | 대안 단위별 [후보 목록 + 채택여부 + 채택이유] 표 (대안이 여러 축이면 축마다 별도 표) | `.md` (표) | `05-대안비교.md` |
-| 리스크·가정 | Initiative | 리스크 표[리스크·발생여부·영향도·출처·대응] + 가정 표[가정·검증상태·근거] | `.md` (표) | `06-리스크가정.md` |
+| 문제정의서 | Proposal | Project | **BPIO 4단**(Background·Problem·Impact·Opportunity) + 근거출처매핑 + Human Review 목록 + 자가평가 | `.md` |
+| 목표·KPI | Proposal | Project | Objective N개 + 각 KR(목표수치/출처/비고) | `.md` (표) |
+| 이해관계자맵 | Proposal | Project | 이해관계자 표[이름·역할·관심사·영향력] + 방법론 역할 매핑표 | `.md` (표) |
+| 범위(Scope) | Proposal | Project | In-Scope(확정/검토중)·Out-of-Scope 표 + 제외 항목 리스크 수용 여부 | `.md` (표) |
+| 대안비교 | Proposal | Project | 대안 단위별 [후보·채택여부·채택이유] 표 | `.md` (표) |
+| 리스크·가정 | Proposal | Project | 리스크 표[리스크·영향도·대응] + 가정 표[가정·검증상태] | `.md` (표) |
 
 ---
 
-## 2. Spec (Project/Bolt 단위, 6종)
+## 2. 범위정의 (Project 단위, 5종)
 
-| 산출물 | Scope | 필수 항목(표준양식) | 파일 형식(권장) |
-|---|---|---|---|
-| 용어집 | Project(현행화: Bolt) | 용어-정의 표[용어·정의·동의어·충돌여부], 신규 용어 발견 시 별도 표기, 버전 이력 | `.md` (표) |
-| 제약사항 | Project | 제약 표[제약ID·카테고리(법무/보안/기술/벤더계약)·내용·적용범위·예외승인여부] | `.md` (표) |
-| 비기능요구(NFR) | Project+Domain | 품질특성별 표[특성(성능/가용성/보안 등)·기준치·측정방법·근거]. 안정화 단계에서 실측 기준으로 현행화 | `.md` (표) |
-| 기능요구(EARS) | Bolt | 요구사항ID(`REQ-{DOM}-{SEQ}`, **Platform Bolt는 `REQ-PLT-{SEQ}`**) + EARS 5패턴(Ubiquitous/Event-driven/State-driven/Optional/Unwanted) 중 해당 패턴으로 "WHEN [트리거], THE [시스템] SHALL [동작]" 문장 + 출처(정책서 챕터·화면 영역) + 우선순위(P1/P2/P3) | `.md` (요구사항ID 표) |
-| 수용기준(GWT) | Bolt | 시나리오ID(`AC-{DOM}-{SEQ}`, **Platform Bolt는 `AC-PLT-{SEQ}`**) + Given/When/Then + 카테고리(정상/경계값/예외) + 대응 EARS ID(요구사항 100% 커버 확인) | `.md` (표) — 테스트 자동화 연동 시 `.feature`(Gherkin) 추출 |
-| 인터페이스 명세 | Bolt | OpenAPI 3.0 형식: endpoint(method/path/auth/role), request/response 필드표, 공통 응답구조, error_catalog, cross_field_rules | `.md` (yaml 블록 내장) — Swagger 등 도구 연동 시 `.yaml`/`.json` 추출 |
-
-*프롬프트 샘플: Spec 전 6종 — `AI활용_개발공정_프롬프트_라이브러리_v2.0.md` 7~12절*
+| 산출물 | 문서종류 | Scope | 필수 항목(표준양식) | 파일 형식(권장) |
+|---|---|---|---|---|
+| 제약사항 | Spec | Project | 제약 표[제약ID·카테고리(법무/보안/기술/벤더)·내용·적용범위·예외승인] | `.md` (표) |
+| 비기능요구(NFR) | Spec | Project | 품질특성별 표[특성·기준치·측정방법·근거] | `.md` (표) |
+| 컴포넌트 | Design | Project | 모듈/서비스 목록 + 책임 정의 + 배포 경계 + 의존관계 다이어그램 | `.md` (plantuml component) |
+| 시스템구성도 | Design | Project | 인프라 배치 다이어그램 + 환경 구성 + 네트워크 + 데이터 저장소 + DB 스키마 그룹핑 + 스케일링 전략 | `.md` (plantuml) |
+| 도메인 정의서 | Design | Project | 도메인 목록(업무그룹) + 도메인별 책임(하는 것/안 하는 것) + 소유 데이터 + 도메인 간 관계 다이어그램 + 경계 규칙 | `.md` (plantuml + 표) |
 
 ---
 
-## 3. Design (Project/Domain/Bolt 단위, 11종)
+## 3. 구조설계 (Domain 단위, 7종 + Tasks 6종)
 
-| 산출물 | Scope | 필수 항목(표준양식) | 파일 형식(권장) |
-|---|---|---|---|
-| 컴포넌트 | Project | 모듈/서비스 목록 + 책임 정의 + 배포·책임 경계 + 의존관계 다이어그램 + **앱별 메뉴구조**(전체 네비게이션 트리 — 앱별 1depth/2depth/화면 계층, 셸 구조(NavBar/Sidebar/BottomNav), 상위 유스케이스의 선행자료로 활용) | `.md` (plantuml component 블록) |
-| 상위 유스케이스 | Domain(**Platform Bolt는 Project 직속**) | 액터 정의 + 액터-유스케이스 관계도(다이어그램) + 권한 범위 + **업무그룹**(조건부 — 도메인정의서의 책임 목록 기준으로 유스케이스를 대분류 소제목으로 묶음. Bolt 후보가 6개 넘으면 중분류까지 추가). Platform Bolt의 경우: 앱 셸 유스케이스(로그인·메뉴접근·탭관리·공통UI) | `.md` (plantuml usecase 블록) |
-| 도메인·ERD | Domain(현행화: Bolt) | DBML 형식: 테이블별 컬럼(타입/nullable/default) + PK/FK + 인덱스 + **불변식(invariants)** + 상태전이 필드 있으면 명시 + soft delete 정책 + 감사컬럼 + 유스케이스/화면 대응 주석 | `.md` (dbml 블록 내장) — dbdiagram.io 연동 시 `.dbml` 추출 |
-| 상태머신 | Domain(현행화: Bolt) | 상태 목록 + 허용 전이표 + **forbidden_transitions**(금지 전이 + 사유) + 전이 트리거 조건 | `.md` (plantuml state 블록) |
-| 비즈니스 프로세스 | Domain | 액티비티 다이어그램(스윔레인, PlantUML) + 시작/종료조건 + 예외흐름(E1, E2...) | `.md` (plantuml activity/스윔레인 블록) |
-| 이벤트 플로우 | Domain 간 | 이벤트 카탈로그[이벤트명·발행도메인·구독도메인·스키마·동기/비동기] | `.md` (표) |
-| 세부 유스케이스 | Bolt | 버튼/메뉴 단위 액터 행위 분해 + 상위 유스케이스와의 연결 | `.md` (표) |
-| 시퀀스 | Bolt | PlantUML 다이어그램 + **트랜잭션 경계**(rect 블록) + **이벤트 발행 타이밍**(BEFORE/AFTER COMMIT) + 실패 분기(alt/opt) + wrong_patterns | `.md` (plantuml 블록 내장) — 별도 렌더링 필요 시 `.puml` 추출 |
-| 화면 레이아웃(확정) | Bolt | 와이어프레임 + 컴포넌트-API 매핑표 + 프론트 검증규칙 + 상태(state) 소스·refresh trigger + loading/optimistic 패턴 + **채널별 완성 경로**(admin/partner: md→tsx 직행, mobile: md→Figma시안→tsx) + mobile 해당 시 **Figma 시안 필수 항목**(Figma 링크·디자인 토큰·컴포넌트 명세·상태별 시안·인터랙션 스펙·핸드오프 체크리스트) | `.md` (+ 와이어프레임은 `.png`/Figma 링크) |
-| ADR | Domain/Bolt | 제목 + 상태(제안/승인/폐기) + Context(배경) + Decision(결정) + Alternatives(대안+트레이드오프) + Consequences(결과) | `.md` (ADR 1건=1파일 권장, `adr/NNNN-제목.md`) |
-| 클래스 설계 | Bolt(현행화) | 클래스 다이어그램(속성/메서드/관계) + 책임 분배 + 상속/합성 구조 | `.md` (plantuml classDiagram 블록) |
+| 산출물 | 문서종류 | Scope | 필수 항목(표준양식) | 파일 형식(권장) |
+|---|---|---|---|---|
+| 상위 유스케이스 | Design | Domain | 액터 정의 + 업무그룹별 UC 목록(도출 근거 포함) + 관계도 + 권한 범위 | `.md` (plantuml usecase) |
+| 메뉴구조도(IA) | Design | Project(앱별) | 셸 구조 + 1depth/2depth/화면 계층 + 도메인 매핑 | `.md` (표) |
+| 기능요구(EARS) | Spec | Domain | 요구사항ID(`REQ-{DOM}-{SEQ}`) + EARS 5패턴 + 도출 근거(정책서/상위UC) | `.md` (표) |
+| 도메인 모델(ERD) | Design | Domain | DBML: 테이블·컬럼·PK/FK·인덱스 + 불변식 + soft delete 정책 + 감사컬럼 | `.md` (dbml 블록) |
+| 상태머신 | Design | Domain | 상태 목록 + 허용 전이표 + forbidden_transitions + 트리거 조건 | `.md` (plantuml state) |
+| 비즈니스 프로세스 | Design | Domain | 액티비티 다이어그램(스윔레인) + 시작/종료조건 + 예외흐름 | `.md` (plantuml activity) |
+| 이벤트 플로우 | Design | Domain 간 | 이벤트 카탈로그[이벤트명·발행도메인·구독도메인·스키마·동기/비동기] | `.md` (표) |
 
-*프롬프트 샘플: Design 전 11종 — 프롬프트 라이브러리 v2.0 13~23절*
+**Tasks 산출물 (구조설계 마지막)**
 
----
-
-## 4. Tasks (Initiative/Project/Domain/Bolt 단위, 6종)
-
-| 산출물 | Scope | 필수 항목(표준양식) | 파일 형식(권장) |
-|---|---|---|---|
-| RACI | Initiative | 산출물×역할 매트릭스(R/A/C/I) + 방법론 역할↔실제 담당자 매핑(03-이해관계자맵 참조) | `.md` (표, 항목 방대 시 `.csv` 병행) |
-| DoD 템플릿 | Project | 카테고리별 체크항목 풀(코드품질/테스트/보안/문서화 등) | `.md` (체크리스트) |
-| 리스크 대응계획 | Initiative+Bolt | 트리거조건 → 대응액션 매핑 + 우선순위 + 담당자 (06-리스크가정의 리스크를 이어받음) | `.md` (표) |
-| 의존성 맵 | Domain+Bolt | 작업 간 선후관계(DAG) + 크리티컬 패스 표시 | `.md` (plantuml 블록, 화살표로 DAG 표현) |
-| WBS(하위)·산정 | Bolt | Epic > Story > Task 분해 + Task별 예상시간(최대 반나절) + 선행 Task ID + DoD 체크 항목 + 담당(FE/BE) | `.md` (표) — 이슈트래커 연동 시 `.csv` export |
-| DoD 체크리스트(Bolt 적용본) | Bolt | DoD 템플릿에서 해당 Bolt에 맞는 카테고리만 선택 + 체크 결과 | `.md` (체크리스트) |
-
-*프롬프트 샘플: Tasks 전 6종 — 프롬프트 라이브러리 v2.0 24~29절*
+| 산출물 | 문서종류 | Scope | 필수 항목(표준양식) | 파일 형식(권장) |
+|---|---|---|---|---|
+| RACI | Task | Project | 산출물×역할 매트릭스(R/A/C/I) + 실제 담당자 매핑 | `.md` (표) |
+| DoD 템플릿 | Task | Project | 카테고리별 체크항목 풀 | `.md` (체크리스트) |
+| 의존성 맵 | Task | Domain→Bolt | 작업 간 선후관계(DAG) + 크리티컬 패스 | `.md` (plantuml) |
+| WBS·산정 | Task | Project→Bolt | Epic > Story > Task 분해 + Task별 공수 + 선행 Task ID | `.md` (표) |
+| 리스크 대응계획 | Task | Project | 트리거조건 → 대응액션 + 우선순위 + 담당자 | `.md` (표) |
+| DoD 체크리스트 | Task | Bolt | DoD 템플릿에서 Bolt 맞춤 선택 + 체크 결과 | `.md` (체크리스트) |
 
 ---
 
-## 5. Code (Bolt 단위, 5종)
+## 4. 상세설계 (Bolt 단위, 7종)
 
-| 산출물 | Scope | 필수 항목(표준양식) | 파일 형식(권장) |
-|---|---|---|---|
-| 코드 구현 | Bolt | 레이어별 파일 목록(Controller/Service/Repository/DTO) + 네이밍 규칙 준수 + 코딩 컨벤션 준수 여부 | **실제 소스코드**(언어별 확장자, 예: `.kt`/`.ts`/`.tsx`) + Mock 데이터 `.json` — 유일하게 .md가 아닌 산출물 |
-| 자동 검증(활동) | Bolt | 컴파일/Lint/SAST 결과 리포트 + 실패 시 재시도 이력 | `.md` (결과 요약) — 원본 리포트는 도구별 `.xml`(JUnit)/`.json`(SARIF) |
-| 단위 테스트 실행·결과 | Bolt | 테스트케이스(GWT 경계값 기반) + 커버리지 수치 + Pass/Fail 기록 | 테스트 코드(언어별 확장자) + 결과 요약 `.md` |
-| 클래스 설계(현행화) | Bolt | Design 산출물과 동일 포맷 — **변경사항만 diff로 기록**(구현 중 설계 차이 발견 시) | `.md` (plantuml 블록, diff 서술) |
-| 도메인·ERD/상태머신(현행화) | Domain | Design 산출물과 동일 포맷 — 변경사항만 diff로 기록 | `.md` (dbml/plantuml 블록, diff 서술) |
-
-*프롬프트 샘플: Code 전 3종(신규분) — 프롬프트 라이브러리 v2.0 30~32절*
-
----
-
-## 6. 통합 테스트 (Project/Domain/Bolt 단위, 10종)
-
-| 산출물 | Scope | 필수 항목(표준양식) | 파일 형식(권장) |
-|---|---|---|---|
-| 통합테스트 계획서 | Project | 시나리오 목록 + 범위/우선순위 + 의존성맵·ADR 참조 | `.md` |
-| 수용기준(GWT) 실행(활동) | Bolt | Spec 단계 GWT를 그대로 실행 — Pass/Fail 기록만 | `.md` (표) — 자동화 시 `.feature` 실행 결과 |
-| 이벤트플로우(현행화) | Domain 간 | Design 산출물과 동일 포맷 + "통합 중 발견사항" 섹션 추가 | `.md` (표) |
-| 의존성맵(현행화) | Domain+Bolt | Tasks 산출물과 동일 포맷 + "통합 중 발견사항" 섹션 추가 | `.md` (plantuml 블록) |
-| 리스크·가정(현행화) | Initiative | Proposal 산출물과 동일 포맷 + "통합 중 발견사항" 섹션 추가 | `.md` (표) |
-| 통합테스트 결과보고서 | Project | 시나리오별 결과 + 발견된 결함(5.2 등급별: Critical/Major/Minor/Trivial) + 재현 조건 | `.md` |
-| E2E 시나리오 | Project | 실사용자 관점 흐름(통합테스트 결과 기반) | `.md` — 자동화 시 `.spec.ts`(Playwright/Cypress) 병행 |
-| NFR(현행화) | Project | Spec 산출물과 동일 포맷 — 실측치로 기준 보정 | `.md` (표) |
-| DoD 체크리스트(최종) | Bolt | 전체 항목 최종 확인 결과 | `.md` (체크리스트) |
-| Go/No-Go 판단근거 | Project | 5.2 Go/No-Go 판단 매트릭스 적용 결과 + Critical/Major 건수 + 최종 판정 | `.md` |
-
-*프롬프트 샘플: 신규 4종(계획서·결과보고서·E2E·Go-No-Go) — 프롬프트 라이브러리 v2.0 33~36절*
+| 산출물 | 문서종류 | Scope | 필수 항목(표준양식) | 파일 형식(권장) |
+|---|---|---|---|---|
+| 수용기준(GWT) | Spec | Bolt | 시나리오ID(`AC-{DOM}-{SEQ}`) + Given/When/Then + 카테고리(정상/경계값/예외) + 대응 EARS ID | `.md` (표) — 자동화 시 `.feature` |
+| 세부 유스케이스 | Design | Bolt | 버튼/메뉴 단위 액터 행위 분해 + 기본흐름 + 대안흐름 | `.md` (표) |
+| 인터페이스 명세 | Spec | Bolt | OpenAPI 3.0: endpoint(method/path/auth), request/response, error_catalog | `.md` (yaml 블록) — Swagger 연동 시 `.yaml` |
+| 시퀀스 | Design | Bolt | PlantUML + 트랜잭션 경계(rect) + 이벤트 발행 타이밍 + 실패 분기(alt/opt) | `.md` (plantuml) |
+| 화면 레이아웃 | Design | Bolt | 와이어프레임 + API 매핑표 + 상태별 UI + 채널별 경로(admin→tsx, mobile→Figma→tsx) | `.md` (+ Figma 링크) |
+| ADR | Design | 발생 시 | 제목 + 상태 + Context + Decision + Alternatives + Consequences | `.md` (1건=1파일) |
+| 클래스 설계 | Design | Bolt | 클래스 다이어그램(속성/메서드/관계) + 책임 분배 + 패키지 구조 | `.md` (plantuml class) |
 
 ---
 
-## 7. 안정화 (Project/Initiative 단위, 9종)
+## 5. 구현 (Bolt 단위, 5종)
 
-| 산출물 | Scope | 필수 항목(표준양식) | 파일 형식(권장) |
-|---|---|---|---|
-| 운영매뉴얼/Runbook | Project | 장애대응 절차 + 에스컬레이션 경로 + 담당자 연락처 | `.md` |
-| Go-Live 승인기록 | Project | 승인자 + 승인일시 + Go/No-Go 판단근거 문서 링크 | `.md` (짧은 표) |
-| 목표·KPI(베이스라인) | Initiative | 오픈 시점 실측값 기록 시작 | `.md` (표) |
-| 장애/이슈 로그 | Project | 발생일시 + 등급 + 원인 + 조치 + 재발방지책 (지속 누적) | `.md` (표) — 누적량 많으면 `.csv`/이슈트래커 연동 |
-| 리스크 대응계획(현행화) | Initiative+Bolt | Tasks 산출물과 동일 포맷 — 실제 발생 이슈로 갱신 | `.md` (표) |
-| NFR(현행화) | Project | 운영 실측 기준으로 재조정 | `.md` (표) |
-| 용어집(현행화) | Project | 운영 중 발생한 신조어 반영, 최종 확정 | `.md` (표) |
-| 목표·KPI(최종) | Initiative | 목표 대비 실적 비교 | `.md` (표) |
-| 안정화 결과보고서 | Project | 전체 과정 종합 + KPI 달성 평가 + **자산화(다음 프로젝트 재사용) 권고사항** | `.md` |
+| 산출물 | 문서종류 | Scope | 필수 항목(표준양식) | 파일 형식(권장) |
+|---|---|---|---|---|
+| 코드 구현 | — | Bolt | 레이어별 파일(Controller/Service/Repository/DTO) + 네이밍·컨벤션 준수 | 소스코드(`.kt`/`.ts`/`.tsx`) + Mock `.json` |
+| 자동 검증 | — | Bolt | 컴파일/Lint/SAST 결과 리포트 + 실패 시 재시도 이력 | `.md` (결과 요약) |
+| 단위 테스트 | — | Bolt | 테스트케이스(GWT 경계값 기반) + 커버리지 수치 + Pass/Fail | 테스트 코드 + 결과 `.md` |
+| 클래스 설계(보완) | Design | Bolt | 변경사항만 diff 기록 | `.md` (plantuml, diff) |
+| ERD·상태머신(보완) | Design | Domain | 변경사항만 diff 기록 | `.md` (dbml/plantuml, diff) |
 
-*프롬프트 샘플: 신규 4종(운영매뉴얼·Go-Live승인·장애로그·안정화결과보고서) — 프롬프트 라이브러리 v2.0 37~40절*
+---
+
+## 6. 테스트 (Project/Domain/Bolt 단위, 10종)
+
+| 산출물 | 문서종류 | Scope | 필수 항목(표준양식) | 파일 형식(권장) |
+|---|---|---|---|---|
+| 통합테스트 계획서 | — | Project | 시나리오 목록 + 범위/우선순위 + 의존성맵·ADR 참조 | `.md` |
+| GWT 실행 | — | Bolt | Spec 단계 GWT 실행 — Pass/Fail 기록 | `.md` (표) |
+| 이벤트플로우(보완) | Design | Domain 간 | 동일 포맷 + "통합 중 발견사항" 섹션 | `.md` (표) |
+| 의존성맵(보완) | Task | Domain+Bolt | 동일 포맷 + "통합 중 발견사항" 섹션 | `.md` (plantuml) |
+| 리스크·가정(보완) | Proposal | Project | 동일 포맷 + "통합 중 발견사항" 섹션 | `.md` (표) |
+| 통합테스트 결과보고서 | — | Project | 시나리오별 결과 + 결함(Critical/Major/Minor/Trivial) + 재현 조건 | `.md` |
+| E2E 시나리오 | — | Project | 실사용자 관점 흐름 | `.md` — 자동화 시 `.spec.ts` |
+| NFR(보완) | Spec | Project | 실측치로 기준 보정 | `.md` (표) |
+| DoD 체크리스트(최종) | Task | Bolt | 전체 항목 최종 확인 | `.md` (체크리스트) |
+| Go/No-Go 판단근거 | — | Project | 5.2 매트릭스 적용 + Critical/Major 건수 + 최종 판정 | `.md` |
+
+---
+
+## 7. 안정화 (Project 단위, 9종)
+
+| 산출물 | 문서종류 | Scope | 필수 항목(표준양식) | 파일 형식(권장) |
+|---|---|---|---|---|
+| 운영매뉴얼/Runbook | — | Project | 장애대응 절차 + 에스컬레이션 경로 + 담당자 연락처 | `.md` |
+| Go-Live 승인기록 | — | Project | 승인자 + 승인일시 + Go/No-Go 문서 링크 | `.md` |
+| 목표·KPI(베이스라인) | Proposal | Project | 오픈 시점 실측값 기록 시작 | `.md` (표) |
+| 장애/이슈 로그 | — | Project | 발생일시 + 등급 + 원인 + 조치 + 재발방지 (지속 누적) | `.md` (표) |
+| 리스크 대응계획(보완) | Task | Project | 실제 발생 이슈로 갱신 | `.md` (표) |
+| NFR(보완) | Spec | Project | 운영 실측 기준으로 재조정 | `.md` (표) |
+| 용어집(보완) | Spec | Project | 운영 중 신조어 반영, 최종 확정 | `.md` (표) |
+| 목표·KPI(최종) | Proposal | Project | 목표 대비 실적 비교 | `.md` (표) |
+| 안정화 결과보고서 | — | Project | 전체 과정 종합 + KPI 평가 + 자산화 권고사항 | `.md` |
 
 ---
 
