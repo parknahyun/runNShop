@@ -3,8 +3,8 @@ import { useState } from 'react'
 import { login, type Session } from './mockAuth'
 
 export default function LoginScreen({ onLogin }: { onLogin: (session: Session) => void }) {
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
+  const [email, setEmail] = useState('admin@test.com')
+  const [password, setPassword] = useState('1234')
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
