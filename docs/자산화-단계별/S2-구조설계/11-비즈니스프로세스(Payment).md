@@ -34,42 +34,30 @@ start
 :금액 검증\n(요청 금액 == 주문 금액?);
 
 if (금액 일치?) then (yes)
-  :PG(토스페이먼츠) 승인 요청;
+  :PG(토스페이먼츠) 승인 요청\n(최대 3회 재시도, 타임아웃 30초);
 else (no)
   :금액 불일치 오류;
   :PAYMENT_FAILED 이벤트 발행;
   stop
 endif
 
-if (PG 응답?) then (승인 성공)
+if (PG 승인 성공?) then (yes)
   :PAID;
   :pay_payment_log 기록 (APPROVE);
   :PAYMENT_APPROVED 이벤트 발행 → Order;
   stop
-else if (실패)
-  :pay_payment_log 기록 (FAIL);
-  if (retry_count < 3?) then (yes)
-    :대기 (지수 백오프);
-    backward :PG 승인 요청;
-  else (3회 소진)
-    :CANCELLED;
-    :pay_payment_log 기록 (FAIL, final);
-    :PAYMENT_FAILED 이벤트 발행 → Order;
-    stop
-  endif
-else (타임아웃 30초)
-  :pay_payment_log 기록 (TIMEOUT);
-  if (retry_count < 3?) then (yes)
-    backward :PG 승인 요청;
-  else (3회 소진)
-    :CANCELLED;
-    :PAYMENT_FAILED 이벤트 발행 → Order;
-    stop
-  endif
+else (no — 실패 or 타임아웃, 3회 소진)
+  :CANCELLED;
+  :pay_payment_log 기록 (FAIL/TIMEOUT, final);
+  :PAYMENT_FAILED 이벤트 발행 → Order;
+  stop
 endif
 
 @enduml
 ```
+
+> **재시도 상세**: PG 실패/타임아웃 시 지수 백오프(1초→2초→4초)로 최대 3회 재시도.
+> 3회 모두 실패 시 CANCELLED로 전환. 각 시도마다 pay_payment_log에 기록.
 
 ---
 
@@ -124,17 +112,28 @@ title 수동 환불 비즈니스 프로세스
 |CS 담당자|
 start
 :환불 실패 건 확인;
-:수동 환불 요청;
 
-|시스템(Payment)|
-:PG 재환불 요청;
-
-if (성공?) then (yes)
-  :상태 갱신 (REFUNDED/PARTIAL_REFUNDED);
-  :pay_payment_log 기록;
-  stop
-else (실패)
-  :PG 직접 관리자 환불 필요\n(에스컬레이션);
+if (PG 재환불 가능?) then (yes)
+  :수동 PG 재환불 요청;
+  |시스템(Payment)|
+  :PG 재환불 요청;
+  if (성공?) then (yes)
+    :상태 갱신 (REFUNDED/PARTIAL_REFUNDED);
+    :pay_payment_log 기록;
+    stop
+  else (실패)
+    :에스컬레이션\n(PG 관리자 직접 처리);
+    stop
+  endif
+else (원결제수단 환불 불가)
+  |CS 담당자|
+  :고객에게 입금정보 요청;
+  :입금정보 시스템 등록\n(은행/계좌번호/예금주);
+  :직접 계좌이체 수행\n(수동);
+  :환불완료 처리 클릭;
+  |시스템(Payment)|
+  :상태 갱신 (REFUNDED);
+  :pay_payment_log 기록 (BANK_TRANSFER);
   stop
 endif
 

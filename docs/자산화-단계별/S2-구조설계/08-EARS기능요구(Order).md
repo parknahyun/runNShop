@@ -91,6 +91,36 @@
 
 ---
 
+## 클레임 확장 (배송비 결제·수거·품질점검·폐기·반송)
+
+> v2 (2026-08-12 현행화): S3 상세설계에서 클레임 프로세스 확장에 따라 추가.
+
+| ID | 패턴 | 요구사항 | 도출 근거 |
+|---|---|---|---|
+| REQ-ORD-040 | Event-driven | WHEN 고객 귀책 클레임이 접수되면, THE 시스템은 SHALL 클레임 상태를 PAYMENT_PENDING으로 전환하고 수거 배송비 결제를 요청한다. | 정책: 고객 귀책 배송비 부담 |
+| REQ-ORD-041 | Event-driven | WHEN 고객이 수거 배송비를 결제하면, THE 시스템은 SHALL 클레임 상태를 PICKUP으로 전환하고 수거 프로세스를 시작한다. | 상태머신: PAYMENT_PENDING→PICKUP |
+| REQ-ORD-042 | Unwanted | IF 수거 배송비가 24시간 내 결제되지 않으면, THEN THE 시스템은 SHALL 클레임을 자동 취소(PAYMENT_EXPIRED)하고 고객에게 알림톡을 발송한다. | 정책: 결제 기한 24시간 |
+| REQ-ORD-043 | Event-driven | WHEN 결제 대기 12시간이 경과하면, THE 시스템은 SHALL 미결제 리마인드 알림톡을 발송한다. | 정책: 신속 처리 유도 |
+| REQ-ORD-044 | Event-driven | WHEN 입점사가 수거 운송장을 등록하면, THE 시스템은 SHALL 수거 택배 추적을 시작한다. | 상위UC: 수거정보 입력 |
+| REQ-ORD-045 | Event-driven | WHEN 입점사가 상품 입고를 확인하면, THE 시스템은 SHALL 클레임 상태를 INSPECTING(품질점검)으로 전환한다. | 상태머신: PICKUP→INSPECTING |
+| REQ-ORD-046 | Event-driven | WHEN 입점사가 품질점검 합격을 판정하면, THE 시스템은 SHALL 클레임 상태를 PICKED_UP(수거완료)으로 전환한다. | 상태머신: INSPECTING→PICKED_UP |
+| REQ-ORD-047 | Event-driven | WHEN 입점사가 품질점검 거부를 판정하면, THE 시스템은 SHALL 클레임 상태를 PICKUP_REJECTED(수거거부)로 전환하고 거부 사유를 기록한다. | 상태머신: INSPECTING→PICKUP_REJECTED |
+| REQ-ORD-048 | Unwanted | IF 입점사가 거부 사유 없이 품질점검 거부를 시도하면, THEN THE 시스템은 SHALL 거부를 차단하고 사유 입력을 요구한다. | 정책: 사유 필수 |
+| REQ-ORD-049 | Event-driven | WHEN 어드민이 수거거부 건에 대해 폐기를 결정하면, THE 시스템은 SHALL 클레임 상태를 DISPOSED로 전환한다. | CS 운영: 반송 불가 판단 |
+| REQ-ORD-050 | Event-driven | WHEN 어드민이 수거거부 건에 대해 반송 배송비 추가결제를 요청하면, THE 시스템은 SHALL 고객에게 반송 배송비 결제 알림톡을 발송하고 PAYMENT_PENDING(RETURN)으로 전환한다. | CS 운영: 반송 결정 |
+| REQ-ORD-051 | Event-driven | WHEN 반송 배송비 결제 완료 후 입점사가 반송 운송장을 등록하면, THE 시스템은 SHALL 클레임 상태를 RETURN_SHIPPING으로 전환한다. | 상태머신: 반송 배송 |
+
+---
+
+## 장바구니 옵션 변경
+
+| ID | 패턴 | 요구사항 | 도출 근거 |
+|---|---|---|---|
+| REQ-ORD-052 | Event-driven | WHEN 고객이 장바구니 상품의 옵션을 변경하면, THE 시스템은 SHALL 변경된 SKU로 갱신하고 소계를 재계산한다. | 상위UC: 옵션 변경 |
+| REQ-ORD-053 | Unwanted | IF 변경하려는 옵션의 잔여수량(실재고−장바구니 선점수량)이 0 이하이면, THEN THE 시스템은 SHALL 변경을 거부하고 "해당 옵션은 품절입니다" 메시지를 반환한다. | 정책: 품절 판정 |
+
+---
+
 ## 근거
 
 | 항목 | 출처 |

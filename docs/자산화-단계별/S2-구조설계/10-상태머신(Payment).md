@@ -73,8 +73,10 @@ end note
 | PENDING | PAID | PG 승인 성공 응답 | 금액 일치 (REQ-PAY-007) | PAYMENT_APPROVED 이벤트 발행 → Order |
 | PENDING | CANCELLED | PG 실패 (3회 재시도 소진) | retry_count ≥ 3 | PAYMENT_FAILED 이벤트 발행 → Order |
 | PAID | CANCELLED | ORDER_CANCELLED 이벤트 수신 | — | PG 전액 환불 요청 |
-| PAID | REFUNDED | PG 전액 환불 성공 | 환불액 == 원결제액 | 환불 완료 로그 기록 |
-| PAID | PARTIAL_REFUNDED | PG 부분 환불 성공 | 환불액 < 원결제액 | 환불 완료 로그 기록 |
+| PAID | REFUNDED | PG 전액 환불 성공 (주문 취소) | 환불액 == 원결제액 | 환불 완료 로그 기록 |
+| PAID | PARTIAL_REFUNDED | CLAIM_COMPLETED 이벤트 수신 → PG 부분 환불 성공 | 환불액 < 원결제액 | 환불 완료 로그 기록 |
+| PAID | REFUNDED | CLAIM_COMPLETED 이벤트 수신 → PG 전액 환불 성공 (전체 클레임) | 환불액 == 원결제액 | 환불 완료 로그 기록 |
+| PARTIAL_REFUNDED | PARTIAL_REFUNDED | 추가 CLAIM_COMPLETED 이벤트 수신 → 부분 환불 | 누적 환불액 < 원결제액 | 환불 완료 로그 기록 |
 | PARTIAL_REFUNDED | REFUNDED | 잔여분 추가 환불 성공 | 누적 환불액 == 원결제액 | 최종 환불 완료 |
 
 ### 금지 전이

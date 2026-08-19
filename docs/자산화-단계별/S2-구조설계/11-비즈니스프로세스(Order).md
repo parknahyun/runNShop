@@ -37,32 +37,30 @@ start
 if (재고 충분?) then (yes)
   :Payment 도메인에 결제 요청;
 else (no)
-  :주문 실패\n(STOCK_INSUFFICIENT);
+  :재고 부족 → 주문 접수 실패;
+  :STOCK_FAILED 이벤트 발행\n→ 고객 알림톡;
   stop
 endif
 
 |시스템(Payment)|
-:PG 승인 요청;
+:PG 승인 요청\n(최대 3회 재시도, 타임아웃 30초);
 
 if (승인 성공?) then (yes)
   :PAYMENT_APPROVED 이벤트 발행;
-else (no)
-  if (재시도 가능?) then (retry < 3)
-    :재시도;
-    backward :PG 승인 요청;
-  else (3회 소진)
-    :PAYMENT_FAILED 이벤트 발행;
-    |시스템(Order)|
-    :재고 복원;
-    :PAYMENT_FAILED;
-    stop
-  endif
+else (no — 3회 재시도 소진)
+  :PAYMENT_FAILED 이벤트 발행;
+  |시스템(Order)|
+  :재고 복원;
+  :주문 상태 → PAYMENT_FAILED;
+  :고객 알림톡 발송;
+  stop
 endif
 
 |시스템(Order)|
-:PAYMENT_COMPLETED;
+:주문 상태 → PAYMENT_COMPLETED;
 :입점사별 주문 분할;
-:주문확인 알림 → Notification;
+:ORDER_PAID 이벤트 발행;
+note right: → Settlement(정산 대기)\n→ Notification(주문확인 알림톡+이메일)
 
 stop
 @enduml
@@ -127,21 +125,24 @@ start
 :취소 요청;
 
 |시스템(Order)|
-if (현재 상태?) then (PAYMENT_COMPLETED)
+if (PAYMENT_COMPLETED 상태?) then (yes)
   :고객 단순 취소 허용;
-else if (PREPARING 이후)
+  :CANCELLED;
+  :ORDER_CANCELLED 이벤트 발행;
+  note right: → Payment(환불)\n→ Catalog(재고 복원)\n→ Member(포인트 복원)
+  stop
+else (PREPARING 이후)
   if (CS 예외 취소?) then (yes)
     :CS 예외 취소 처리;
+    :CANCELLED;
+    :ORDER_CANCELLED 이벤트 발행;
+    note right: → Payment(환불)\n→ Catalog(재고 복원)
+    stop
   else (no)
     :취소 거부\n"반품 신청을 이용해주세요";
     stop
   endif
 endif
-
-:CANCELLED;
-:ORDER_CANCELLED 이벤트 발행;
-note right: → Payment(환불)\n→ Catalog(재고 복원)\n→ Member(포인트 복원)
-stop
 
 @enduml
 ```
@@ -150,43 +151,85 @@ stop
 
 ## 4. 클레임(반품/교환) 프로세스
 
+> v2 (2026-08-12 현행화): 12상태 확장 반영 (배송비 결제→수거→품질점검→합격/거부→환불/폐기/반송)
+
 ```plantuml
 @startuml
 skinparam backgroundColor transparent
 skinparam defaultFontSize 11
-title 클레임 비즈니스 프로세스
+title 클레임 비즈니스 프로세스 (확장)
 
 |고객|
 start
-:반품/교환 신청;
+:반품/교환 신청\n(주문상세에서 아이템 선택, 사유·회수지 입력);
 
 |시스템(Order)|
 if (배송완료 후 10일 이내?) then (yes)
   :클레임 생성 (RECEIVED);
+  :귀책 판정;
 else (no)
   :신청 거부\n"기한이 초과되었습니다";
   stop
 endif
 
-|CS 담당자|
-:클레임 검토;
-if (승인?) then (yes)
-  :처리 시작 (IN_PROGRESS);
+|어드민|
+if (접수 승인?) then (yes)
+  if (고객 귀책?) then (yes)
+    :배송비 결제 요청 (PAYMENT_PENDING)\n알림톡 발송;
+    |고객|
+    if (24시간 내 결제?) then (yes)
+      :수거 배송비 결제 완료\n(쿠폰 적용 가능);
+    else (no)
+      :자동 취소 (PAYMENT_EXPIRED)\n알림톡 발송;
+      stop
+    endif
+  else (판매자 귀책)
+    :배송비 불필요\n즉시 수거 시작;
+  endif
 else (no)
-  :반려 (REJECTED);
+  :반려 (REJECTED)\n알림톡 발송;
   stop
 endif
 
-|판매자|
-:수거 처리;
-:수거 완료 확인;
+|입점사|
+:수거 운송장 등록 (PICKUP);
+:상품 입고 확인 (INSPECTING);
+:품질점검;
 
-|CS 담당자|
-:완료 처리 (COMPLETED);
+if (합격?) then (yes)
+  :수거완료 (PICKED_UP);
+else (no)
+  :수거거부 (PICKUP_REJECTED)\n사유 등록;
+
+  |어드민|
+  if (반송 가능?) then (yes)
+    :반송 배송비 추가결제 요청\n고객 알림톡;
+    |고객|
+    :반송 배송비 결제;
+    |입점사|
+    :반송 운송장 등록 (RETURN_SHIPPING);
+    :반송 배송완료 → 클레임완료 (COMPLETED);
+    stop
+  else (no)
+    :폐기 처리 (DISPOSED)\n→ 클레임완료 (COMPLETED);
+    stop
+  endif
+endif
+
+|어드민|
+:환불 처리;
+note right
+  원결제수단 PG 환불
+  또는 계좌이체(수동)
+  - 입금정보 시스템 등록
+  - 이체 행위 휴먼 진행
+  - 환불완료 처리
+end note
+:환불완료 (REFUNDED);
 
 |시스템(Order)|
-:CLAIM_COMPLETED 이벤트 발행;
-note right: → Payment(부분 환불)\n→ Catalog(재고 복원)\n→ Member(포인트 복원)
+:클레임완료 (COMPLETED)\n알림톡+이메일 발송;
+note right: → Payment(환불)\n→ Catalog(재고 복원)\n→ Member(포인트 복원)
 stop
 
 @enduml

@@ -40,7 +40,7 @@
 | REQ-PAY-010 | Event-driven | WHEN PG로부터 환불 성공 응답을 수신하면, THE 시스템은 SHALL 결제 상태를 REFUNDED(전액) 또는 PARTIAL_REFUNDED(부분)로 전환한다. | 환불 상태 관리 |
 | REQ-PAY-011 | Unwanted | IF PG 자동 환불이 실패하면, THEN THE 시스템은 SHALL 환불 실패 알림을 CS 담당자에게 발송하고 수동 환불 대기 상태로 전환한다. | 상위UC: 수동 환불 |
 | REQ-PAY-012 | Event-driven | WHEN CS 담당자가 수동 환불을 처리하면, THE 시스템은 SHALL PG에 재환불을 요청하고 결과를 기록한다. | 상위UC: 수동 환불 처리 |
-| REQ-PAY-013 | Ubiquitous | THE 시스템은 SHALL 환불 시 원결제 수단으로만 환불한다 (다른 수단 환불 불가). | 권한 범위: PG 환불 정책 |
+| REQ-PAY-013 | Ubiquitous | THE 시스템은 SHALL 환불 시 원결제 수단으로 환불한다. 단, 원결제 수단 환불 불가 시 CS 담당자 승인 하에 계좌이체(수동)로 대체할 수 있다. | 권한 범위: PG 환불 정책 + CS 예외 처리 |
 
 ---
 

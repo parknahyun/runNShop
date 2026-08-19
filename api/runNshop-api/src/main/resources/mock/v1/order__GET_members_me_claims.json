@@ -1,0 +1,62 @@
+{
+  "code": "SUCCESS",
+  "data": {
+    "totalCount": 3,
+    "claims": [
+      {
+        "claimId": "clm-001",
+        "claimNo": "CLM-20260628-001",
+        "claimType": "RETURN",
+        "claimTypeLabel": "반품",
+        "status": "IN_PROGRESS",
+        "statusLabel": "처리중",
+        "orderId": "ord-003",
+        "platformOrderNo": "ORD-20260622-008",
+        "productName": "호카 클리프턴 9",
+        "imageUrl": "https://placehold.co/80x80/f5f5f5/333?text=Clifton9",
+        "optionName": "오렌지 / 275",
+        "quantity": 1,
+        "refundAmount": 169000,
+        "reason": "사이즈가 맞지 않습니다",
+        "createdAt": "2026-06-28",
+        "updatedAt": "2026-06-29"
+      },
+      {
+        "claimId": "clm-002",
+        "claimNo": "CLM-20260625-003",
+        "claimType": "EXCHANGE",
+        "claimTypeLabel": "교환",
+        "status": "RECEIVED",
+        "statusLabel": "접수",
+        "orderId": "ord-004",
+        "platformOrderNo": "ORD-20260620-003",
+        "productName": "나이키 드라이핏 ADV 러닝 티셔츠",
+        "imageUrl": "https://placehold.co/80x80/f5f5f5/333?text=DryFit",
+        "optionName": "네이비 / L → XL 교환 요청",
+        "quantity": 1,
+        "refundAmount": 0,
+        "reason": "사이즈 교환 희망",
+        "createdAt": "2026-06-25",
+        "updatedAt": "2026-06-25"
+      },
+      {
+        "claimId": "clm-003",
+        "claimNo": "CLM-20260620-001",
+        "claimType": "CANCEL",
+        "claimTypeLabel": "취소",
+        "status": "COMPLETED",
+        "statusLabel": "완료",
+        "orderId": "ord-005",
+        "platformOrderNo": "ORD-20260618-021",
+        "productName": "온 클라우드서퍼 2",
+        "imageUrl": "https://placehold.co/80x80/f5f5f5/333?text=Cloudsurfer",
+        "optionName": "블랙 / 270",
+        "quantity": 1,
+        "refundAmount": 209000,
+        "reason": "단순 변심",
+        "createdAt": "2026-06-20",
+        "updatedAt": "2026-06-20"
+      }
+    ]
+  }
+}

@@ -25,6 +25,8 @@ ord_platform_order (고객 주문 단위, 1:N)
         ├── ord_order_item (주문상품 라인)
         ├── ord_shipping (배송정보)
         ├── ord_claim (클레임)
+        │     ├── ord_claim_payment (클레임 배송비 결제)
+        │     └── ord_claim_image (클레임 첨부 이미지)
         └── ord_order_history (상태변경 이력)
 
 ord_cart (장바구니, 독립)
@@ -135,17 +137,58 @@ Table ord_claim {
   id varchar [pk, note: 'ULID']
   order_id varchar [not null, ref: > ord_order.id]
   claim_type varchar [not null, note: 'CANCEL / RETURN / EXCHANGE']
-  status varchar [not null, note: 'RECEIVED / IN_PROGRESS / COMPLETED / REJECTED']
+  status varchar [not null, note: 'RECEIVED / PAYMENT_PENDING / PAYMENT_EXPIRED / PICKUP / INSPECTING / PICKED_UP / PICKUP_REJECTED / REFUNDED / RETURN_SHIPPING / DISPOSED / COMPLETED / REJECTED']
   reason varchar [not null]
+  detail_reason varchar [note: '상세 사유 (선택)']
   responsibility varchar [note: 'CUSTOMER / VENDOR / PLATFORM']
-  extra_shipping_fee int [default: 0]
+  channel varchar [not null, default: 'SELF', note: '신청경로: SELF(고객직접) / CS(콜센터)']
+  pickup_address_id varchar [note: '회수지 주소 ID (기본: 주문 배송지)']
   created_at timestamp [not null]
   updated_at timestamp [not null]
 
   indexes {
     order_id [name: 'idx_claim_order']
     (claim_type, status) [name: 'idx_claim_type_status']
+    (status, created_at) [name: 'idx_claim_status_date']
   }
+
+  note: '클레임. 12상태 확장 (v2 2026-08-12)'
+}
+
+Table ord_claim_payment {
+  id varchar [pk, note: 'ULID']
+  claim_id varchar [not null, ref: > ord_claim.id]
+  payment_type varchar [not null, note: 'PICKUP(수거배송비) / RETURN(반송배송비)']
+  amount int [not null, note: '배송비 금액']
+  coupon_id varchar [note: '배송비 쿠폰 적용 시']
+  coupon_discount int [default: 0]
+  paid_amount int [not null, note: '실결제금액 (amount - coupon_discount)']
+  status varchar [not null, note: 'PENDING / PAID / EXPIRED']
+  pg_transaction_id varchar [note: 'PG 거래번호']
+  paid_at timestamp
+  expired_at timestamp [note: '결제 만료 시각 (접수 후 24시간)']
+  created_at timestamp [not null]
+
+  indexes {
+    claim_id [name: 'idx_cpay_claim']
+    (claim_id, payment_type) [unique, name: 'uq_cpay_claim_type']
+  }
+
+  note: '클레임 배송비 결제. 수거/반송 구분 관리'
+}
+
+Table ord_claim_image {
+  id varchar [pk, note: 'ULID']
+  claim_id varchar [not null, ref: > ord_claim.id]
+  image_url varchar [not null]
+  sort_order int [not null, default: 0]
+  created_at timestamp [not null]
+
+  indexes {
+    claim_id [name: 'idx_cimg_claim']
+  }
+
+  note: '클레임 첨부 이미지. 최대 3장'
 }
 
 Table ord_order_history {
@@ -175,6 +218,9 @@ Table ord_order_history {
 | `ord_cart` 동일 member+sku는 unique | 담기 시 | REQ-ORD-005: 수량 합산, 중복 라인 방지 |
 | `ord_platform_order.total_amount == SUM(ord_order.total_amount) + SUM(ord_order.shipping_fee)` | 주문 분할 시 | 플랫폼주문↔입점사주문 금액 정합 |
 | `ord_order.status` 전이는 상태머신(⑩) 허용 전이만 가능 | 상태 변경 시 | 금지 전이 위반 방지 |
+| `ord_claim.status` 전이는 상태머신(⑩) 클레임 12상태 허용 전이만 가능 | 상태 변경 시 | 클레임 금지 전이 위반 방지 |
+| `ord_claim_payment` 동일 claim+payment_type는 unique | 배송비 결제 시 | 수거/반송 배송비 중복 결제 방지 |
+| `ord_claim_image` 동일 claim에 최대 3건 | 이미지 첨부 시 | 첨부 제한 3장 |
 
 ---
 
@@ -188,6 +234,8 @@ Table ord_order_history {
 | ord_order_item | 물리 삭제 없음 | 주문 이력 일부 |
 | ord_shipping | 물리 삭제 없음 | 배송 증빙 |
 | ord_claim | 물리 삭제 없음 | 클레임 이력 |
+| ord_claim_payment | 물리 삭제 없음 | 배송비 결제 증빙 |
+| ord_claim_image | 물리 삭제 없음 | 클레임 증빙 이미지 |
 | ord_order_history | 물리 삭제 없음 | 감사 로그 |
 
 ---

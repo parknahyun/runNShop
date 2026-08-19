@@ -1,0 +1,18 @@
+{
+  "code": "SUCCESS",
+  "data": {
+    "memberId": "mem-001",
+    "name": "홍*동",
+    "grade": "러닝 메이트",
+    "gradeIcon": "🏃",
+    "point": 5200,
+    "couponCount": 3,
+    "reviewCount": 7,
+    "orderStatusSummary": {
+      "paymentCompleted": 0,
+      "preparing": 0,
+      "inDelivery": 1,
+      "delivered": 1
+    }
+  }
+}

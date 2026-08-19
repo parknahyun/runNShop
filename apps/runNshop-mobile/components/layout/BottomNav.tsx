@@ -7,7 +7,7 @@ const TABS = [
   { href: '/', label: '홈' },
   { href: '/exhibitions', label: '기획전' },
   { href: '/search', label: '검색' },
-  { href: '/guide', label: 'Guide' },
+  { href: '/my', label: 'MY' },
 ];
 
 export function BottomNav() {
