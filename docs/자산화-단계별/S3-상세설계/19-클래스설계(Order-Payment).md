@@ -292,15 +292,34 @@ class ShippingService(
 class ClaimService(
     private val orderRepository: OrderRepository,
     private val claimRepository: ClaimRepository,
+    private val paymentPublicApi: PaymentPublicApi,
     private val eventPublisher: OrderEventPublisher
 ) {
     fun createClaim(memberId: String, orderId: String, request: CreateClaimRequest): ClaimResponse
-    fun startProcessing(adminId: String, claimId: String)
-    fun completeClaim(adminId: String, claimId: String, memo: String)
-    fun rejectClaim(adminId: String, claimId: String, reason: String)
-    fun confirmPickup(vendorId: String, claimNo: String)
-    fun getAdminClaims(filter: AdminClaimFilter): ClaimListResponse
-    fun getPartnerClaims(vendorId: String, claimType: String, filter: PartnerClaimFilter): ClaimListResponse
+
+    // ── Admin (#23~#29) ──
+    fun getAdminClaims(filter: AdminClaimFilter): ClaimListResponse                                    // #23 GET /api/admin/v1/claims
+    fun startProcessing(adminId: String, claimId: String)                                              // #24 POST .../start
+    fun completeClaim(adminId: String, claimId: String, memo: String)                                  // #25 POST .../complete (환불 진행)
+    fun rejectClaim(adminId: String, claimId: String, reason: String)                                  // #26 POST .../reject
+    fun refundClaim(adminId: String, claimId: String, refundMethod: String, bankAccount: BankAccountInfo?): ClaimResponse
+    // #27 POST .../refund — refundMethod: ORIGINAL(원결제수단) / BANK_TRANSFER(계좌이체, bankAccount 필수). PG 환불 실행은 Payment 도메인(RefundService)에 위임
+    fun dispose(adminId: String, claimId: String, reason: String): ClaimResponse                       // #28 POST .../dispose — PICKUP_REJECTED 건 폐기 결정
+    fun requestReturnPayment(adminId: String, claimId: String, returnShippingFee: Int): ClaimResponse   // #29 POST .../request-return-payment — 수거거부 건 반송배송비 추가결제 요청(알림톡)
+
+    // ── Partner (#35~#40) ──
+    fun registerPickupTracking(vendorId: String, claimId: String, deliveryCompany: String, trackingNo: String): ClaimResponse
+    // #35 POST /api/partner/v1/shipping/{claimId}/pickup — 수거 운송장 등록 → status: PICKUP
+    fun confirmPickup(vendorId: String, claimNo: String)                                               // #36 POST .../pickup-confirm — 입고 확인 → INSPECTING
+    fun inspectPass(vendorId: String, claimId: String, tagIntact: Boolean?, memo: String): ClaimResponse
+    // #37 POST .../inspect-pass — 품질점검 합격 → PICKED_UP
+    // tagIntact: 판정 근거(택 부착 여부). claimType=EXCHANGE 전용 기준, claimType=RETURN이면 null(사용감·파손 등은 memo로 기술)
+    fun inspectReject(vendorId: String, claimId: String, tagIntact: Boolean?, rejectReason: String): ClaimResponse
+    // #38 POST .../inspect-reject — 품질점검 거부 → PICKUP_REJECTED (rejectReason 필수)
+    // tagIntact: inspectPass와 동일한 EXCHANGE 전용/RETURN=null 규칙
+    fun returnShip(vendorId: String, claimId: String, deliveryCompany: String, trackingNo: String): ClaimResponse
+    // #39 POST .../return-ship — 반송 운송장 등록 → RETURN_SHIPPING (반송배송비 결제 완료 건 대상)
+    fun getPartnerClaims(vendorId: String, claimType: String, filter: PartnerClaimFilter): ClaimListResponse  // #40 GET /api/partner/v1/claims
 }
 ```
 
@@ -560,6 +579,91 @@ class Payment(
     fun refund() { this.status = PaymentStatus.REFUNDED; this.refundedAt = Instant.now() }
     fun partialRefund() { this.status = PaymentStatus.PARTIAL_REFUNDED }
 }
+```
+
+### Claim
+
+```kotlin
+@Entity
+@Table(name = "ord_claim")
+class Claim(
+    @Id val id: String,
+    val orderId: String,
+    val claimType: ClaimType,
+    var status: ClaimStatus,
+    val reason: String,
+    val detailReason: String? = null,
+    var responsibility: ClaimResponsibility? = null,
+    val channel: ClaimChannel = ClaimChannel.SELF,
+    var pickupAddressId: String? = null,
+    val exchangeSkuId: String? = null,       // 교환 대상 SKU (Catalog 도메인 FK, claimType=EXCHANGE 전용, 선출고 시 사용)
+    var tagIntact: Boolean? = null,          // 품질점검 판정 근거 — 택(TAG) 부착 여부 (claimType=EXCHANGE 전용, RETURN이면 null)
+    val createdAt: Instant,
+    var updatedAt: Instant
+) {
+    fun registerPickupTracking() { this.status = ClaimStatus.PICKUP }
+    fun startInspecting() { this.status = ClaimStatus.INSPECTING }
+    fun passInspection(tagIntact: Boolean?) { this.status = ClaimStatus.PICKED_UP; this.tagIntact = tagIntact }
+    fun rejectInspection(tagIntact: Boolean?) { this.status = ClaimStatus.PICKUP_REJECTED; this.tagIntact = tagIntact }
+    fun requestReturnPayment() { this.status = ClaimStatus.RETURN_PAYMENT_PENDING }
+    fun startReturnShipping() { this.status = ClaimStatus.RETURN_SHIPPING }
+    fun completeReturnDelivery() { this.status = ClaimStatus.RETURN_DELIVERED }
+    fun refund() { this.status = ClaimStatus.REFUNDED }
+    fun dispose() { this.status = ClaimStatus.DISPOSED }
+    fun complete() { this.status = ClaimStatus.COMPLETED }
+    fun reject(reason: String) { this.status = ClaimStatus.REJECTED }
+    fun canDispose(): Boolean = this.status == ClaimStatus.PICKUP_REJECTED
+}
+
+enum class ClaimType { CANCEL, RETURN, EXCHANGE }
+
+enum class ClaimStatus {
+    RECEIVED,               // 접수
+    PAYMENT_PENDING,        // 수거 배송비 결제대기
+    PAYMENT_EXPIRED,        // 배송비 결제 만료 (접수 후 24시간)
+    PICKUP,                 // 수거중 (수거 운송장 등록됨)
+    INSPECTING,             // 입고 확인 → 품질점검중
+    PICKED_UP,              // 품질점검 합격 (수거완료)
+    PICKUP_REJECTED,        // 품질점검 거부 (수거거부)
+    REFUNDED,               // 환불완료
+    RETURN_PAYMENT_PENDING, // 반송 배송비 추가결제 대기
+    RETURN_SHIPPING,        // 반송 운송장 등록 → 반송중
+    RETURN_DELIVERED,       // 반송 배송완료
+    DISPOSED,               // 폐기
+    COMPLETED,              // 클레임 완료
+    REJECTED                // 클레임 반려
+}
+
+enum class ClaimResponsibility { CUSTOMER, VENDOR, PLATFORM }
+
+enum class ClaimChannel { SELF, CS }
+```
+
+### ClaimPayment
+
+```kotlin
+@Entity
+@Table(name = "ord_claim_payment")
+class ClaimPayment(
+    @Id val id: String,
+    val claimId: String,
+    val paymentType: ClaimPaymentType,  // PICKUP(수거배송비) / RETURN(반송배송비)
+    val amount: Int,
+    val couponId: String? = null,
+    val couponDiscount: Int = 0,
+    val paidAmount: Int,
+    var status: ClaimPaymentStatus,
+    var pgTransactionId: String? = null,
+    var paidAt: Instant? = null,
+    var expiredAt: Instant? = null,      // 결제 만료 시각 (접수 후 24시간)
+    val createdAt: Instant
+) {
+    fun pay(pgTransactionId: String) { this.status = ClaimPaymentStatus.PAID; this.pgTransactionId = pgTransactionId; this.paidAt = Instant.now() }
+    fun expire() { this.status = ClaimPaymentStatus.EXPIRED; this.expiredAt = Instant.now() }
+}
+
+enum class ClaimPaymentType { PICKUP, RETURN }
+enum class ClaimPaymentStatus { PENDING, PAID, EXPIRED }
 ```
 
 ---

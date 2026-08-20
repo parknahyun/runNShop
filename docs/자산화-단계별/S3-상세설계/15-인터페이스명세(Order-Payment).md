@@ -59,7 +59,12 @@
 | 37 | POST | /api/partner/v1/claims/{claimId}/inspect-pass | 품질점검 합격 (수거완료) | partner |
 | 38 | POST | /api/partner/v1/claims/{claimId}/inspect-reject | 품질점검 거부 (수거거부) | partner |
 | 39 | POST | /api/partner/v1/claims/{claimId}/return-ship | 반송 운송장 등록 | partner |
+| 39-1 | POST | /api/partner/v1/claims/{claimId}/exchange-ship | 교환상품 선출고 운송장 등록 | partner |
+| 39-2 | POST | /api/admin/v1/claims/{claimId}/return-delivered | 반송 배송완료 확인 (택배사 콜백/배치) | admin |
 | 40 | GET | /api/partner/v1/claims | 클레임 현황 (통합) | partner |
+| 41 | GET | /api/v1/members/me/payments | 내 결제 이력 조회 | mobile |
+| 42 | GET | /api/admin/v1/payments/search | CS 결제 검색 | admin |
+| 43 | GET | /api/admin/v1/payments/{paymentId}/pg-logs | PG 거래 로그 조회 | admin |
 
 ---
 
@@ -402,6 +407,19 @@
 }
 ```
 
+> `claimType=EXCHANGE` 예시 — 교환 대상 SKU(`exchangeSkuId`)를 함께 전달한다.
+
+```json
+{
+  "claimType": "EXCHANGE",
+  "reason": "사이즈 교환",
+  "detailReason": "270 사이즈로 교환 원합니다",
+  "exchangeSkuId": "sku-002"
+}
+```
+
+> `exchangeSkuId`: 교환 대상 SKU ID. `claimType=EXCHANGE`일 때 **필수** (Catalog 도메인 SKU 참조, 선출고 시 사용)
+
 #### Response 201
 
 ```json
@@ -411,12 +429,15 @@
 }
 ```
 
+> `claimType=EXCHANGE`인 경우 `data`에 `exchangeSkuId`가 함께 반환된다: `{ "claimId": "clm-002", "claimType": "EXCHANGE", "status": "RECEIVED", "exchangeSkuId": "sku-002" }`
+
 #### Error Responses
 
 | HTTP | code | message | 조건 | 대응 GWT |
 |---|---|---|---|---|
 | 400 | CLAIM_PERIOD_EXPIRED | 기한이 초과되었습니다 (배송완료 후 10일 이내) | 10일 초과 | AC-ORD-032 |
 | 400 | CLAIM_NOT_ALLOWED | 배송완료 후에만 신청할 수 있습니다 | DELIVERED 아닌 상태 | — |
+| 400 | EXCHANGE_SKU_REQUIRED | 교환할 옵션(SKU)을 선택해주세요 | claimType=EXCHANGE인데 exchangeSkuId 누락 | REQ-ORD-056 |
 
 ---
 
@@ -557,7 +578,7 @@
     "items": [ { "productName": "나이키 페가수스 41", "optionName": "블랙/265", "quantity": 1, "unitPrice": 152000, "subtotal": 152000 } ],
     "payment": { "method": "신용카드", "pgProvider": "토스페이먼츠", "transactionId": "TXN-001", "paidAt": "2026-06-26 09:15" },
     "shipping": { "recipientName": "홍*동", "phone": "010-****-5678", "address": "[06234] 서울 강남구 테헤란로 123", "carrier": "CJ대한통운", "trackingNumber": "1234567890" },
-    "history": [ { "fromStatus": "PROCESSING", "toStatus": "PAYMENT_COMPLETED", "changedBy": "SYSTEM", "createdAt": "2026-06-26 09:15" } ]
+    "history": [ { "fromStatus": "PAYMENT_PENDING", "toStatus": "PAYMENT_COMPLETED", "changedBy": "SYSTEM", "createdAt": "2026-06-26 09:15" } ]
   }
 }
 ```
@@ -1106,8 +1127,10 @@
 #### Response 200
 
 ```json
-{ "code": "SUCCESS", "data": { "claimId": "clm-001", "status": "PAYMENT_PENDING", "paymentType": "RETURN" } }
+{ "code": "SUCCESS", "data": { "claimId": "clm-001", "status": "RETURN_PAYMENT_PENDING", "paymentType": "RETURN" } }
 ```
+
+> `status`는 `RETURN_PAYMENT_PENDING`(반송 배송비 결제대기)으로 전환된다. 수거 배송비 결제대기 상태인 `PAYMENT_PENDING`과는 구분되는 별도 상태이므로 혼동하지 않는다.
 
 ---
 
@@ -1146,13 +1169,15 @@
 #### Request Body
 
 ```json
-{ "memo": "상품 상태 양호. 환불 가능" }
+{ "memo": "상품 상태 양호. 환불 가능", "tagIntact": true }
 ```
+
+> `tagIntact`: 택(TAG) 부착 유지 여부. `claimType=EXCHANGE` 건의 판정 근거 (REQ-ORD-057). RETURN 건은 생략 가능
 
 #### Response 200
 
 ```json
-{ "code": "SUCCESS", "data": { "claimId": "clm-001", "status": "PICKED_UP" } }
+{ "code": "SUCCESS", "data": { "claimId": "clm-001", "status": "PICKED_UP", "tagIntact": true } }
 ```
 
 ---
@@ -1169,13 +1194,15 @@
 #### Request Body
 
 ```json
-{ "rejectReason": "상품 택 제거 및 사용 흔적으로 반품 불가" }
+{ "rejectReason": "상품 택 제거 및 사용 흔적으로 반품 불가", "tagIntact": false }
 ```
+
+> `tagIntact`: 택(TAG) 부착 유지 여부. `claimType=EXCHANGE` 건은 택 제거·훼손이 거부 사유인 경우 `false`로 전달 (REQ-ORD-057). RETURN 건은 생략 가능
 
 #### Response 200
 
 ```json
-{ "code": "SUCCESS", "data": { "claimId": "clm-001", "status": "PICKUP_REJECTED" } }
+{ "code": "SUCCESS", "data": { "claimId": "clm-001", "status": "PICKUP_REJECTED", "tagIntact": false } }
 ```
 
 #### Error Responses
@@ -1206,6 +1233,69 @@
 ```json
 { "code": "SUCCESS", "data": { "claimId": "clm-001", "status": "RETURN_SHIPPING" } }
 ```
+
+---
+
+## 39-1. POST /api/partner/v1/claims/{claimId}/exchange-ship — 교환상품 선출고 운송장 등록
+
+| 항목 | 내용 |
+|---|---|
+| Method | POST |
+| Path | /api/partner/v1/claims/{claimId}/exchange-ship |
+| 인증 | Partner Bearer (필수) |
+| 설명 | `claimType=EXCHANGE` 건이 PICKUP 상태로 전환될 때, 교환 대상 SKU(`exchange_sku_id`)를 원상품 수취 이전에 선출고하기 위한 택배사 + 운송장 등록 (REQ-ORD-056, 맞교환 원칙: 선출고 후 수취). 반송 운송장 등록(39.)과 동일한 패턴 |
+
+#### Request Body
+
+```json
+{ "deliveryCompany": "CJ대한통운", "trackingNo": "4444555566" }
+```
+
+#### Response 200
+
+```json
+{ "code": "SUCCESS", "data": { "claimId": "clm-001", "exchangeSkuId": "sku-002", "status": "PICKUP", "exchangeShippedAt": "2026-06-29 09:30" } }
+```
+
+#### Error Responses
+
+| HTTP | code | message | 조건 |
+|---|---|---|---|
+| 400 | TRACKING_NO_REQUIRED | 운송장번호를 입력해주세요 | 번호 누락 |
+| 400 | NOT_EXCHANGE_CLAIM | 교환 클레임이 아닙니다 | claimType≠EXCHANGE |
+| 409 | EXCHANGE_STOCK_UNAVAILABLE | 교환 대상 재고가 없습니다 | exchange_sku_id 재고 선점 실패 |
+
+---
+
+## 39-2. POST /api/admin/v1/claims/{claimId}/return-delivered — 반송 배송완료 확인
+
+| 항목 | 내용 |
+|---|---|
+| Method | POST |
+| Path | /api/admin/v1/claims/{claimId}/return-delivered |
+| 인증 | System/Admin Bearer (필수) — 택배사 배송완료 콜백 수신 또는 배송추적 배치가 호출 |
+| 설명 | RETURN_SHIPPING(반송중) 상태의 클레임에 대해 택배사로부터 배송완료를 수신(또는 배치가 택배사 API 조회 결과 확인)하면 상태를 RETURN_DELIVERED(반송 배송완료)로 전환한다. 상태 갱신 후 클레임 완료(COMPLETED) 처리로 이어짐 |
+
+#### Request Body
+
+```json
+{ "deliveryCompany": "CJ대한통운", "trackingNo": "1111222233", "deliveredAt": "2026-07-01 11:20", "source": "CARRIER_CALLBACK" }
+```
+
+> `source`: `CARRIER_CALLBACK`(택배사 콜백 수신) 또는 `BATCH_CHECK`(배송추적 배치의 상태 조회 결과)
+
+#### Response 200
+
+```json
+{ "code": "SUCCESS", "data": { "claimId": "clm-001", "status": "RETURN_DELIVERED", "deliveredAt": "2026-07-01 11:20" } }
+```
+
+#### Error Responses
+
+| HTTP | code | message | 조건 |
+|---|---|---|---|
+| 400 | RETURN_DELIVER_NOT_ALLOWED | 반송중 상태에서만 배송완료 처리할 수 있습니다 | RETURN_SHIPPING 아닌 상태 |
+| 404 | CLAIM_NOT_FOUND | 클레임을 찾을 수 없습니다 | 존재하지 않는 claimId |
 
 ---
 
@@ -1349,6 +1439,102 @@
 > |---|---|
 > | `GET /api/admin/v1/orders/{orderId}` | `items[]`(주문상품), `payment`(결제정보), `shipping`(배송정보), `claims[]`(CS·클레임), `inquiries[]`(주문문의), `history[]`(변경이력) |
 > | `GET /api/partner/v1/orders/{orderId}` | `items[]`(주문상품), `shipping`(배송정보), `claims[]`(클레임), `history[]`(변경이력) |
+
+---
+
+## 41. GET /api/v1/members/me/payments — 내 결제 이력 조회
+
+| 항목 | 내용 |
+|---|---|
+| Method | GET |
+| Path | /api/v1/members/me/payments |
+| 인증 | Bearer {memberId} (필수) |
+| Query | `?from=&to=&page=1&size=10` |
+| 설명 | 본인 결제 건만 최신순으로 반환 (REQ-PAY-020) |
+
+#### Response 200
+
+```json
+{
+  "code": "SUCCESS",
+  "data": {
+    "totalCount": 3,
+    "payments": [
+      { "paymentId": "pay-001", "platformOrderNo": "ORD-20260626-001", "amount": 152000, "paymentMethod": "신용카드 (****-1234)", "status": "PAID", "paidAt": "2026-06-26 09:14" }
+    ]
+  }
+}
+```
+
+#### Error Responses
+
+| HTTP | code | message | 조건 |
+|---|---|---|---|
+| 401 | UNAUTHORIZED | 인증이 필요합니다 | 토큰 누락/만료 |
+
+---
+
+## 42. GET /api/admin/v1/payments/search — CS 결제 검색
+
+| 항목 | 내용 |
+|---|---|
+| Method | GET |
+| Path | /api/admin/v1/payments/search |
+| 인증 | Admin Bearer (필수) |
+| Query | `?status=ALL&platformOrderNo=&pgTransactionNo=&from=&to=&page=1&size=10` |
+| 설명 | 상태·기간·주문번호·PG거래번호 필터로 결제 건 검색 (REQ-PAY-021) |
+
+#### Response 200
+
+```json
+{
+  "code": "SUCCESS",
+  "data": {
+    "totalCount": 1,
+    "payments": [
+      { "paymentId": "pay-001", "platformOrderNo": "ORD-20260626-001", "customerName": "홍*동", "amount": 152000, "pgTransactionNo": "PG-20260626-99001", "status": "PAID", "paidAt": "2026-06-26 09:14" }
+    ]
+  }
+}
+```
+
+#### Error Responses
+
+| HTTP | code | message | 조건 |
+|---|---|---|---|
+| 400 | INVALID_DATE_RANGE | 조회 기간이 올바르지 않습니다 | from > to |
+
+---
+
+## 43. GET /api/admin/v1/payments/{paymentId}/pg-logs — PG 거래 로그 조회
+
+| 항목 | 내용 |
+|---|---|
+| Method | GET |
+| Path | /api/admin/v1/payments/{paymentId}/pg-logs |
+| 인증 | Admin Bearer (필수) |
+| 설명 | 해당 결제 건의 PG 요청·응답 전체 이력 조회. PII 마스킹 처리 (REQ-PAY-022) |
+
+#### Response 200
+
+```json
+{
+  "code": "SUCCESS",
+  "data": {
+    "paymentId": "pay-001",
+    "logs": [
+      { "at": "2026-06-26 09:14:01", "direction": "REQUEST", "pgTransactionNo": "PG-20260626-99001", "payload": { "cardNo": "****-****-****-1234", "amount": 152000 } },
+      { "at": "2026-06-26 09:14:02", "direction": "RESPONSE", "pgTransactionNo": "PG-20260626-99001", "payload": { "resultCode": "0000", "approvalNo": "12345678" } }
+    ]
+  }
+}
+```
+
+#### Error Responses
+
+| HTTP | code | message | 조건 |
+|---|---|---|---|
+| 404 | PAYMENT_NOT_FOUND | 결제 건을 찾을 수 없습니다 | 존재하지 않는 paymentId |
 
 ---
 

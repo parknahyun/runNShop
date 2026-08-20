@@ -13,7 +13,7 @@
 | ID | SPEC-EARS-ORDER-001 |
 | 상태 | **Finalized** |
 | 작성일 | 2026-08-11 |
-| 갱신일 | 2026-08-11 |
+| 갱신일 | 2026-08-20 |
 
 ---
 
@@ -94,6 +94,7 @@
 ## 클레임 확장 (배송비 결제·수거·품질점검·폐기·반송)
 
 > v2 (2026-08-12 현행화): S3 상세설계에서 클레임 프로세스 확장에 따라 추가.
+> v3 (2026-08-20 현행화): REQ-ORD-050 상태명 오기 수정(PAYMENT_PENDING(RETURN) → RETURN_PAYMENT_PENDING), 반송배송완료(RETURN_DELIVERED)·자동완료 전환 요구 신설(REQ-ORD-052/053), 장바구니 옵션변경 REQ 번호 이동(052/053 → 054/055).
 
 | ID | 패턴 | 요구사항 | 도출 근거 |
 |---|---|---|---|
@@ -107,8 +108,10 @@
 | REQ-ORD-047 | Event-driven | WHEN 입점사가 품질점검 거부를 판정하면, THE 시스템은 SHALL 클레임 상태를 PICKUP_REJECTED(수거거부)로 전환하고 거부 사유를 기록한다. | 상태머신: INSPECTING→PICKUP_REJECTED |
 | REQ-ORD-048 | Unwanted | IF 입점사가 거부 사유 없이 품질점검 거부를 시도하면, THEN THE 시스템은 SHALL 거부를 차단하고 사유 입력을 요구한다. | 정책: 사유 필수 |
 | REQ-ORD-049 | Event-driven | WHEN 어드민이 수거거부 건에 대해 폐기를 결정하면, THE 시스템은 SHALL 클레임 상태를 DISPOSED로 전환한다. | CS 운영: 반송 불가 판단 |
-| REQ-ORD-050 | Event-driven | WHEN 어드민이 수거거부 건에 대해 반송 배송비 추가결제를 요청하면, THE 시스템은 SHALL 고객에게 반송 배송비 결제 알림톡을 발송하고 PAYMENT_PENDING(RETURN)으로 전환한다. | CS 운영: 반송 결정 |
+| REQ-ORD-050 | Event-driven | WHEN 어드민이 수거거부 건에 대해 반송 배송비 추가결제를 요청하면, THE 시스템은 SHALL 고객에게 반송 배송비 결제 알림톡을 발송하고 RETURN_PAYMENT_PENDING으로 전환한다. | CS 운영: 반송 결정 |
 | REQ-ORD-051 | Event-driven | WHEN 반송 배송비 결제 완료 후 입점사가 반송 운송장을 등록하면, THE 시스템은 SHALL 클레임 상태를 RETURN_SHIPPING으로 전환한다. | 상태머신: 반송 배송 |
+| REQ-ORD-052 | Event-driven | WHEN 택배사가 반송 배송완료를 확인하면, THE 시스템은 SHALL 클레임 상태를 RETURN_DELIVERED로 전환한다. | 상태머신: RETURN_SHIPPING→RETURN_DELIVERED |
+| REQ-ORD-053 | Event-driven | WHEN 클레임이 RETURN_DELIVERED 상태에서 배치가 실행되면, THE 시스템은 SHALL 클레임 상태를 COMPLETED로 자동 전환하고 고객에게 완료 알림톡을 발송한다. | 상태머신: RETURN_DELIVERED→COMPLETED |
 
 ---
 
@@ -116,8 +119,21 @@
 
 | ID | 패턴 | 요구사항 | 도출 근거 |
 |---|---|---|---|
-| REQ-ORD-052 | Event-driven | WHEN 고객이 장바구니 상품의 옵션을 변경하면, THE 시스템은 SHALL 변경된 SKU로 갱신하고 소계를 재계산한다. | 상위UC: 옵션 변경 |
-| REQ-ORD-053 | Unwanted | IF 변경하려는 옵션의 잔여수량(실재고−장바구니 선점수량)이 0 이하이면, THEN THE 시스템은 SHALL 변경을 거부하고 "해당 옵션은 품절입니다" 메시지를 반환한다. | 정책: 품절 판정 |
+| REQ-ORD-054 | Event-driven | WHEN 고객이 장바구니 상품의 옵션을 변경하면, THE 시스템은 SHALL 변경된 SKU로 갱신하고 소계를 재계산한다. | 상위UC: 옵션 변경 |
+| REQ-ORD-055 | Unwanted | IF 변경하려는 옵션의 잔여수량(실재고−장바구니 선점수량)이 0 이하이면, THEN THE 시스템은 SHALL 변경을 거부하고 "해당 옵션은 품절입니다" 메시지를 반환한다. | 정책: 품절 판정 |
+
+---
+
+## 클레임 확장 — 교환(맞교환 원칙)
+
+> v4 (2026-08-20 신설): 교환은 "맞교환"을 전제로 한다 — 선출고 후 수취 순서이며, 수취 시 품질점검 기준은 택(TAG) 유지 여부로 판단한다. REQ-ORD-046/047(품질점검 합격/거부)을 EXCHANGE 유형에 한해 아래 기준으로 특화한다.
+
+| ID | 패턴 | 요구사항 | 도출 근거 |
+|---|---|---|---|
+| REQ-ORD-056 | Event-driven | WHEN 클레임 유형이 EXCHANGE이고 귀책판정이 완료되어 PICKUP 상태로 전환되면, THE 시스템은 SHALL 교환 SKU 재고를 선점하고 교환상품을 즉시 선출고한다(원상품 수취 이전). | 정책: 맞교환 — 선출고 후 수취 |
+| REQ-ORD-057 | Event-driven | WHEN 클레임 유형이 EXCHANGE이고 입점사가 회수 상품의 택(TAG) 부착 상태를 확인하면, THE 시스템은 SHALL 택이 유지된 경우 품질점검 합격(PICKED_UP)으로, 택이 제거·훼손된 경우 품질점검 거부(PICKUP_REJECTED)로 판정한다. | 상태머신: INSPECTING→PICKED_UP/PICKUP_REJECTED (EXCHANGE 특화 기준) |
+
+> ⚠️ **정책 결정 필요**: 품질점검 불합격(택 미유지) 판정 시, 이미 선출고된 교환상품의 회수·추가청구 방법이 미정. CS 운영 정책 확정 필요.
 
 ---
 

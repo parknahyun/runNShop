@@ -13,7 +13,170 @@
 | ID | DESIGN-ERD-ORDER-001 |
 | 상태 | **Finalized** |
 | 작성일 | 2026-08-11 |
-| 갱신일 | 2026-08-11 |
+| 갱신일 | 2026-08-20 |
+
+---
+
+## ERD 다이어그램 (PlantUML)
+
+```plantuml
+@startuml
+skinparam backgroundColor transparent
+skinparam linetype ortho
+skinparam classAttributeIconSize 0
+skinparam classFontSize 11
+skinparam classAttributeFontSize 10
+
+title Order 도메인 — ERD
+
+' ===== Platform Order =====
+entity "ord_platform_order" as porder {
+  * id : varchar <<PK, ULID>>
+  --
+  * member_id : varchar <<FK Member>>
+  * status : varchar [TEMP / SPLIT_TO_ORDERS]
+  * total_amount : int
+    point_used : int [0]
+    coupon_discount : int [0]
+  * created_at : timestamp
+  * updated_at : timestamp
+    is_deleted : boolean [false]
+}
+
+' ===== Order =====
+entity "ord_order" as order {
+  * id : varchar <<PK, ULID>>
+  --
+  * platform_order_id : varchar <<FK>>
+  * vendor_id : varchar <<FK Vendor>>
+  * status : varchar [11상태]
+    total_amount : int
+    shipping_fee : int [0]
+    cancel_reason : varchar
+    confirmed_at : timestamp
+  * created_at : timestamp
+  * updated_at : timestamp
+    is_deleted : boolean [false]
+}
+
+' ===== Order Item =====
+entity "ord_order_item" as item {
+  * id : varchar <<PK, ULID>>
+  --
+  * order_id : varchar <<FK>>
+  * product_id : varchar <<FK Catalog>>
+  * sku_id : varchar
+  * product_name : varchar
+    option_name : varchar
+  * quantity : int
+  * unit_price : int
+  * actual_paid_amount : int
+  * created_at : timestamp
+}
+
+' ===== Cart =====
+entity "ord_cart" as cart {
+  * id : varchar <<PK, ULID>>
+  --
+  * member_id : varchar
+  * product_id : varchar
+  * sku_id : varchar
+  * vendor_id : varchar
+  * quantity : int [1]
+  * added_at : timestamp
+    is_deleted : boolean [false]
+  ..
+  <<UQ>> member_id + product_id + sku_id
+}
+
+' ===== Shipping =====
+entity "ord_shipping" as shipping {
+  * id : varchar <<PK, ULID>>
+  --
+  * order_id : varchar <<FK>>
+  * recipient_name : varchar
+  * phone : varchar
+  * address : varchar
+    address_detail : varchar
+  * zip_code : varchar
+    carrier : varchar
+    tracking_number : varchar
+    shipped_at : timestamp
+    delivered_at : timestamp
+  * created_at : timestamp
+  * updated_at : timestamp
+}
+
+' ===== Claim =====
+entity "ord_claim" as claim {
+  * id : varchar <<PK, ULID>>
+  --
+  * order_id : varchar <<FK>>
+  * claim_type : varchar [CANCEL/RETURN/EXCHANGE]
+  * status : varchar [14상태]
+  * reason : varchar
+    detail_reason : varchar
+    responsibility : varchar
+  * channel : varchar [SELF/CS]
+    pickup_address_id : varchar
+    exchange_sku_id : varchar <<FK Catalog>>
+    tag_intact : boolean
+  * created_at : timestamp
+  * updated_at : timestamp
+}
+
+' ===== Claim Payment =====
+entity "ord_claim_payment" as cpay {
+  * id : varchar <<PK, ULID>>
+  --
+  * claim_id : varchar <<FK>>
+  * payment_type : varchar [PICKUP/RETURN]
+  * amount : int
+    coupon_id : varchar
+    coupon_discount : int [0]
+  * paid_amount : int
+  * status : varchar [PENDING/PAID/EXPIRED]
+    pg_transaction_id : varchar
+    paid_at : timestamp
+    expired_at : timestamp
+  * created_at : timestamp
+  ..
+  <<UQ>> claim_id + payment_type
+}
+
+' ===== Claim Image =====
+entity "ord_claim_image" as cimg {
+  * id : varchar <<PK, ULID>>
+  --
+  * claim_id : varchar <<FK>>
+  * image_url : varchar
+  * sort_order : int [0]
+  * created_at : timestamp
+}
+
+' ===== Order History =====
+entity "ord_order_history" as hist {
+  * id : varchar <<PK, ULID>>
+  --
+  * order_id : varchar <<FK>>
+  * from_status : varchar
+  * to_status : varchar
+  * changed_by : varchar
+    reason : varchar
+  * created_at : timestamp
+}
+
+' ===== Relations =====
+porder ||--o{ order : "1:N\n입점사별 분할"
+order ||--o{ item : "1:N"
+order ||--o| shipping : "1:1"
+order ||--o{ claim : "1:N"
+order ||--o{ hist : "1:N"
+claim ||--o{ cpay : "1:N\n수거/반송"
+claim ||--o{ cimg : "1:N\n최대3장"
+
+@enduml
+```
 
 ---
 
@@ -60,7 +223,7 @@ Table ord_order {
   id varchar [pk, note: 'ULID']
   platform_order_id varchar [not null, ref: > ord_platform_order.id]
   vendor_id varchar [not null, note: '입점사 ID (Vendor 도메인)']
-  status varchar [not null, note: 'PROCESSING / PAYMENT_COMPLETED / PREPARING / IN_DELIVERY / DELIVERED / CONFIRMED / CANCELLED / PAYMENT_FAILED']
+  status varchar [not null, note: 'TEMP / ORDER_RECEIVED / PAYMENT_PENDING / PAYMENT_COMPLETED / PREPARING / IN_DELIVERY / DELIVERED / CONFIRMED / CANCELLED / PAYMENT_FAILED / STOCK_FAILED']
   total_amount int [not null]
   shipping_fee int [default: 0]
   cancel_reason varchar
@@ -137,12 +300,14 @@ Table ord_claim {
   id varchar [pk, note: 'ULID']
   order_id varchar [not null, ref: > ord_order.id]
   claim_type varchar [not null, note: 'CANCEL / RETURN / EXCHANGE']
-  status varchar [not null, note: 'RECEIVED / PAYMENT_PENDING / PAYMENT_EXPIRED / PICKUP / INSPECTING / PICKED_UP / PICKUP_REJECTED / REFUNDED / RETURN_SHIPPING / DISPOSED / COMPLETED / REJECTED']
+  status varchar [not null, note: 'RECEIVED / PAYMENT_PENDING / PAYMENT_EXPIRED / PICKUP / INSPECTING / PICKED_UP / PICKUP_REJECTED / REFUNDED / RETURN_PAYMENT_PENDING / RETURN_SHIPPING / RETURN_DELIVERED / DISPOSED / COMPLETED / REJECTED']
   reason varchar [not null]
   detail_reason varchar [note: '상세 사유 (선택)']
   responsibility varchar [note: 'CUSTOMER / VENDOR / PLATFORM']
   channel varchar [not null, default: 'SELF', note: '신청경로: SELF(고객직접) / CS(콜센터)']
   pickup_address_id varchar [note: '회수지 주소 ID (기본: 주문 배송지)']
+  exchange_sku_id varchar [note: '교환 대상 SKU (Catalog 도메인, claim_type=EXCHANGE 전용, 선출고 시 사용)']
+  tag_intact boolean [note: '품질점검 판정 근거 — 택(TAG) 부착 여부 (claim_type=EXCHANGE 전용)']
   created_at timestamp [not null]
   updated_at timestamp [not null]
 
@@ -152,7 +317,7 @@ Table ord_claim {
     (status, created_at) [name: 'idx_claim_status_date']
   }
 
-  note: '클레임. 12상태 확장 (v2 2026-08-12)'
+  note: '클레임. 14상태 확장 (v3 2026-08-12) — 반송 배송비결제 대기/반송배송완료 포함. v4(2026-08-20): 교환(EXCHANGE) 맞교환 원칙 — exchange_sku_id/tag_intact 필드 추가'
 }
 
 Table ord_claim_payment {
@@ -218,7 +383,7 @@ Table ord_order_history {
 | `ord_cart` 동일 member+sku는 unique | 담기 시 | REQ-ORD-005: 수량 합산, 중복 라인 방지 |
 | `ord_platform_order.total_amount == SUM(ord_order.total_amount) + SUM(ord_order.shipping_fee)` | 주문 분할 시 | 플랫폼주문↔입점사주문 금액 정합 |
 | `ord_order.status` 전이는 상태머신(⑩) 허용 전이만 가능 | 상태 변경 시 | 금지 전이 위반 방지 |
-| `ord_claim.status` 전이는 상태머신(⑩) 클레임 12상태 허용 전이만 가능 | 상태 변경 시 | 클레임 금지 전이 위반 방지 |
+| `ord_claim.status` 전이는 상태머신(⑩) 클레임 14상태 허용 전이만 가능 | 상태 변경 시 | 클레임 금지 전이 위반 방지 |
 | `ord_claim_payment` 동일 claim+payment_type는 unique | 배송비 결제 시 | 수거/반송 배송비 중복 결제 방지 |
 | `ord_claim_image` 동일 claim에 최대 3건 | 이미지 첨부 시 | 첨부 제한 3장 |
 

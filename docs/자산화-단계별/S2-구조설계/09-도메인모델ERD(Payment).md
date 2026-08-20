@@ -13,7 +13,100 @@
 | ID | DESIGN-ERD-PAYMENT-001 |
 | 상태 | **Finalized** |
 | 작성일 | 2026-08-11 |
-| 갱신일 | 2026-08-11 |
+| 갱신일 | 2026-08-12 |
+
+---
+
+## ERD 다이어그램 (PlantUML)
+
+```plantuml
+@startuml
+skinparam backgroundColor transparent
+skinparam linetype ortho
+skinparam classAttributeIconSize 0
+skinparam classFontSize 11
+skinparam classAttributeFontSize 10
+
+title Payment 도메인 — ERD
+
+' ===== Payment =====
+entity "pay_payment" as payment {
+  * id : varchar <<PK, ULID>>
+  --
+  * order_id : varchar <<FK ord_order>>
+  * platform_order_id : varchar
+  * member_id : varchar <<FK Member>>
+  * pg_provider : varchar [TOSS]
+    pg_token : varchar
+  * payment_method : varchar [CARD/VIRTUAL_ACCOUNT/SIMPLE_PAY]
+  * amount : int
+    point_amount : int [0]
+  * status : varchar [PENDING/PAID/CANCELLED/REFUNDED/PARTIAL_REFUNDED]
+    approved_at : timestamp
+    cancelled_at : timestamp
+    refunded_at : timestamp
+  * created_at : timestamp
+  * updated_at : timestamp
+}
+
+' ===== Payment Log =====
+entity "pay_payment_log" as plog {
+  * id : varchar <<PK, ULID>>
+  --
+  * payment_id : varchar <<FK>>
+  * event_type : varchar [REQUEST/APPROVE/FAIL/RETRY/CANCEL/REFUND/PARTIAL_REFUND]
+    pg_transaction_id : varchar
+    request_amount : int
+    response_code : varchar
+    raw_response : text
+    retry_count : int [0]
+  * created_at : timestamp
+}
+
+' ===== Payment Method =====
+entity "pay_payment_method" as pmethod {
+  * id : varchar <<PK, ULID>>
+  --
+  * member_id : varchar
+  * method_type : varchar [CARD/ACCOUNT/SIMPLE_PAY]
+  * pg_billing_key : varchar
+  * display_name : varchar [****-1234]
+    card_company : varchar
+    is_default : boolean [false]
+  * created_at : timestamp
+  * updated_at : timestamp
+    is_deleted : boolean [false]
+}
+
+' ===== Card Restriction =====
+entity "pay_card_restriction" as crestr {
+  * id : varchar <<PK, ULID>>
+  --
+  * card_hash : varchar
+  * restricted_date : date
+  * fail_count : int [3]
+    released_at : timestamp
+  * created_at : timestamp
+  ..
+  <<UQ>> card_hash + restricted_date
+}
+
+' ===== Relations =====
+payment ||--o{ plog : "1:N\nPG 이력"
+
+' ===== Cross-domain (논리적) =====
+note bottom of payment
+  order_id → ord_order.id (논리적 FK)
+  member_id → Member 도메인
+end note
+
+note bottom of pmethod
+  member_id → Member 도메인
+  카드번호 미저장 (PCI DSS)
+end note
+
+@enduml
+```
 
 ---
 

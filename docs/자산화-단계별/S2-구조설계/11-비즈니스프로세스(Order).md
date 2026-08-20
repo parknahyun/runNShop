@@ -13,11 +13,13 @@
 | ID | DESIGN-BP-ORDER-001 |
 | 상태 | **Finalized** |
 | 작성일 | 2026-08-11 |
-| 갱신일 | 2026-08-11 |
+| 갱신일 | 2026-08-20 |
 
 ---
 
 ## 1. 주문결제 프로세스
+
+> v2 (2026-08-20 현행화): 구모델 잔재 `PROCESSING` 제거 — 상태머신(⑩) TEMP→ORDER_RECEIVED→PAYMENT_PENDING 3단계로 정정
 
 ```plantuml
 @startuml
@@ -27,17 +29,19 @@ title 주문결제 비즈니스 프로세스
 
 |고객|
 start
+:주문서 화면 진입\n(TEMP 임시주문 생성);
 :주문서 작성\n(배송지·쿠폰·포인트 선택);
 :결제 요청;
 
 |시스템(Order)|
-:주문 생성 (PROCESSING);
+:주문 접수 (ORDER_RECEIVED)\n(재고차감 요청);
 :재고 선점 요청\n→ Catalog PublicApi;
 
 if (재고 충분?) then (yes)
+  :주문 상태 → PAYMENT_PENDING;
   :Payment 도메인에 결제 요청;
 else (no)
-  :재고 부족 → 주문 접수 실패;
+  :재고 부족 → 주문 접수 실패 (STOCK_FAILED);
   :STOCK_FAILED 이벤트 발행\n→ 고객 알림톡;
   stop
 endif
@@ -152,6 +156,8 @@ endif
 ## 4. 클레임(반품/교환) 프로세스
 
 > v2 (2026-08-12 현행화): 12상태 확장 반영 (배송비 결제→수거→품질점검→합격/거부→환불/폐기/반송)
+> v3 (2026-08-20 현행화): 14상태 반영 — 반송 배송비결제 대기(RETURN_PAYMENT_PENDING)·반송배송완료(RETURN_DELIVERED) 상태 보강
+> v4 (2026-08-20 현행화): 교환(EXCHANGE) "맞교환" 원칙 반영 — PICKUP 진입 시 교환상품 선출고, 품질점검 판정 기준을 EXCHANGE는 택(TAG) 유지 여부로 명시
 
 ```plantuml
 @startuml
@@ -193,8 +199,19 @@ endif
 
 |입점사|
 :수거 운송장 등록 (PICKUP);
+note right
+  EXCHANGE(교환) 유형: 이 시점에
+  교환상품 선출고 (맞교환 원칙,
+  선출고 후 수취 — REQ-ORD-056)
+end note
 :상품 입고 확인 (INSPECTING);
 :품질점검;
+note right
+  판정 기준:
+  RETURN → 상품 상태(훼손 여부)
+  EXCHANGE → 택(TAG) 유지 여부
+  (REQ-ORD-057)
+end note
 
 if (합격?) then (yes)
   :수거완료 (PICKED_UP);
@@ -203,12 +220,14 @@ else (no)
 
   |어드민|
   if (반송 가능?) then (yes)
-    :반송 배송비 추가결제 요청\n고객 알림톡;
+    :반송 배송비 추가결제 요청 (RETURN_PAYMENT_PENDING)\n고객 알림톡;
     |고객|
-    :반송 배송비 결제;
+    :반송 배송비 결제 완료;
     |입점사|
     :반송 운송장 등록 (RETURN_SHIPPING);
-    :반송 배송완료 → 클레임완료 (COMPLETED);
+    |시스템(Order)|
+    :반송 배송완료 (RETURN_DELIVERED)\n(택배사 API);
+    :클레임완료 (COMPLETED)\n(배치 자동전환, 알림톡);
     stop
   else (no)
     :폐기 처리 (DISPOSED)\n→ 클레임완료 (COMPLETED);

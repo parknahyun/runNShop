@@ -92,12 +92,13 @@
 | 산출물 | 문서종류 | Scope | 필수 항목(표준양식) | 파일 형식(권장) |
 |---|---|---|---|---|
 | 수용기준(GWT) | Spec | Bolt | 시나리오ID(`AC-{DOM}-{SEQ}`) + Given/When/Then + 카테고리(정상/경계값/예외) + 대응 EARS ID | `.md` (표) — 자동화 시 `.feature` |
-| 세부 유스케이스 | Design | Bolt | 버튼/메뉴 단위 액터 행위 분해 + 기본흐름 + 대안흐름 | `.md` (표) |
+| 세부 유스케이스 | Design | Bolt | `[상위UC명]` 접두사 + 버튼/메뉴 단위 액터 행위 분해 + 기본흐름 + 대안흐름 | `.md` (표) |
 | 인터페이스 명세 | Spec | Bolt | OpenAPI 3.0: endpoint(method/path/auth), request/response, error_catalog | `.md` (yaml 블록) — Swagger 연동 시 `.yaml` |
-| 시퀀스 | Design | Bolt | PlantUML + 트랜잭션 경계(rect) + 이벤트 발행 타이밍 + 실패 분기(alt/opt) | `.md` (plantuml) |
+| 시퀀스 | Design | Bolt | `[API]`/`[컨슈머]`/`[배치]` 태그 + PlantUML + 트랜잭션 경계(rect) + 이벤트 발행 타이밍 + 실패 분기(alt/opt) | `.md` (plantuml) |
 | 화면 레이아웃 | Design | Bolt | 와이어프레임 + API 매핑표 + 상태별 UI + 채널별 경로(admin→tsx, mobile→Figma→tsx) | `.md` (+ Figma 링크) |
 | ADR | Design | 발생 시 | 제목 + 상태 + Context + Decision + Alternatives + Consequences | `.md` (1건=1파일) |
 | 클래스 설계 | Design | Bolt | 클래스 다이어그램(속성/메서드/관계) + 책임 분배 + 패키지 구조 | `.md` (plantuml class) |
+| 프로그램 목록 | Design | Domain | PGM-ID(유형별) + 유형(화면/API/컨슈머/배치) + 프로그램명 + 채널 + 세부UC참조 + 시퀀스참조 + endpoint/트리거 + 상태전이 | `.md` (표) |
 
 ---
 
