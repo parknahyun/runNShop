@@ -1,4 +1,4 @@
-# C-3 디자인 시스템 — Mobile (runNshop-mobile)
+# C3 디자인 시스템 — Mobile (runNshop-mobile)
 
 > **스타일링**: Tailwind CSS
 > **레이아웃**: Header + Content + BottomNav (App Router)
