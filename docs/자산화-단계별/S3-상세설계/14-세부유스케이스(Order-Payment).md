@@ -136,6 +136,40 @@ endif
 
 ## 1. [장바구니 담기] 장바구니 담기 Bolt
 
+```plantuml
+@startuml
+skinparam backgroundColor transparent
+skinparam defaultFontSize 11
+title §1 [장바구니 담기] 장바구니 담기
+
+|고객|
+start
+:상품상세에서 옵션(색상/사이즈) 선택;
+:수량 입력 (기본 1);
+:"장바구니 담기" 클릭;
+
+|시스템|
+:POST /api/v1/cart/items;
+
+if (동일 상품+옵션 존재?) then (예)
+  :수량 합산;
+else (아니오)
+  if (장바구니 50개 초과?) then (예)
+    :"장바구니가 가득 찼습니다" 토스트;
+    stop
+  else (아니오)
+    :신규 아이템 추가;
+  endif
+endif
+
+:뱃지 수량 갱신 + 성공 토스트;
+
+|고객|
+:장바구니 이동 or 쇼핑 계속;
+stop
+@enduml
+```
+
 ### 기본 흐름
 
 | Step | 액터 | 행위 | 시스템 응답 | 비고 |
@@ -158,6 +192,50 @@ endif
 
 ## 2. [장바구니 담기] 장바구니 조회·관리 Bolt
 
+```plantuml
+@startuml
+skinparam backgroundColor transparent
+skinparam defaultFontSize 11
+title §2 [장바구니 담기] 장바구니 조회·관리
+
+|고객|
+start
+:장바구니 화면 진입;
+
+|시스템|
+:GET /api/v1/cart;
+
+if (장바구니 비어있음?) then (예)
+  :빈 상태 + "쇼핑하러 가기" 버튼 표시;
+  stop
+else (아니오)
+  :입점사별 그룹 표시;
+endif
+
+|고객|
+:수량 +/- 버튼 클릭;
+
+|시스템|
+:PATCH /api/v1/cart/items/{id}/quantity
+→ 소계 갱신;
+
+|고객|
+if (삭제?) then (예)
+  |시스템|
+  :DELETE /api/v1/cart/items/{id}
+  → 목록 갱신;
+else (아니오)
+endif
+
+|고객|
+:"선택상품 주문하기" 클릭;
+
+|시스템|
+:주문서 화면(/orders/new)으로 이동;
+stop
+@enduml
+```
+
 ### 기본 흐름
 
 | Step | 액터 | 행위 | 시스템 응답 | 비고 |
@@ -179,6 +257,55 @@ endif
 ## 3. [주문서 제출] 주문서 작성·제출 Bolt
 
 > v2 (2026-08-21 바텀업 재검증): Step7~8을 "결제 즉시 성공/실패 확인" 동기 모델에서 "재고선점까지만 동기 확인, PG승인 결과는 비동기 알림"으로 정정(16-시퀀스 §4/§4-1, REQ-ORD-012~014와 일치). CARD_RESTRICTED 대안흐름 추가.
+
+```plantuml
+@startuml
+skinparam backgroundColor transparent
+skinparam defaultFontSize 11
+title §3 [주문서 제출] 주문서 작성·제출
+
+|고객|
+start
+:주문서 화면 진입;
+
+|시스템|
+:POST /api/v1/orders/sheet
+→ 배송지·상품·쿠폰·포인트·금액 표시;
+
+|고객|
+:배송지 확인/변경;
+:쿠폰 적용 → 금액 재계산;
+:포인트 입력 → 금액 재계산;
+:결제수단 선택;
+:약관 동의 체크;
+
+if (필수 약관 전체 동의?) then (아니오)
+  :결제 버튼 비활성화;
+  stop
+else (예)
+endif
+
+:"결제하기" 클릭;
+
+|시스템|
+:POST /api/v1/orders/{sheetId}/pay;
+
+if (재고선점 성공?) then (아니오)
+  :"재고가 부족합니다" 토스트\n(STOCK_FAILED);
+  stop
+else (예)
+  :202 응답 → "주문 접수 완료" 화면\n(status=PAYMENT_PENDING);
+endif
+
+|시스템(비동기)|
+if (PG 승인 결과?) then (성공)
+  :PAYMENT_APPROVED 수신\n→ PAYMENT_COMPLETED\n+ 알림톡/이메일 발송;
+else (실패)
+  :PAYMENT_FAILED\n→ 알림톡 발송 + 재고 복원;
+endif
+stop
+@enduml
+```
 
 ### 기본 흐름
 
@@ -208,6 +335,25 @@ endif
 
 ## 4. [바로구매] 바로구매 Bolt
 
+```plantuml
+@startuml
+skinparam backgroundColor transparent
+skinparam defaultFontSize 11
+title §4 [바로구매] 바로구매
+
+|고객|
+start
+:상품상세에서 "바로구매" 클릭;
+
+|시스템|
+:장바구니 미경유\n즉시 주문서 화면 이동;
+
+|고객|
+:주문서 작성·제출\n(§3 Step 1~8 동일);
+stop
+@enduml
+```
+
 ### 기본 흐름
 
 | Step | 액터 | 행위 | 시스템 응답 | 비고 |
@@ -218,6 +364,33 @@ endif
 ---
 
 ## 5. [고객 단순 취소] 고객 주문 취소 Bolt
+
+```plantuml
+@startuml
+skinparam backgroundColor transparent
+skinparam defaultFontSize 11
+title §5 [고객 단순 취소] 고객 주문 취소
+
+|고객|
+start
+:주문상세 화면 진입;
+
+if (PREPARING 이후 상태?) then (예)
+  :취소 버튼 비노출\n"반품 신청을 이용해주세요" 안내;
+  stop
+else (아니오)
+  :"취소" 버튼 클릭;
+endif
+
+:취소 사유 선택;
+:"취소 요청" 버튼 클릭;
+
+|시스템|
+:POST /api/v1/orders/{orderId}/cancel;
+:주문 취소 완료 + 환불 안내;
+stop
+@enduml
+```
 
 ### 기본 흐름
 
@@ -238,6 +411,32 @@ endif
 
 ## 6. [예외 취소] CS 예외 취소 Bolt (admin)
 
+```plantuml
+@startuml
+skinparam backgroundColor transparent
+skinparam defaultFontSize 11
+title §6 [예외 취소] CS 예외 취소
+
+|CS 담당자|
+start
+:주문상세 > CS·클레임 탭 진입;
+
+if (DELIVERED 이후 상태?) then (예)
+  :"예외 취소" 버튼 비활성화\n"반품 신청으로 처리해주세요" 안내;
+  stop
+else (아니오 — PREPARING 이하)
+  :"예외 취소" 버튼 클릭;
+endif
+
+:취소 확인 다이얼로그 → 확인 클릭;
+
+|시스템|
+:POST /api/admin/v1/orders/{orderId}/force-cancel;
+:주문 취소 + 환불 요청 + 상태 갱신;
+stop
+@enduml
+```
+
 ### 기본 흐름
 
 | Step | 액터 | 행위 | 시스템 응답 | 비고 |
@@ -256,6 +455,39 @@ endif
 ---
 
 ## 7. [출고·운송장 등록] 판매자 출고·배송 Bolt (partner)
+
+```plantuml
+@startuml
+skinparam backgroundColor transparent
+skinparam defaultFontSize 11
+title §7 [출고·운송장 등록] 판매자 출고·배송
+
+|판매자|
+start
+:주문 목록에서 PAYMENT_COMPLETED 주문 선택;
+:"출고 처리" 버튼 클릭;
+
+|시스템|
+:POST /api/partner/v1/orders/{orderId}/ship;
+:주문 상태→PREPARING\n+ shipment(OUTBOUND) 생성;
+
+|판매자|
+:배송관리에서 해당 건 선택;
+:택배사 선택 + 운송장번호 입력;
+
+if (운송장번호 입력?) then (미입력)
+  :"운송장번호를 입력해주세요" 알림;
+  stop
+else (입력 완료)
+  :"배송정보 입력" 클릭;
+endif
+
+|시스템|
+:POST /api/partner/v1/shipping/{orderId};
+:shipment(OUTBOUND) 상태→IN_TRANSIT\n배송 추적 시작;
+stop
+@enduml
+```
 
 ### 기본 흐름
 
@@ -279,6 +511,33 @@ endif
 
 ## 8. [배송지 변경] 배송지 변경 Bolt
 
+```plantuml
+@startuml
+skinparam backgroundColor transparent
+skinparam defaultFontSize 11
+title §8 [배송지 변경] 배송지 변경
+
+|고객|
+start
+:주문상세 진입;
+
+if (PAYMENT_COMPLETED 상태?) then (아니오)
+  :"출고 후에는 변경할 수 없습니다"\n버튼 비노출;
+  stop
+else (예)
+  :"배송지 변경" 클릭;
+endif
+
+:새 배송지 입력;
+:"변경" 버튼 클릭;
+
+|시스템|
+:PUT /api/v1/orders/{orderId}/shipping-address;
+:배송지 갱신 완료;
+stop
+@enduml
+```
+
 ### 기본 흐름
 
 | Step | 액터 | 행위 | 시스템 응답 | 비고 |
@@ -298,6 +557,24 @@ endif
 
 ## 9. [구매확정] 고객 구매확정 Bolt
 
+```plantuml
+@startuml
+skinparam backgroundColor transparent
+skinparam defaultFontSize 11
+title §9 [구매확정] 고객 구매확정
+
+|고객|
+start
+:주문상세에서 "구매확정" 버튼 클릭\n(DELIVERED 상태만 노출);
+:확인 다이얼로그 → 확인 클릭;
+
+|시스템|
+:POST /api/v1/orders/{orderId}/confirm;
+:주문 상태→CONFIRMED\n정산등록 + 포인트적립 이벤트;
+stop
+@enduml
+```
+
 ### 기본 흐름
 
 | Step | 액터 | 행위 | 시스템 응답 | 비고 |
@@ -309,6 +586,39 @@ endif
 ---
 
 ## 10. [반품/교환 신청] 고객 반품·교환 신청 Bolt
+
+```plantuml
+@startuml
+skinparam backgroundColor transparent
+skinparam defaultFontSize 11
+title §10 [반품/교환 신청] 고객 반품·교환 신청
+
+|고객|
+start
+:주문상세에서 "반품 신청" 또는 "교환 신청" 클릭;
+
+if (배송완료 후 10일 초과?) then (예)
+  :"기한이 초과되었습니다" 안내\n버튼 비노출;
+  stop
+else (아니오)
+  :신청 폼 표시;
+endif
+
+:사유 선택 + 상세 입력;
+
+if (판매자 귀책 + 사진 미첨부?) then (예)
+  :"사진을 1장 이상 첨부해주세요" 안내;
+  stop
+else (아니오)
+  :"신청" 버튼 클릭;
+endif
+
+|시스템|
+:POST /api/v1/orders/{orderId}/claims;
+:클레임 RECEIVED 상태 생성\n접수 안내;
+stop
+@enduml
+```
 
 ### 기본 흐름
 
@@ -333,6 +643,48 @@ endif
 > **역할 경계**: §11은 클레임 접수 단계(RECEIVED→REJECTED)만 담당.
 > 수거완료 후 환불/폐기/반송 판정은 §22에서 처리.
 > v2 (2026-08-21 바텀업 재검증): Step 3a에 "CS가 고객 자진신고와 다르게 판정할 수 있다"는 REQ-ORD-066을 명시하고, 실제 호출 API(blame-decision)를 표기. EXCHANGE 재고부족 거부(REQ-ORD-069) 대안흐름 추가.
+
+```plantuml
+@startuml
+skinparam backgroundColor transparent
+skinparam defaultFontSize 11
+title §11 [클레임 접수/반려] CS 클레임 접수 확인·반려·귀책판정
+
+|CS 담당자|
+start
+:클레임 관리 목록에서 RECEIVED 건 선택;
+:접수 내용·사유·첨부사진 확인;
+
+if (접수 승인?) then (반려)
+  if (반려 사유 입력?) then (미입력)
+    :"반려 사유를 입력해주세요";
+    stop
+  else (입력)
+    :POST /api/admin/v1/claims/{claimId}/reject;
+  endif
+  |시스템|
+  :클레임 상태→REJECTED\n고객 알림톡;
+  stop
+else (귀책 판정)
+  :귀책 판정 확정\n(고객 신고값과 무관하게 최종 결정);
+  :POST /api/admin/v1/claims/{claimId}/blame-decision;
+endif
+
+|시스템|
+if (고객 귀책?) then (예)
+  :상태→PAYMENT_PENDING\n(배송비 결제 요청);
+else (판매자 귀책)
+  :shipment(PICKUP) 자동 생성\n(즉시 수거 시작 → §21);
+endif
+
+if (claimType=EXCHANGE?) then (예)
+  |판매자|
+  :교환상품 선출고 운송장 등록\nPOST /api/partner/v1/claims/{claimId}/exchange-ship;
+else (아니오)
+endif
+stop
+@enduml
+```
 
 ### 기본 흐름
 
@@ -360,6 +712,27 @@ endif
 
 > 접수·처리 판정은 어드민 담당. 입점사는 클레임 현황 조회 + 클레임상세 MDI에서 수거·품질점검 수행 (§21 참조). 교환상품은 이미 선출고됨(맞교환 원칙) — 원상품 회수만 진행.
 
+```plantuml
+@startuml
+skinparam backgroundColor transparent
+skinparam defaultFontSize 11
+title §12 [클레임 접수/반려] 판매자 클레임 조회
+
+|판매자|
+start
+:클레임 현황 화면에서 필터 설정 + 조회;
+
+|시스템|
+:GET /api/partner/v1/claims → 통합 목록;
+
+|판매자|
+:클레임번호 클릭;
+:클레임상세 MDI 탭 오픈;
+:수거·품질점검 수행 (§21 참조);
+stop
+@enduml
+```
+
 ### 기본 흐름
 
 | Step | 액터 | 행위 | 시스템 응답 | 비고 |
@@ -371,6 +744,35 @@ endif
 ---
 
 ## 13. [결제수단 등록/삭제] 결제수단 관리 Bolt (mobile)
+
+```plantuml
+@startuml
+skinparam backgroundColor transparent
+skinparam defaultFontSize 11
+title §13 [결제수단 등록/삭제] 결제수단 관리
+
+|고객|
+start
+:마이페이지 > 결제수단 관리 진입;
+
+|시스템|
+:GET /api/v1/payment-methods\n→ 마스킹된 목록;
+
+|고객|
+if (새 카드 등록?) then (예)
+  :"새 카드 등록" 클릭;
+  :PG 카드 등록 UI에서 정보 입력;
+  |시스템|
+  :POST /api/v1/payment-methods\n→ 토큰 저장, 목록 갱신;
+else (삭제)
+  |고객|
+  :기존 카드 "삭제" 클릭;
+  |시스템|
+  :DELETE /api/v1/payment-methods/{id}\n→ 토큰 무효화;
+endif
+stop
+@enduml
+```
 
 ### 기본 흐름
 
@@ -386,6 +788,28 @@ endif
 
 ## 14. [전체 주문 검색] 주문 조회 Bolt (admin — 주문 현황)
 
+```plantuml
+@startuml
+skinparam backgroundColor transparent
+skinparam defaultFontSize 11
+title §14 [전체 주문 검색] 주문 조회 (admin)
+
+|CS 담당자|
+start
+:주문 현황 화면 진입;
+:필터 설정 (키워드·상태·기간) + "조회" 클릭;
+
+|시스템|
+:GET /api/admin/v1/orders → 테이블 표시;
+
+|CS 담당자|
+:테이블 행 클릭;
+:주문상세 MDI 탭 오픈;
+:탭 전환\n(주문상품/결제정보/배송정보/CS·클레임/변경이력);
+stop
+@enduml
+```
+
 ### 기본 흐름
 
 | Step | 액터 | 행위 | 시스템 응답 | 비고 |
@@ -399,6 +823,26 @@ endif
 
 ## 15. [입점사 주문 조회] 주문 조회 Bolt (partner — 주문 목록)
 
+```plantuml
+@startuml
+skinparam backgroundColor transparent
+skinparam defaultFontSize 11
+title §15 [입점사 주문 조회] 주문 조회 (partner)
+
+|판매자|
+start
+:주문 목록 화면 진입 + 조회;
+
+|시스템|
+:GET /api/partner/v1/orders\n→ 자기 매장 주문 표시;
+
+|판매자|
+:테이블 행 클릭;
+:주문상세 MDI 탭 오픈\n(주문정보/처리이력);
+stop
+@enduml
+```
+
 ### 기본 흐름
 
 | Step | 액터 | 행위 | 시스템 응답 | 비고 |
@@ -409,6 +853,35 @@ endif
 ---
 
 ## 16. [반품/교환 신청] 고객 클레임 목록 조회 Bolt (mobile — 마이페이지)
+
+```plantuml
+@startuml
+skinparam backgroundColor transparent
+skinparam defaultFontSize 11
+title §16 [반품/교환 신청] 고객 클레임 목록 조회
+
+|고객|
+start
+:마이페이지 > "취소/반품/교환 내역" 클릭;
+
+|시스템|
+:GET /api/v1/members/me/claims;
+
+if (클레임 있음?) then (아니오)
+  :"접수된 클레임이 없습니다." 안내;
+  stop
+else (예)
+  :상태 요약 + 목록 표시;
+endif
+
+|고객|
+:클레임 카드 클릭;
+
+|시스템|
+:클레임 상세 화면(/my/claims/{claimId}) 이동;
+stop
+@enduml
+```
 
 ### 기본 흐름
 
@@ -428,6 +901,37 @@ endif
 
 ## 17. [반품/교환 신청] 고객 클레임 상세 조회 Bolt (mobile — 마이페이지)
 
+```plantuml
+@startuml
+skinparam backgroundColor transparent
+skinparam defaultFontSize 11
+title §17 [반품/교환 신청] 고객 클레임 상세 조회
+
+|고객|
+start
+:클레임 목록에서 카드 클릭;
+
+|시스템|
+:GET /api/v1/members/me/claims/{claimId};
+
+if (취소 건?) then (예)
+  :수거 정보 비노출\n환불 정보만 표시;
+else (아니오)
+  if (교환 건?) then (예)
+    :환불 정보 비노출\n교환 상품 정보 표시;
+  else (반품 건)
+    :상품정보·사유·수거정보·환불정보 전체 표시;
+  endif
+endif
+
+:처리 타임라인 표시\n(최신 이벤트 강조);
+
+|고객|
+:진행 상태 확인;
+stop
+@enduml
+```
+
 ### 기본 흐름
 
 | Step | 액터 | 행위 | 시스템 응답 | 비고 |
@@ -446,6 +950,33 @@ endif
 ---
 
 ## 18. [내 주문 조회] 고객 주문 상세 조회 Bolt (mobile)
+
+```plantuml
+@startuml
+skinparam backgroundColor transparent
+skinparam defaultFontSize 11
+title §18 [내 주문 조회] 고객 주문 상세 조회
+
+|고객|
+start
+:주문/배송 조회 목록에서 주문번호 클릭;
+
+|시스템|
+:GET /api/v1/members/me/orders/{orderId};
+:입점사별 상품·결제·배송·이력 표시;
+
+|고객|
+if (상태?) then (DELIVERED)
+  :구매확정/반품교환/배송조회 버튼 노출;
+  :입점사별 액션 버튼 클릭;
+else (PAYMENT_PENDING)
+  :"결제 진행 중" 안내 표시;
+else (취소/결제실패)
+  :취소 사유 + 환불 상태 추가 표시;
+endif
+stop
+@enduml
+```
 
 ### 기본 흐름
 
@@ -468,6 +999,41 @@ endif
 
 > 주문상세(§18) 또는 주문/배송 조회(§8)에서 [반품/교환] 클릭 시 진입.
 > 반품/교환은 **입점사 단위**로 진행. 복수 아이템 선택 가능(주문상세에서만).
+
+```plantuml
+@startuml
+skinparam backgroundColor transparent
+skinparam defaultFontSize 11
+title §19 [반품/교환 신청] 고객 클레임 신청 상세
+
+|고객|
+start
+:신청 유형 선택 (반품/교환);
+:신청 상품 선택 + 수량 지정;
+:사유 선택;
+
+if (고객 귀책 사유?) then (예)
+  :"수거 배송비 발생" 안내 노출;
+else (아니오)
+endif
+
+:상세 사유 입력 (선택);
+:사진 첨부 (선택, 최대 3장);
+:회수지 확인/변경;
+
+if (아이템/사유 미선택?) then (예)
+  :[신청하기] 비활성화;
+  stop
+else (아니오)
+  :"신청하기" 클릭;
+endif
+
+|시스템|
+:POST /api/v1/orders/{orderId}/claims;
+:신청 완료 화면 이동\n(고객귀책 시 배송비 결제 유도);
+stop
+@enduml
+```
 
 ### 기본 흐름
 
@@ -497,6 +1063,48 @@ endif
 > 클레임 신청 완료 화면(§8-3) 또는 클레임 상세(§10)에서 진행.
 > 결제 기한 24시간. 미결제 시 클레임 자동 취소.
 
+```plantuml
+@startuml
+skinparam backgroundColor transparent
+skinparam defaultFontSize 11
+title §20 [반품/교환 신청] 고객 클레임 배송비 결제
+
+|고객|
+start
+:클레임 상세에서 [배송비 결제하기] 클릭;
+
+if (결제 기한 24시간 초과?) then (예)
+  :버튼 비활성화\n클레임 자동 취소 + 알림톡;
+  stop
+else (아니오)
+  :배송비 결제 레이어 팝업 오픈;
+endif
+
+if (배송비 쿠폰 전액 적용?) then (예)
+  :결제 0원, 즉시 수거 진행;
+else (아니오)
+  :결제수단 선택;
+  :[결제하기] 클릭 → PG SDK 인증;
+  if (PG 결제 성공?) then (실패)
+    :팝업 내 에러 표시\n재시도 안내;
+    stop
+  else (성공)
+  endif
+endif
+
+|시스템|
+:POST /api/v1/claims/{claimId}/shipping-payment;
+:shipment(PICKUP) 자동 생성\n수거 프로세스 시작 + 알림톡;
+
+if (claimType=EXCHANGE?) then (예)
+  |판매자|
+  :교환상품 선출고 운송장 등록;
+else (아니오)
+endif
+stop
+@enduml
+```
+
 ### 기본 흐름
 
 | Step | 액터 | 행위 | 시스템 응답 | 비고 |
@@ -521,6 +1129,54 @@ endif
 ## 21. [수거·재고복구] 입점사 수거·품질점검 Bolt (partner)
 
 > 배송관리에서 회수 건 처리 또는 클레임상세 MDI에서 수행.
+
+```plantuml
+@startuml
+skinparam backgroundColor transparent
+skinparam defaultFontSize 11
+title §21 [수거·재고복구] 입점사 수거·품질점검
+
+|판매자|
+start
+:배송관리에서 회수 건(수거대기) 선택;
+
+if (배송비 결제 완료?) then (미결제)
+  :"배송비 결제 후 수거 가능" 안내;
+  stop
+else (결제완료)
+  :택배사 + 운송장번호 입력;
+  :[수거정보 입력] 클릭;
+endif
+
+|시스템|
+:POST /api/partner/v1/shipping/{claimId}/pickup;
+:shipment(PICKUP) 상태→IN_TRANSIT;
+
+|판매자|
+:상품 도착 후\n[입고 확인 → 품질점검 시작] 클릭;
+
+|시스템|
+:POST /api/partner/v1/claims/{claimId}/pickup-confirm;
+:클레임 상태→INSPECTING\nshipment(PICKUP)→DELIVERED;
+
+|판매자|
+if (품질점검 결과?) then (합격)
+  :POST /api/partner/v1/claims/{claimId}/inspect-pass;
+  |시스템|
+  :클레임 상태→PICKED_UP\n어드민 환불 처리 대기;
+else (거부)
+  if (거부 사유 입력?) then (미입력)
+    :"거부 사유를 입력해주세요";
+    stop
+  else (입력)
+    :POST /api/partner/v1/claims/{claimId}/inspect-reject;
+  endif
+  |시스템|
+  :클레임 상태→PICKUP_REJECTED\n+ 사유 기록 → 어드민 판정 대기;
+endif
+stop
+@enduml
+```
 
 ### 기본 흐름
 
@@ -551,6 +1207,52 @@ endif
 
 > 수거완료(PICKED_UP) 또는 수거거부(PICKUP_REJECTED) 상태에서 어드민이 후속 처리.
 
+```plantuml
+@startuml
+skinparam backgroundColor transparent
+skinparam defaultFontSize 11
+title §22 [수거·재고복구] 어드민 환불/폐기/반송결제 판정
+
+|CS 담당자|
+start
+
+if (클레임 상태?) then (PICKED_UP — 수거완료)
+  :클레임상세 > 환불정보 탭 진입;
+  :[환불 처리] 클릭;
+  |시스템|
+  :POST /api/admin/v1/claims/{claimId}/refund;
+  :클레임 상태→REFUNDED→COMPLETED\n고객 알림톡 발송;
+  stop
+else (PICKUP_REJECTED — 수거거부)
+  :거부 사유 조회;
+  if (반송 가능?) then (불가)
+    :[폐기 처리] 클릭;
+    |시스템|
+    :POST /api/admin/v1/claims/{claimId}/dispose;
+    :상태→DISPOSED→COMPLETED;
+    stop
+  else (가능)
+    :[반송 배송비 추가결제 요청] 클릭;
+    |시스템|
+    :POST /api/admin/v1/claims/{claimId}/request-return-payment;
+    :고객에게 결제 알림톡 발송;
+  endif
+endif
+
+|고객|
+:반송 배송비 결제 (§20, paymentType=RETURN);
+
+|판매자|
+:반송 운송장 등록;
+:POST /api/partner/v1/claims/{claimId}/return-ship;
+
+|시스템|
+:shipment(RETURN)→IN_TRANSIT→DELIVERED;
+:배치 자동전환 → COMPLETED\n고객 알림톡 발송;
+stop
+@enduml
+```
+
 ### 기본 흐름 (수거완료 → 환불)
 
 | Step | 액터 | 행위 | 시스템 응답 | 비고 |
@@ -575,6 +1277,32 @@ endif
 
 ## 23. [장바구니 담기] 장바구니 옵션 변경 Bolt (mobile)
 
+```plantuml
+@startuml
+skinparam backgroundColor transparent
+skinparam defaultFontSize 11
+title §23 [장바구니 담기] 장바구니 옵션 변경
+
+|고객|
+start
+:장바구니에서 [옵션변경] 클릭;
+:옵션 변경 레이어 팝업 오픈;
+
+if (선택한 옵션 품절?) then (예)
+  :해당 옵션 [×] 표시, 선택 불가;
+  stop
+else (아니오)
+  :색상/사이즈 선택;
+  :[변경 완료] 클릭;
+endif
+
+|시스템|
+:PUT /api/v1/cart/items/{cartItemId}/option;
+:옵션 갱신 + 소계 재계산;
+stop
+@enduml
+```
+
 ### 기본 흐름
 
 | Step | 액터 | 행위 | 시스템 응답 | 비고 |
@@ -596,6 +1324,31 @@ endif
 
 > 신규 (2026-08-21 바텀업 재검증): REQ-ORD-073/071 대응. RECEIVED/PAYMENT_PENDING 상태에서만 가능, 귀책판정(INSPECTING 진입) 이후는 불가.
 
+```plantuml
+@startuml
+skinparam backgroundColor transparent
+skinparam defaultFontSize 11
+title §24 [반품/교환 신청] 고객 클레임 자진 취소
+
+|고객|
+start
+:내 클레임 상세 진입;
+
+if (INSPECTING 이후 상태?) then (예)
+  :"취소" 버튼 비노출\n"귀책 판정/수거 시작 이후에는\n취소할 수 없습니다" 안내;
+  stop
+else (RECEIVED/PAYMENT_PENDING)
+  :"취소" 버튼 클릭;
+  :취소 확인 다이얼로그 → 확인 클릭;
+endif
+
+|시스템|
+:POST /api/v1/claims/{claimId}/cancel;
+:클레임 상태→REJECTED\n(사유="고객 자진 철회")\n취소완료 알림톡;
+stop
+@enduml
+```
+
 ### 기본 흐름
 
 | Step | 액터 | 행위 | 시스템 응답 | 비고 |
@@ -615,6 +1368,38 @@ endif
 ## 25. [배송실패 재발송] 판매자·CS 배송 재발송 처리 Bolt (partner/admin — 신규)
 
 > 신규 (2026-08-21 바텀업 재검증): REQ-ORD-062 대응. shipment_type 공통(OUTBOUND/PICKUP/RETURN/EXCHANGE_OUT).
+
+```plantuml
+@startuml
+skinparam backgroundColor transparent
+skinparam defaultFontSize 11
+title §25 [배송실패 재발송] 판매자·CS 배송 재발송 처리
+
+|판매자 또는 CS 담당자|
+start
+:배송관리에서 FAILED 상태 건 선택;
+
+if (shipment 상태 = FAILED?) then (아니오)
+  :"FAILED 상태만 재발송 가능합니다"\n(RESHIP_NOT_ALLOWED);
+  stop
+else (예)
+  :재발송 처리 모달 표시;
+  :택배사 + 새 운송장번호 입력;
+endif
+
+if (운송장번호 입력?) then (미입력)
+  :"운송장번호를 입력해주세요";
+  stop
+else (입력 완료)
+  :[재발송 처리] 클릭;
+endif
+
+|시스템|
+:POST /api/partner/v1/shipping/{shipmentId}/reship;
+:shipment 상태 FAILED→PENDING→IN_TRANSIT\n추적 재시작;
+stop
+@enduml
+```
 
 ### 기본 흐름
 
