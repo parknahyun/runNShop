@@ -1,4 +1,4 @@
-# C3 디자인 시스템 — Admin (runNshop-admin)
+# C7 디자인 시스템 — Admin (runNshop-admin)
 
 > **스타일링**: 순수 CSS 클래스 (globals.css), BEM 네이밍
 > **레이아웃**: NavBar + TabBar + TabContent (MDI 패턴)

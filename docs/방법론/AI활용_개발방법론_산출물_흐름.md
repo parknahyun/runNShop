@@ -91,11 +91,11 @@ S3 -down-> S3_ART
 S4 -down-> S4_ART
 
 ' === 컨벤션 산출물 (상단, 수평으로 참고 공급) ===
-rectangle "C8\n보안" as C8 #FFF9C4
-rectangle "C9\n용어" as C9 #FFF9C4
+rectangle "C1\n보안" as C8 #FFF9C4
+rectangle "C2\n용어" as C9 #FFF9C4
 rectangle "C3 아키텍처\nC4 데이터\nC5 이벤트" as C156 #FFF9C4
 rectangle "C6 API\nC7 디자인시스템\nC8 UX Writing\nC9 코딩" as C2340 #FFF9C4
-rectangle "C7\n테스트" as C7 #FFF9C4
+rectangle "CA\n테스트" as C7 #FFF9C4
 
 ' === 컨벤션 → 설계 산출물 참고 연결 (점선) ===
 C8 ..down..> NFR : 참고
@@ -132,16 +132,16 @@ end note
 
 | ID | 컨벤션명 | 수립 데드라인 | 참고하는 설계 산출물 |
 |---|---|---|---|
-| C8 | 보안 컨벤션 | S0 착수 중 | D8 NFR |
-| C9 | 용어 컨벤션 | S1 시작 전 | DB 도메인정의서, DE EARS, 전체 |
-| C1 | 아키텍처 컨벤션 | S2 시작 전 | D9 컴포넌트, DF ERD, DI 이벤트플로우, DM 시퀀스 |
-| C5 | 데이터 모델링 컨벤션 | S2 ERD 전 | DF ERD, DG 상태머신 |
-| C6 | 이벤트 설계 컨벤션 | S2 이벤트플로우 전 | DI 이벤트플로우, DM 시퀀스 |
-| C4 | API 설계 컨벤션 | S3 인터페이스명세 전 | DL 인터페이스명세, DM 시퀀스, DQ 프로그램목록 |
-| C3 | 디자인 시스템 | S3 화면레이아웃 전 | DN 화면레이아웃, tsx 구현 |
-| CA | UX Writing 컨벤션 | S3 화면레이아웃 전 | DN 화면레이아웃, 알림 문구 |
-| C2 | 코딩 컨벤션 | S3 클래스설계 전 | DP 클래스설계, 코드구현, 코드리뷰 |
-| C7 | 테스트 컨벤션 | S4 구현 시작 전 | 단위테스트, 통합테스트 |
+| C1 | 보안 컨벤션 | S0 착수 중 | D8 NFR |
+| C2 | 용어 컨벤션 | S1 시작 전 | DB 도메인정의서, DE EARS, 전체 |
+| C3 | 아키텍처 컨벤션 | S2 시작 전 | D9 컴포넌트, DF ERD, DI 이벤트플로우, DM 시퀀스 |
+| C4 | 데이터 모델링 컨벤션 | S2 ERD 전 | DF ERD, DG 상태머신 |
+| C5 | 이벤트 설계 컨벤션 | S2 이벤트플로우 전 | DI 이벤트플로우, DM 시퀀스 |
+| C6 | API 설계 컨벤션 | S3 인터페이스명세 전 | DL 인터페이스명세, DM 시퀀스, DQ 프로그램목록 |
+| C7 | 디자인 시스템 | S3 화면레이아웃 전 | DN 화면레이아웃, tsx 구현 |
+| C8 | UX Writing 컨벤션 | S3 화면레이아웃 전 | DN 화면레이아웃, 알림 문구 |
+| C9 | 코딩 컨벤션 | S3 클래스설계 전 | DP 클래스설계, 코드구현, 코드리뷰 |
+| CA | 테스트 컨벤션 | S4 구현 시작 전 | 단위테스트, 통합테스트 |
 
 ---
 
