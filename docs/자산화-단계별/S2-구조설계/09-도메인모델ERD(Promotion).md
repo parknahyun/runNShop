@@ -1,0 +1,312 @@
+# 도메인 모델 (ERD) — Promotion
+
+> **단계**: 구조설계
+> **문서범위**: Domain
+> **문서종류**: Design
+>
+> **작성 목적**: EARS(⑧)에서 도출된 엔티티·속성·관계를 테이블 설계로 구체화한다.
+> **흐름 내 위치**: ⑧ EARS → **⑨ 도메인 모델(ERD)** → ⑩ 상태머신
+> **작성 주체**: 시니어 개발자 + AI 협업 (DBA/아키텍트 검토)
+
+| 항목 | 내용 |
+|---|---|
+| ID | DESIGN-ERD-PROMOTION-001 |
+| 상태 | **Draft** |
+| 작성일 | 2026-07-08 |
+| 갱신일 | 2026-07-08 |
+
+---
+
+## 테이블 구조
+
+```
+prm_discount_event (행사가·즉시할인)
+  └── prm_discount_event_product (행사 대상 상품)
+
+prm_quantity_discount (수량구간 할인)
+  └── prm_quantity_discount_tier (구간별 조건)
+  └── prm_quantity_discount_product (대상 상품)
+
+prm_cart_discount (장바구니 가격할인)
+
+prm_coupon (쿠폰 정의)
+  └── prm_coupon_target_member (회원 타겟팅)
+  └── prm_coupon_target_product (상품 타겟팅)
+  └── prm_coupon_issue (발급 이력)
+
+prm_exhibition (기획전)
+  └── prm_exhibition_product (기획전 상품)
+  └── prm_exhibition_promotion (기획전 소속 프로모션)
+```
+
+---
+
+## DBML
+
+```dbml
+Table prm_discount_event {
+  id varchar [pk, note: 'ULID']
+  name varchar [not null, note: '행사명']
+  discount_type varchar [not null, note: 'RATE / AMOUNT (정률/정액)']
+  discount_value int [not null, note: '할인율(%) 또는 할인금액(원)']
+  total_quantity int [note: '행사 수량 (null=무제한)']
+  remaining_quantity int [note: 'Redis 동기화 (수량 소진 판별)']
+  status varchar [not null, note: 'DRAFT / ACTIVE / ENDED']
+  start_at timestamp [not null]
+  end_at timestamp [not null]
+  created_by varchar [not null, note: 'MD 사용자 ID']
+  created_at timestamp [not null]
+  updated_at timestamp [not null]
+
+  indexes {
+    status [name: 'idx_devent_status']
+    (status, end_at) [name: 'idx_devent_status_end']
+  }
+
+  note: 'REQ-PRM-010~013: 행사가(즉시할인) 정책'
+}
+
+Table prm_discount_event_product {
+  id varchar [pk, note: 'ULID']
+  discount_event_id varchar [not null, ref: > prm_discount_event.id]
+  product_id varchar [not null, note: 'Catalog product_id (논리적 FK)']
+  original_price int [not null, note: '행사 적용 전 판매가 (복원용)']
+  created_at timestamp [not null]
+
+  indexes {
+    discount_event_id [name: 'idx_dep_event']
+    product_id [name: 'idx_dep_product']
+    (discount_event_id, product_id) [unique, name: 'uq_dep_event_product']
+  }
+
+  note: '행사 대상 상품 매핑'
+}
+
+Table prm_quantity_discount {
+  id varchar [pk, note: 'ULID']
+  name varchar [not null, note: '수량할인명']
+  vendor_id varchar [not null, note: '입점사 ID']
+  status varchar [not null, note: 'DRAFT / ACTIVE / ENDED']
+  start_at timestamp [not null]
+  end_at timestamp [not null]
+  created_by varchar [not null]
+  created_at timestamp [not null]
+  updated_at timestamp [not null]
+
+  indexes {
+    (vendor_id, status) [name: 'idx_qd_vendor_status']
+  }
+
+  note: 'REQ-PRM-020~021: 수량구간 할인 정책'
+}
+
+Table prm_quantity_discount_tier {
+  id varchar [pk, note: 'ULID']
+  quantity_discount_id varchar [not null, ref: > prm_quantity_discount.id]
+  min_quantity int [not null, note: '최소 수량']
+  max_quantity int [note: 'null = 상한 없음']
+  discount_rate int [not null, note: '할인율 (%)']
+  sort_order int [not null, default: 0]
+
+  indexes {
+    quantity_discount_id [name: 'idx_qdt_discount']
+  }
+
+  note: '수량구간 할인 조건 테이블'
+}
+
+Table prm_quantity_discount_product {
+  id varchar [pk, note: 'ULID']
+  quantity_discount_id varchar [not null, ref: > prm_quantity_discount.id]
+  product_id varchar [not null]
+  created_at timestamp [not null]
+
+  indexes {
+    (quantity_discount_id, product_id) [unique, name: 'uq_qdp_discount_product']
+  }
+
+  note: '수량할인 대상 상품'
+}
+
+Table prm_cart_discount {
+  id varchar [pk, note: 'ULID']
+  name varchar [not null, note: '장바구니 할인명']
+  condition_amount int [not null, note: '조건 금액 (이상)']
+  discount_amount int [not null, note: '할인 금액']
+  status varchar [not null, note: 'DRAFT / ACTIVE / ENDED']
+  start_at timestamp [not null]
+  end_at timestamp [not null]
+  created_by varchar [not null, note: '플랫폼 운영자 ID']
+  created_at timestamp [not null]
+  updated_at timestamp [not null]
+
+  indexes {
+    status [name: 'idx_cd_status']
+  }
+
+  note: 'REQ-PRM-030~032: 장바구니 가격할인 (동시 1건만 ACTIVE)'
+}
+
+Table prm_coupon {
+  id varchar [pk, note: 'ULID']
+  name varchar [not null, note: '쿠폰명']
+  coupon_type varchar [not null, note: 'PRODUCT / CART (상품쿠폰/장바구니쿠폰)']
+  discount_type varchar [not null, note: 'RATE / AMOUNT']
+  discount_value int [not null, note: '할인율(%) 또는 할인금액(원)']
+  max_discount_amount int [note: '최대 할인 한도 (정률 시)']
+  min_order_amount int [default: 0, note: '최소 주문 금액']
+  issue_limit int [not null, note: '총 발급 한도']
+  issued_count int [default: 0, note: '현재 발급 수']
+  use_limit_per_member int [default: 1, note: '1인당 사용 횟수']
+  vendor_id varchar [note: '벤더 발행 시 입점사 ID (플랫폼 발행이면 null)']
+  member_target_type varchar [not null, note: 'ALL / GRADE / MANUAL (전체/등급/임의지정)']
+  product_target_type varchar [not null, note: 'ALL / MANUAL / CATEGORY']
+  status varchar [not null, note: 'PENDING_APPROVAL / ACTIVE / REJECTED / EXPIRED']
+  reject_reason varchar [note: '반려 사유']
+  valid_from timestamp [not null]
+  valid_to timestamp [not null]
+  created_by varchar [not null]
+  created_at timestamp [not null]
+  updated_at timestamp [not null]
+
+  indexes {
+    status [name: 'idx_coupon_status']
+    vendor_id [name: 'idx_coupon_vendor']
+    (status, valid_to) [name: 'idx_coupon_status_valid']
+  }
+
+  note: 'REQ-PRM-040~048: 쿠폰 정의'
+}
+
+Table prm_coupon_target_member {
+  id varchar [pk, note: 'ULID']
+  coupon_id varchar [not null, ref: > prm_coupon.id]
+  member_id varchar [note: 'MANUAL 타겟 시']
+  grade varchar [note: 'GRADE 타겟 시']
+  created_at timestamp [not null]
+
+  indexes {
+    coupon_id [name: 'idx_ctm_coupon']
+  }
+
+  note: '쿠폰 회원 타겟팅 (REQ-PRM-043)'
+}
+
+Table prm_coupon_target_product {
+  id varchar [pk, note: 'ULID']
+  coupon_id varchar [not null, ref: > prm_coupon.id]
+  product_id varchar [note: 'MANUAL 타겟 시']
+  category_code varchar [note: 'CATEGORY 타겟 시']
+  created_at timestamp [not null]
+
+  indexes {
+    coupon_id [name: 'idx_ctp_coupon']
+  }
+
+  note: '쿠폰 상품 타겟팅 (REQ-PRM-043)'
+}
+
+Table prm_coupon_issue {
+  id varchar [pk, note: 'ULID']
+  coupon_id varchar [not null, ref: > prm_coupon.id]
+  member_id varchar [not null]
+  status varchar [not null, note: 'AVAILABLE / USED / EXPIRED']
+  used_order_id varchar [note: '사용된 주문 ID']
+  issued_at timestamp [not null]
+  used_at timestamp
+  expired_at timestamp
+
+  indexes {
+    (coupon_id, member_id) [name: 'idx_ci_coupon_member']
+    (member_id, status) [name: 'idx_ci_member_status']
+  }
+
+  note: '쿠폰 발급 이력 (REQ-PRM-044~047)'
+}
+
+Table prm_exhibition {
+  id varchar [pk, note: 'ULID']
+  name varchar [not null, note: '기획전명']
+  description text [note: '기획전 설명']
+  status varchar [not null, note: 'DRAFT / ACTIVE / ENDED']
+  start_at timestamp [not null]
+  end_at timestamp [not null]
+  created_by varchar [not null]
+  created_at timestamp [not null]
+  updated_at timestamp [not null]
+
+  indexes {
+    status [name: 'idx_exhibition_status']
+  }
+
+  note: '기획전 (프로모션 컨테이너)'
+}
+
+Table prm_exhibition_product {
+  id varchar [pk, note: 'ULID']
+  exhibition_id varchar [not null, ref: > prm_exhibition.id]
+  product_id varchar [not null]
+  sort_order int [default: 0]
+  created_at timestamp [not null]
+
+  indexes {
+    (exhibition_id, product_id) [unique, name: 'uq_ep_exhibition_product']
+  }
+
+  note: '기획전 대상 상품'
+}
+
+Table prm_exhibition_promotion {
+  id varchar [pk, note: 'ULID']
+  exhibition_id varchar [not null, ref: > prm_exhibition.id]
+  promotion_type varchar [not null, note: 'DISCOUNT_EVENT / QUANTITY_DISCOUNT / CART_DISCOUNT / COUPON']
+  promotion_id varchar [not null, note: '각 프로모션 테이블의 ID']
+  created_at timestamp [not null]
+
+  indexes {
+    exhibition_id [name: 'idx_epromo_exhibition']
+  }
+
+  note: '기획전 소속 프로모션 번들링'
+}
+```
+
+---
+
+## 불변식 (Invariants)
+
+| 불변식 | 검증 시점 | 도출 근거 |
+|---|---|---|
+| 동일 product_id에 ACTIVE 행사가와 ACTIVE 수량할인 동시 불가 | 행사/수량할인 활성화 시 | REQ-PRM-007, REQ-PRM-021 |
+| prm_cart_discount에 status=ACTIVE인 행은 최대 1건 | 장바구니 할인 활성화 시 | REQ-PRM-032 |
+| prm_coupon_issue의 USED 상태 쿠폰은 사용 횟수 한도 내 | 쿠폰 사용 시 | REQ-PRM-003 |
+| prm_coupon.issued_count ≤ issue_limit | 쿠폰 발급 시 | REQ-PRM-046 |
+| 환불 시 쿠폰 상태 USED → AVAILABLE 복원 (사용 건 취소 시) | 환불 이벤트 수신 시 | 정산 정책 |
+| prm_discount_event.remaining_quantity ≥ 0 | 수량 차감 시 | REQ-PRM-012 |
+| vendor.is_platform_direct=TRUE인 쿠폰은 PENDING_APPROVAL 상태 생략 | 쿠폰 생성 시 | REQ-PRM-039, 정책서 §9.0 |
+
+---
+
+## Soft Delete 정책
+
+| 테이블 | 정책 | 사유 |
+|---|---|---|
+| prm_discount_event | 물리 삭제 없음, ENDED 상태 보존 | 행사 이력 추적 |
+| prm_quantity_discount | 물리 삭제 없음, ENDED 상태 보존 | 할인 이력 추적 |
+| prm_cart_discount | 물리 삭제 없음, ENDED 상태 보존 | 정산 기준 |
+| prm_coupon | 물리 삭제 없음 | 쿠폰 발급·사용 이력 법적 보관 |
+| prm_coupon_issue | 물리 삭제 없음 | 사용 이력 법적 보관 |
+| prm_exhibition | 물리 삭제 없음, ENDED 상태 보존 | 기획전 이력 |
+
+---
+
+## 근거
+
+| 항목 | 출처 |
+|---|---|
+| 엔티티 도출 | `08-EARS기능요구(Promotion).md` 주어/목적어 명사 추출 |
+| 테이블 접두사 `prm_` | `05-도메인정의서.md` 스키마 그룹핑 |
+| 택1 규칙 | REQ-PRM-007, REQ-PRM-021 |
+| 장바구니 1건 제한 | REQ-PRM-032 |
+| 쿠폰 승인 워크플로우 | REQ-PRM-040~042 |
+| 기획전 번들링 구조 | 도메인기능표 코드 기반 보완 (PromotionsTab) |

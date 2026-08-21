@@ -1,0 +1,267 @@
+# 비즈니스 프로세스 — Promotion
+
+> **단계**: 구조설계
+> **문서범위**: Domain
+> **문서종류**: Design
+>
+> **작성 목적**: 상태머신(⑩)의 전이를 액티비티 흐름으로 확장하여, "누가 어떤 순서로 업무를 수행하는가"를 시각화한다.
+> **흐름 내 위치**: ⑩ 상태머신 → **⑪ 비즈니스 프로세스** → ⑫ 이벤트 플로우
+> **작성 주체**: 시니어 개발자 + AI 협업 (기획자·현업 검토·확인)
+
+| 항목 | 내용 |
+|---|---|
+| ID | DESIGN-BP-PROMOTION-001 |
+| 상태 | **Draft** |
+| 작성일 | 2026-07-08 |
+| 갱신일 | 2026-07-08 |
+
+---
+
+## 1. 할인 적용 계산 프로세스 (Order 연동)
+
+```plantuml
+@startuml
+skinparam backgroundColor transparent
+skinparam defaultFontSize 11
+title 할인 적용 계산 프로세스 (PublicApi)
+
+|시스템(Order)|
+start
+:할인 계산 요청\n(productId, skuId, qty);
+
+|시스템(Promotion)|
+:상품별 ACTIVE 행사 조회;
+
+if (행사가(즉시할인) ACTIVE?) then (yes)
+  :할인 유형 = INSTANT_DISCOUNT;
+  :할인 금액 계산\n(정률 or 정액);
+else if (수량구간 할인 ACTIVE?) then (yes)
+  :구간별 조건 확인;
+  if (qty ≥ min_quantity?) then (yes)
+    :할인 유형 = QTY_TIER_DISCOUNT;
+    :해당 구간 할인율 적용;
+  else (조건 미충족)
+    :할인 없음 (0원);
+  endif
+else (둘 다 없음)
+  :할인 없음 (null);
+endif
+
+:할인 유형·할인금액·할인 후 단가 반환;
+stop
+
+@enduml
+```
+
+---
+
+## 2. 쿠폰 등록·승인 프로세스
+
+```plantuml
+@startuml
+skinparam backgroundColor transparent
+skinparam defaultFontSize 11
+title 쿠폰 등록·승인 비즈니스 프로세스
+
+|시스템(Promotion)|
+start
+:등록 주체 판별;
+
+if (vendor.is_platform_direct?) then (TRUE: 직매입)
+  |관리자(MD)|
+  :직매입 쿠폰 정보 입력\n(할인유형, 금액/율, 유효기간, 발급한도, 최소주문);
+  :등록 요청;
+  
+  |시스템(Promotion)|
+  :쿠폰 저장 → 즉시 ACTIVE;
+  :승인 게이트 생략;
+  stop
+else (FALSE: 입점형)
+  |판매자(벤더)|
+  :쿠폰 정보 입력\n(할인유형, 금액/율, 유효기간, 발급한도, 최소주문);
+  :등록 요청;
+  
+  |시스템(Promotion)|
+  :쿠폰 저장 (PENDING_APPROVAL);
+  
+  |관리자(MD)|
+  :승인 대기 쿠폰 확인;
+  
+  if (승인?) then (yes)
+    |시스템(Promotion)|
+    :ACTIVE 전환;
+    :발급 가능 상태;
+    stop
+  else (반려)
+    |시스템(Promotion)|
+    :REJECTED 전환;
+    :반려 사유 기록;
+    :판매자에게 통보;
+    stop
+  endif
+endif
+
+@enduml
+```
+
+---
+
+## 3. 쿠폰 발급·사용 프로세스
+
+```plantuml
+@startuml
+skinparam backgroundColor transparent
+skinparam defaultFontSize 11
+title 쿠폰 발급·사용 프로세스
+
+|고객|
+start
+:쿠폰 다운로드 요청;
+
+|시스템(Promotion)|
+:쿠폰 상태 확인;
+
+if (ACTIVE && issued_count < issue_limit?) then (yes)
+  :prm_coupon_issue 생성 (AVAILABLE);
+  :issued_count 증가;
+  :발급 완료 응답;
+else (발급 불가)
+  :한도 초과 / 비활성 안내;
+  stop
+endif
+
+|고객|
+:주문 시 쿠폰 적용 요청;
+
+|시스템(Order → Promotion PublicApi)|
+:쿠폰 유효성 검증;
+
+if (유효?) then (yes)
+  :할인 금액 계산·반환;
+  note right: 유효기간 내\n사용횟수 미초과\n최소주문금액 충족\n적용상품 일치
+else (무효)
+  :사용 불가 사유 반환;
+  stop
+endif
+
+|시스템(Promotion)|
+:결제 완료 시 USED 전환;
+:used_order_id, used_at 기록;
+stop
+
+@enduml
+```
+
+---
+
+## 4. 행사가(즉시할인) 등록·종료 프로세스
+
+```plantuml
+@startuml
+skinparam backgroundColor transparent
+skinparam defaultFontSize 11
+title 행사가 등록·종료 프로세스
+
+|관리자(MD)|
+start
+:행사가 정보 입력\n(대상상품, 할인율/금액, 기간, 수량);
+:활성화 요청;
+
+|시스템(Promotion)|
+:택1 규칙 검증;
+
+if (동일 상품에 ACTIVE 수량할인 존재?) then (yes)
+  :등록 거부\n(택1 규칙 위반);
+  stop
+else (통과)
+  :DRAFT → ACTIVE 전환;
+  :대상 상품 할인가 반영;
+  :Redis remaining_quantity 초기화;
+endif
+
+... 시간 경과 ...
+
+|시스템(배치/Consumer)|
+if (end_at 도래?) then (기간 만료)
+  :ACTIVE → ENDED;
+  :가격 자동 복원;
+  :EVENT_ENDED 이벤트 발행;
+  stop
+else if (remaining_quantity = 0?) then (수량 소진)
+  :ACTIVE → ENDED;
+  :가격 자동 복원;
+  :EVENT_ENDED 이벤트 발행;
+  stop
+endif
+
+@enduml
+```
+
+---
+
+## 5. 장바구니 할인 평가 프로세스
+
+```plantuml
+@startuml
+skinparam backgroundColor transparent
+skinparam defaultFontSize 11
+title 장바구니 할인 평가 프로세스
+
+|시스템(Order)|
+start
+:장바구니 할인 평가 요청\n(주문 총액, 상품 목록);
+
+|시스템(Promotion)|
+:ACTIVE 장바구니 할인 정책 조회;
+
+if (ACTIVE 정책 존재?) then (yes)
+  :주문 총액 ≥ condition_amount?;
+  if (조건 충족?) then (yes)
+    :할인금액·조건명 반환;
+    stop
+  else (미충족)
+    :할인 0원, 미충족 반환;
+    stop
+  endif
+else (정책 없음)
+  :할인 0원, 정책 없음 반환;
+  stop
+endif
+
+@enduml
+```
+
+---
+
+## 6. 쿠폰 만료 배치 프로세스
+
+```plantuml
+@startuml
+skinparam backgroundColor transparent
+skinparam defaultFontSize 11
+title 쿠폰 만료 배치 프로세스
+
+|시스템(배치)|
+start
+:매일 02:00 배치 실행;
+:유효기간 만료 쿠폰 조회\n(prm_coupon.valid_to < now AND status = ACTIVE);
+:대상 쿠폰 → EXPIRED 일괄 전환;
+:해당 쿠폰의 미사용 발급 건\n(prm_coupon_issue.status = AVAILABLE)\n→ EXPIRED 일괄 전환;
+stop
+
+@enduml
+```
+
+---
+
+## 근거
+
+| 항목 | 출처 |
+|---|---|
+| 상태 전이 | `10-상태머신(Promotion).md` |
+| PublicApi 흐름 | `06-상위유스케이스(Promotion).md` 행사가·할인관리 업무그룹 |
+| 택1 규칙 | REQ-PRM-007, REQ-PRM-021 |
+| 쿠폰 검증 로직 | REQ-PRM-003, REQ-PRM-004 |
+| 장바구니 할인 | REQ-PRM-002, REQ-PRM-030~032 |
+| 배치 스케줄 | REQ-PRM-011, REQ-PRM-047 |
+| 할인 적용 순서 | `프로모션-할인유형-적용순서.md` §3 |
