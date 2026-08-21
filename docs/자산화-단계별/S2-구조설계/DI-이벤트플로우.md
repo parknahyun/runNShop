@@ -120,17 +120,49 @@ note right of CAT: 선출고: 교환 SKU -N (귀책판정 완료 시점, shipmen
 
 ## 이벤트 스키마
 
+> **Event Envelope 규격**: C5 이벤트설계컨벤션 §4 Event Contract를 따른다.
+> 모든 이벤트는 아래 Envelope 구조를 공유하며, `payload`만 이벤트별로 다르다.
+
+### Envelope 공통 구조
+
+```json
+{
+  "eventId": "evt_01HXYZ...",       // ULID, 멱등키
+  "eventType": "ORDER_PAID",        // UPPER_SNAKE_CASE
+  "eventVersion": 1,                // 스키마 버전
+  "occurredAt": "2026-08-11T10:00:00Z",  // 비즈니스 이벤트 발생 시각 (UTC)
+  "producer": "order-service",      // 발행 서비스 식별자
+  "correlationId": "cor_01HXYZ...", // 업무 흐름 추적 ID
+  "payload": { ... }
+}
+```
+
+| 필드 | 설명 | 비고 |
+|------|------|------|
+| eventId | 이벤트 고유 식별자 (ULID) | Consumer 멱등 처리용 |
+| eventType | 이벤트명 | §이벤트 카탈로그 참조 |
+| eventVersion | 스키마 버전 (1부터) | 필드 추가=유지, 삭제/변경=증가 |
+| occurredAt | 비즈니스 발생 시각 (UTC) | 기존 `timestamp` → `occurredAt`으로 통일 |
+| producer | 발행 서비스 | "order-service" / "payment-service" |
+| correlationId | 동일 업무 흐름 공유 ID | 동일 주문의 이벤트 체인에서 공유 |
+| payload | 이벤트별 데이터 | 아래 각 이벤트 참조 |
+
+---
+
 ### PAYMENT_APPROVED
 
 ```json
 {
+  "eventId": "evt_01HXYZ001",
   "eventType": "PAYMENT_APPROVED",
-  "eventId": "evt-ulid-001",
-  "timestamp": "2026-08-11T10:00:00Z",
+  "eventVersion": 1,
+  "occurredAt": "2026-08-11T10:00:00Z",
+  "producer": "payment-service",
+  "correlationId": "cor_01HXYZ001",
   "payload": {
-    "paymentId": "pay-ulid-001",
-    "orderId": "ord-ulid-001",
-    "platformOrderId": "pord-ulid-001",
+    "paymentId": "pay_01HXYZ001",
+    "orderId": "ord_01HXYZ001",
+    "platformOrderId": "pord_01HXYZ001",
     "amount": 35000,
     "paymentMethod": "CARD",
     "pgTransactionId": "toss-tx-12345",
@@ -143,13 +175,16 @@ note right of CAT: 선출고: 교환 SKU -N (귀책판정 완료 시점, shipmen
 
 ```json
 {
+  "eventId": "evt_01HXYZ002",
   "eventType": "PAYMENT_FAILED",
-  "eventId": "evt-ulid-002",
-  "timestamp": "2026-08-11T10:00:30Z",
+  "eventVersion": 1,
+  "occurredAt": "2026-08-11T10:00:30Z",
+  "producer": "payment-service",
+  "correlationId": "cor_01HXYZ001",
   "payload": {
-    "paymentId": "pay-ulid-001",
-    "orderId": "ord-ulid-001",
-    "platformOrderId": "pord-ulid-001",
+    "paymentId": "pay_01HXYZ001",
+    "orderId": "ord_01HXYZ001",
+    "platformOrderId": "pord_01HXYZ001",
     "amount": 35000,
     "failReason": "CARD_DECLINED",
     "retryCount": 3
@@ -161,18 +196,21 @@ note right of CAT: 선출고: 교환 SKU -N (귀책판정 완료 시점, shipmen
 
 ```json
 {
+  "eventId": "evt_01HXYZ003",
   "eventType": "ORDER_CANCELLED",
-  "eventId": "evt-ulid-003",
-  "timestamp": "2026-08-11T11:00:00Z",
+  "eventVersion": 1,
+  "occurredAt": "2026-08-11T11:00:00Z",
+  "producer": "order-service",
+  "correlationId": "cor_01HXYZ001",
   "payload": {
-    "orderId": "ord-ulid-001",
-    "platformOrderId": "pord-ulid-001",
-    "memberId": "mem-001",
-    "vendorId": "vnd-001",
+    "orderId": "ord_01HXYZ001",
+    "platformOrderId": "pord_01HXYZ001",
+    "memberId": "mbr_01HXYZ001",
+    "vendorId": "vnd_01HXYZ001",
     "cancelReason": "CUSTOMER_REQUEST",
     "totalAmount": 35000,
     "items": [
-      { "productId": "prod-001", "skuId": "sku-001", "quantity": 2 }
+      { "productId": "prod_01HXYZ001", "skuId": "sku_01HXYZ001", "quantity": 2 }
     ]
   }
 }
@@ -182,18 +220,21 @@ note right of CAT: 선출고: 교환 SKU -N (귀책판정 완료 시점, shipmen
 
 ```json
 {
+  "eventId": "evt_01HXYZ004",
   "eventType": "ORDER_CONFIRMED",
-  "eventId": "evt-ulid-004",
-  "timestamp": "2026-08-18T00:00:00Z",
+  "eventVersion": 1,
+  "occurredAt": "2026-08-18T00:00:00Z",
+  "producer": "order-service",
+  "correlationId": "cor_01HXYZ001",
   "payload": {
-    "orderId": "ord-ulid-001",
-    "platformOrderId": "pord-ulid-001",
-    "memberId": "mem-001",
-    "vendorId": "vnd-001",
+    "orderId": "ord_01HXYZ001",
+    "platformOrderId": "pord_01HXYZ001",
+    "memberId": "mbr_01HXYZ001",
+    "vendorId": "vnd_01HXYZ001",
     "totalAmount": 35000,
     "confirmedAt": "2026-08-18T00:00:00Z",
     "items": [
-      { "productId": "prod-001", "skuId": "sku-001", "quantity": 2, "amount": 35000 }
+      { "productId": "prod_01HXYZ001", "skuId": "sku_01HXYZ001", "quantity": 2, "amount": 35000 }
     ]
   }
 }
@@ -203,17 +244,23 @@ note right of CAT: 선출고: 교환 SKU -N (귀책판정 완료 시점, shipmen
 
 ```json
 {
+  "eventId": "evt_01HXYZ005",
   "eventType": "CLAIM_COMPLETED",
-  "eventId": "evt-ulid-005",
-  "timestamp": "2026-08-20T15:00:00Z",
+  "eventVersion": 1,
+  "occurredAt": "2026-08-20T15:00:00Z",
+  "producer": "order-service",
+  "correlationId": "cor_01HXYZ002",
   "payload": {
-    "claimId": "clm-ulid-001",
-    "orderId": "ord-ulid-001",
+    "claimId": "clm_01HXYZ001",
+    "orderId": "ord_01HXYZ001",
     "claimType": "RETURN",
     "refundAmount": 17500,
     "items": [
-      { "productId": "prod-001", "skuId": "sku-001", "quantity": 1 }
+      { "productId": "prod_01HXYZ001", "skuId": "sku_01HXYZ001", "quantity": 1 }
     ]
+  }
+}
+```
   }
 }
 ```
@@ -224,19 +271,22 @@ note right of CAT: 선출고: 교환 SKU -N (귀책판정 완료 시점, shipmen
 
 ```json
 {
+  "eventId": "evt_01HXYZ010",
   "eventType": "ORDER_PAID",
-  "eventId": "evt-ulid-010",
-  "timestamp": "2026-08-11T10:00:00Z",
+  "eventVersion": 1,
+  "occurredAt": "2026-08-11T10:00:00Z",
+  "producer": "order-service",
+  "correlationId": "cor_01HXYZ001",
   "payload": {
-    "orderId": "ord-ulid-001",
-    "platformOrderId": "pord-ulid-001",
-    "memberId": "mem-001",
-    "vendorId": "vnd-001",
+    "orderId": "ord_01HXYZ001",
+    "platformOrderId": "pord_01HXYZ001",
+    "memberId": "mbr_01HXYZ001",
+    "vendorId": "vnd_01HXYZ001",
     "totalAmount": 418000,
     "paymentMethod": "CARD",
     "paidAt": "2026-08-11T10:00:00Z",
     "items": [
-      { "productId": "prod-001", "skuId": "sku-001", "quantity": 1, "amount": 152000 }
+      { "productId": "prod_01HXYZ001", "skuId": "sku_01HXYZ001", "quantity": 1, "amount": 152000 }
     ]
   }
 }
@@ -246,15 +296,18 @@ note right of CAT: 선출고: 교환 SKU -N (귀책판정 완료 시점, shipmen
 
 ```json
 {
+  "eventId": "evt_01HXYZ011",
   "eventType": "STOCK_FAILED",
-  "eventId": "evt-ulid-011",
-  "timestamp": "2026-08-11T10:00:05Z",
+  "eventVersion": 1,
+  "occurredAt": "2026-08-11T10:00:05Z",
+  "producer": "order-service",
+  "correlationId": "cor_01HXYZ001",
   "payload": {
-    "orderId": "ord-ulid-001",
-    "platformOrderId": "pord-ulid-001",
-    "memberId": "mem-001",
+    "orderId": "ord_01HXYZ001",
+    "platformOrderId": "pord_01HXYZ001",
+    "memberId": "mbr_01HXYZ001",
     "failedItems": [
-      { "productId": "prod-001", "skuId": "sku-001", "requestedQuantity": 2, "availableStock": 0 }
+      { "productId": "prod_01HXYZ001", "skuId": "sku_01HXYZ001", "requestedQuantity": 2, "availableStock": 0 }
     ]
   }
 }
@@ -264,14 +317,17 @@ note right of CAT: 선출고: 교환 SKU -N (귀책판정 완료 시점, shipmen
 
 ```json
 {
+  "eventId": "evt_01HXYZ012",
   "eventType": "SHIPPING_STARTED",
-  "eventId": "evt-ulid-012",
-  "timestamp": "2026-08-12T10:00:00Z",
+  "eventVersion": 1,
+  "occurredAt": "2026-08-12T10:00:00Z",
+  "producer": "order-service",
+  "correlationId": "cor_01HXYZ001",
   "payload": {
-    "orderId": "ord-ulid-001",
-    "platformOrderId": "pord-ulid-001",
-    "memberId": "mem-001",
-    "vendorId": "vnd-001",
+    "orderId": "ord_01HXYZ001",
+    "platformOrderId": "pord_01HXYZ001",
+    "memberId": "mbr_01HXYZ001",
+    "vendorId": "vnd_01HXYZ001",
     "carrier": "CJ대한통운",
     "trackingNo": "1234567890",
     "shippedAt": "2026-08-12T10:00:00Z"
@@ -283,14 +339,17 @@ note right of CAT: 선출고: 교환 SKU -N (귀책판정 완료 시점, shipmen
 
 ```json
 {
+  "eventId": "evt_01HXYZ013",
   "eventType": "DELIVERY_COMPLETED",
-  "eventId": "evt-ulid-013",
-  "timestamp": "2026-08-14T14:00:00Z",
+  "eventVersion": 1,
+  "occurredAt": "2026-08-14T14:00:00Z",
+  "producer": "order-service",
+  "correlationId": "cor_01HXYZ001",
   "payload": {
-    "orderId": "ord-ulid-001",
-    "platformOrderId": "pord-ulid-001",
-    "memberId": "mem-001",
-    "vendorId": "vnd-001",
+    "orderId": "ord_01HXYZ001",
+    "platformOrderId": "pord_01HXYZ001",
+    "memberId": "mbr_01HXYZ001",
+    "vendorId": "vnd_01HXYZ001",
     "deliveredAt": "2026-08-14T14:00:00Z"
   }
 }
@@ -300,18 +359,21 @@ note right of CAT: 선출고: 교환 SKU -N (귀책판정 완료 시점, shipmen
 
 ```json
 {
+  "eventId": "evt_01HXYZ014",
   "eventType": "CLAIM_RECEIVED",
-  "eventId": "evt-ulid-014",
-  "timestamp": "2026-08-15T10:30:00Z",
+  "eventVersion": 1,
+  "occurredAt": "2026-08-15T10:30:00Z",
+  "producer": "order-service",
+  "correlationId": "cor_01HXYZ002",
   "payload": {
-    "claimId": "clm-ulid-001",
-    "orderId": "ord-ulid-001",
-    "memberId": "mem-001",
+    "claimId": "clm_01HXYZ001",
+    "orderId": "ord_01HXYZ001",
+    "memberId": "mbr_01HXYZ001",
     "claimType": "RETURN",
     "reason": "사이즈가 맞지 않습니다",
     "responsibility": "CUSTOMER",
     "items": [
-      { "productId": "prod-001", "skuId": "sku-001", "quantity": 1 }
+      { "productId": "prod_01HXYZ001", "skuId": "sku_01HXYZ001", "quantity": 1 }
     ]
   }
 }
@@ -321,12 +383,15 @@ note right of CAT: 선출고: 교환 SKU -N (귀책판정 완료 시점, shipmen
 
 ```json
 {
+  "eventId": "evt_01HXYZ015",
   "eventType": "CLAIM_SHIPPING_PAID",
-  "eventId": "evt-ulid-015",
-  "timestamp": "2026-08-15T11:00:00Z",
+  "eventVersion": 1,
+  "occurredAt": "2026-08-15T11:00:00Z",
+  "producer": "order-service",
+  "correlationId": "cor_01HXYZ002",
   "payload": {
-    "claimId": "clm-ulid-001",
-    "memberId": "mem-001",
+    "claimId": "clm_01HXYZ001",
+    "memberId": "mbr_01HXYZ001",
     "paymentType": "PICKUP",
     "amount": 5000,
     "couponApplied": false,
@@ -339,12 +404,15 @@ note right of CAT: 선출고: 교환 SKU -N (귀책판정 완료 시점, shipmen
 
 ```json
 {
+  "eventId": "evt_01HXYZ016",
   "eventType": "CLAIM_RETURN_SHIPPING_PAID",
-  "eventId": "evt-ulid-016",
-  "timestamp": "2026-08-20T09:00:00Z",
+  "eventVersion": 1,
+  "occurredAt": "2026-08-20T09:00:00Z",
+  "producer": "order-service",
+  "correlationId": "cor_01HXYZ002",
   "payload": {
-    "claimId": "clm-ulid-001",
-    "memberId": "mem-001",
+    "claimId": "clm_01HXYZ001",
+    "memberId": "mbr_01HXYZ001",
     "paymentType": "RETURN",
     "amount": 5000,
     "couponApplied": false,
@@ -357,13 +425,16 @@ note right of CAT: 선출고: 교환 SKU -N (귀책판정 완료 시점, shipmen
 
 ```json
 {
+  "eventId": "evt_01HXYZ017",
   "eventType": "CLAIM_REFUNDED",
-  "eventId": "evt-ulid-017",
-  "timestamp": "2026-08-18T15:00:00Z",
+  "eventVersion": 1,
+  "occurredAt": "2026-08-18T15:00:00Z",
+  "producer": "order-service",
+  "correlationId": "cor_01HXYZ002",
   "payload": {
-    "claimId": "clm-ulid-001",
-    "orderId": "ord-ulid-001",
-    "memberId": "mem-001",
+    "claimId": "clm_01HXYZ001",
+    "orderId": "ord_01HXYZ001",
+    "memberId": "mbr_01HXYZ001",
     "refundAmount": 169000,
     "refundMethod": "CARD",
     "refundedAt": "2026-08-18T15:00:00Z"
