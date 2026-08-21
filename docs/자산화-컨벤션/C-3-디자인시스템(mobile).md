@@ -111,6 +111,40 @@
 | ClaimCard | 클레임번호 + 유형 + 상태 + 타임라인 | 클레임 목록 |
 | VendorGroup | `bg-white rounded-lg border border-gray-200 p-3` 안에 아이템 목록 | 입점사별 그룹 |
 
+### Section (폼 섹션 카드)
+
+> 주문서·클레임신청 등 L-FORM 화면에서 사용하는 정보 섹션 단위.
+> 모든 섹션은 동일한 **섹션 헤더 패턴**을 따른다.
+
+**섹션 컨테이너**: `bg-white rounded-lg border border-gray-200 p-3`
+
+**섹션 헤더 패턴** (통일 규칙):
+
+```
+┌─────────────────────────────────────┐
+│ [라벨]                   [우측 액션] │
+│  text-sm font-bold        text-xs   │
+│  text-secondary          text-primary│
+└─────────────────────────────────────┘
+```
+
+| 요소 | 클래스 | 설명 |
+|---|---|---|
+| 래퍼 | `flex items-center justify-between mb-1` | 헤더 행 |
+| 라벨 | `text-sm font-bold text-secondary` | 섹션 제목 (배송지, 쿠폰, 포인트, 결제수단) |
+| 우측 액션 | `text-xs text-primary` | [변경], 사용 가능 N장 [>], 보유 N P 등 |
+| 우측 보조값 | `text-xs text-gray-400` | 보유 포인트 등 비강조 정보 |
+
+**적용 예시**:
+
+| 섹션 | 라벨 | 우측 |
+|---|---|---|
+| 배송지 | "배송지" | `[변경]` (text-primary) |
+| 쿠폰 | "쿠폰" | `사용 가능 2장 [>]` (text-primary) |
+| 포인트 | "포인트" | `보유 5,200P` (text-gray-400) |
+| 결제 수단 | "결제 수단" | — |
+| 결제 금액 | "결제 금액" (font-bold) | — |
+
 ### Toast
 
 | 변형 | 클래스 |
