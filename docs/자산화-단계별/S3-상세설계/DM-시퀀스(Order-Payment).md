@@ -4,12 +4,12 @@
 > **문서범위**: Bolt (Order + Payment)  
 > **문서종류**: Design  
 >
-> **작성 목적**: 인터페이스 명세(⑮)의 API를 호출 순서·참여 객체·트랜잭션 경계로 구체화한다.  
+> **작성 목적**: 인터페이스 명세(DL)의 API를 호출 순서·참여 객체·트랜잭션 경계로 구체화한다.  
 > "이 API가 호출되면 내부에서 어떤 순서로 어떤 객체가 상호작용하는가"를 확정한다.
 >
 > **흐름 내 위치**:
 > ```
-> ⑮ 인터페이스 명세 → ⑯ 시퀀스 → ⑰ 화면 레이아웃 / ⑲ 클래스 설계
+> DL 인터페이스 명세 → DM 시퀀스 → DN 화면 레이아웃 / DP 클래스 설계
 > ```
 
 ---
@@ -454,7 +454,7 @@ end
 
 ## 7-1. [API] POST /api/admin/v1/claims/{claimId}/blame-decision — 귀책 판정
 
-> 신규 (2026-08-21 바텀업 재검증): 인터페이스명세(⑮) §19-1에는 있었지만 시퀀스가 없던 것을 보완. CUSTOMER/VENDOR 분기와 EXCHANGE 재고선점 실패(REQ-ORD-069)까지 포함한 전체 분기를 다룬다.
+> 신규 (2026-08-21 바텀업 재검증): 인터페이스명세(DL) §19-1에는 있었지만 시퀀스가 없던 것을 보완. CUSTOMER/VENDOR 분기와 EXCHANGE 재고선점 실패(REQ-ORD-069)까지 포함한 전체 분기를 다룬다.
 
 - **트리거**: CS 담당자가 클레임 접수 내용을 확인하고 귀책을 확정
 - **상태전이**: Claim `RECEIVED` → `PAYMENT_PENDING`(CUSTOMER) / `RECEIVED` 유지 + shipment(PICKUP) 생성 → 이후 §12/§14 경유 `INSPECTING`(VENDOR)
@@ -639,7 +639,7 @@ else
   SS -> SR : updateStatus(refType=ORDER, refId=orderId, type=OUTBOUND,\nstatus=IN_TRANSIT, carrier, trackingNumber, shippedAt)
   SR -> DB : UPDATE ord_shipment (PENDING → IN_TRANSIT)
   DB --> SR : OK
-  note right of SR: 주문 자체(ord_order.status)는 변경 없음 — PREPARING 유지.\n"배송 중" 표시는 PREPARING + shipment(OUTBOUND).status=IN_TRANSIT\n조인으로 화면에서 계산(상태머신⑩ v6 참조). 배송완료 파생 전환은 §19 배치 참조.
+  note right of SR: 주문 자체(ord_order.status)는 변경 없음 — PREPARING 유지.\n"배송 중" 표시는 PREPARING + shipment(OUTBOUND).status=IN_TRANSIT\n조인으로 화면에서 계산(상태머신DG v6 참조). 배송완료 파생 전환은 §19 배치 참조.
 
   SS -> EP : publish(SHIPPING_STARTED)
   note right of EP: Notification* → 고객 알림톡\n("상품 발송, 송장번호")
@@ -659,7 +659,7 @@ end
 
 - **트리거**: 스케줄러 (매 시간 정각)
 - **상태전이**: Claim `REFUNDED` → `COMPLETED`, Claim `DISPOSED` → `COMPLETED` (배치 자동 전환)
-- **비고**: 14상태 모델(⑩)에는 어드민이 직접 호출하는 "클레임 완료" API가 없다. `PICKED_UP → REFUNDED`는 §13(환불 처리), `PICKUP_REJECTED → DISPOSED`는 §20(폐기 처리)에서 각각 어드민이 수행하고, `REFUNDED`/`DISPOSED`에 도달한 클레임은 본 배치가 주기적으로 스캔해 `COMPLETED`로 자동 전환한다. `RETURN_PAYMENT_PENDING → COMPLETED`(shipment(RETURN) DELIVERED 기준) 자동전환은 택배사 반송완료 확인과 같은 배치에서 처리하므로 §19를 참조.
+- **비고**: 14상태 모델(DG)에는 어드민이 직접 호출하는 "클레임 완료" API가 없다. `PICKED_UP → REFUNDED`는 §13(환불 처리), `PICKUP_REJECTED → DISPOSED`는 §20(폐기 처리)에서 각각 어드민이 수행하고, `REFUNDED`/`DISPOSED`에 도달한 클레임은 본 배치가 주기적으로 스캔해 `COMPLETED`로 자동 전환한다. `RETURN_PAYMENT_PENDING → COMPLETED`(shipment(RETURN) DELIVERED 기준) 자동전환은 택배사 반송완료 확인과 같은 배치에서 처리하므로 §19를 참조.
 
 ```plantuml
 @startuml
@@ -954,7 +954,7 @@ alt 상태 != INSPECTING
   PCC --> Partner : 400 에러
 else 정상
   note right of CS
-    합격 판정 기준(⑩ v4)
+    합격 판정 기준(DG v4)
     RETURN: 상품 상태 양호(훼손 없음)
     EXCHANGE: 택(TAG) 유지 여부
   end note
@@ -1182,7 +1182,7 @@ Repo --> Service : List<Claim>
 loop 각 미처리 클레임 (last_reminded_at이 24h 이상 지났거나 NULL인 건만)
     Service -> Noti : sendAdminAlert("접수 24시간 경과 미처리 클레임", claimId)
     Service -> Repo : updateLastRemindedAt(now)
-    note right of Noti: CS 대시보드 "미처리임박" 집계(17-화면레이아웃)의 실제 발송 트리거
+    note right of Noti: CS 대시보드 "미처리임박" 집계(DN-화면레이아웃)의 실제 발송 트리거
 end
 
 deactivate Service
@@ -1439,10 +1439,10 @@ end
 
 | 항목 | 출처 |
 |---|---|
-| API endpoint | 인터페이스 명세(⑮) 27개 API 중 주요 15개 상세화 |
-| 컨슈머 시퀀스 | 이벤트 플로우(⑫) PAYMENT_APPROVED 수신 액션 |
-| 배치 시퀀스 | EARS(⑧) REQ-ORD-006(D+7 자동확정), REQ-ORD-041(24시간 만료) |
-| 에러 분기 | GWT(⑬) 예외 시나리오 |
-| 도메인 간 호출 | 이벤트 플로우(⑫) 동기/비동기 판단 |
-| 참여 객체 | ERD(⑨) 엔티티 + 컴포넌트(③) 모듈 구조 |
-| 상태 전이 | 상태머신(⑩) 전이 규칙 |
+| API endpoint | 인터페이스 명세(DL) 27개 API 중 주요 15개 상세화 |
+| 컨슈머 시퀀스 | 이벤트 플로우(DI) PAYMENT_APPROVED 수신 액션 |
+| 배치 시퀀스 | EARS(DE) REQ-ORD-006(D+7 자동확정), REQ-ORD-041(24시간 만료) |
+| 에러 분기 | GWT(DJ) 예외 시나리오 |
+| 도메인 간 호출 | 이벤트 플로우(DI) 동기/비동기 판단 |
+| 참여 객체 | ERD(DF) 엔티티 + 컴포넌트(D9) 모듈 구조 |
+| 상태 전이 | 상태머신(DG) 전이 규칙 |

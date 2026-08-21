@@ -5,12 +5,12 @@
 > **문서종류**: Design  
 > **도메인**: order, payment  
 >
-> **작성 목적**: 시퀀스(⑯)에서 확정된 API 호출 시점과 응답 데이터를 화면에 매핑한다.  
+> **작성 목적**: 시퀀스(DM)에서 확정된 API 호출 시점과 응답 데이터를 화면에 매핑한다.  
 > "어떤 화면에서 어떤 데이터를 어떤 API로부터 가져와 표시하는가"를 확정한다.
 >
 > **흐름 내 위치**:
 > ```
-> ⑯ 시퀀스 → ⑰ 화면 레이아웃
+> DM 시퀀스 → DN 화면 레이아웃
 > ```
 >
 > **근거 소스**: `apps/runNshop-admin/src/order/`, `apps/runNshop-partner/src/order/`, `apps/runNshop-partner/src/claim/`, `apps/runNshop-mobile/app/cart/`, `apps/runNshop-mobile/app/orders/`, `api/runNshop-api/src/main/resources/mock/`
@@ -920,7 +920,7 @@
 
 ### 클레임 상태별 정리
 
-> claim.status 11상태 (v6 — PICKUP/RETURN_SHIPPING/RETURN_DELIVERED는 `ord_shipment`로 이관되어 제외). 근거: `S2-구조설계/10-상태머신(Order).md` §2.
+> claim.status 11상태 (v6 — PICKUP/RETURN_SHIPPING/RETURN_DELIVERED는 `ord_shipment`로 이관되어 제외). 근거: `S2-구조설계/DG-상태머신(Order).md` §2.
 
 | 상태 | 설명 | 수행 주체 |
 |---|---|---|
@@ -2568,7 +2568,7 @@
 | 영역별 API 매핑 필수 | "이 데이터가 어디서 오는가" 명시 |
 | 상태별 UI 정의 | 빈 상태, 로딩, 에러 상태 포함 |
 | CTA(행동 유도) 명시 | 주요 버튼과 다음 화면 이동 |
-| 인터페이스 명세(⑮) 참조 | API 경로·응답 필드명 일치 |
+| 인터페이스 명세(DL) 참조 | API 경로·응답 필드명 일치 |
 | 개인정보 마스킹 | 연락처·이름은 마스킹 처리 (예: 010-****-5678, 홍*동) |
 
 ---
@@ -2587,8 +2587,8 @@
 
 | 항목 | 출처 |
 |---|---|
-| API 매핑 | 시퀀스(⑯) + 인터페이스 명세(⑮) + mock JSON |
-| 화면 목록 | 메뉴구조도(⑦) + 실제 구현 소스 |
+| API 매핑 | 시퀀스(DM) + 인터페이스 명세(DL) + mock JSON |
+| 화면 목록 | 메뉴구조도(DD) + 실제 구현 소스 |
 | 채널별 경로 | 코딩 표준 (앱별 스타일링 방식) |
 | 데이터 필드 | `api/runNshop-api/src/main/resources/mock/v1/order__*.json` |
 | 컴포넌트 구현 | `apps/runNshop-*/src/order/`, `apps/runNshop-mobile/components/order/`, `apps/runNshop-mobile/components/cart/` |

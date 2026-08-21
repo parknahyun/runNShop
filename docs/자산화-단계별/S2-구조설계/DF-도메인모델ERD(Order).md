@@ -4,8 +4,8 @@
 > **문서범위**: Domain
 > **문서종류**: Design
 >
-> **작성 목적**: EARS(⑧)에서 도출된 엔티티·속성·관계를 테이블 설계로 구체화한다.
-> **흐름 내 위치**: ⑧ EARS → **⑨ 도메인 모델(ERD)** → ⑩ 상태머신
+> **작성 목적**: EARS(DE)에서 도출된 엔티티·속성·관계를 테이블 설계로 구체화한다.
+> **흐름 내 위치**: DE EARS → **DF 도메인 모델(ERD)** → DG 상태머신
 > **작성 주체**: 시니어 개발자 + AI 협업 (DBA/아키텍트 검토)
 
 | 항목 | 내용 |
@@ -427,14 +427,14 @@ Table ord_order_history {
 | `SUM(ord_order_item.actual_paid_amount) == ord_order.total_amount` | 주문 생성 시 | 부분반품 환불 기준 정합성 |
 | `ord_cart` 동일 member+sku는 unique | 담기 시 | REQ-ORD-005: 수량 합산, 중복 라인 방지 |
 | `ord_platform_order.total_amount == SUM(ord_order.total_amount) + SUM(ord_order.shipping_fee)` | 주문 분할 시 | 플랫폼주문↔입점사주문 금액 정합 |
-| `ord_order.status` 전이는 상태머신(⑩) 10상태 허용 전이만 가능 | 상태 변경 시 | 금지 전이 위반 방지 |
-| `ord_claim.status` 전이는 상태머신(⑩) 클레임 11상태 허용 전이만 가능 | 상태 변경 시 | 클레임 금지 전이 위반 방지 |
+| `ord_order.status` 전이는 상태머신(DG) 10상태 허용 전이만 가능 | 상태 변경 시 | 금지 전이 위반 방지 |
+| `ord_claim.status` 전이는 상태머신(DG) 클레임 11상태 허용 전이만 가능 | 상태 변경 시 | 클레임 금지 전이 위반 방지 |
 | `ord_claim_payment` 동일 claim+payment_type는 unique | 배송비 결제 시 | 수거/반송 배송비 중복 결제 방지 |
 | `ord_claim_image` 동일 claim+uploaded_by는 각각 최대 3건 (접수분/판정분 독립) | 이미지 첨부 시 | REQ-ORD-075: 첨부 제한 3장은 업로더별 독립 적용 |
 | `ord_claim_image` uploaded_by=CUSTOMER, submitted_responsibility=VENDOR 클레임은 최소 1건 이상 | 클레임 접수 확인 시 | REQ-ORD-058: 상품불량 등 판매자귀책 사유는 사진 증빙 필수 |
 | `ord_claim_image` uploaded_by=VENDOR, claim_type=EXCHANGE 품질점검거부는 최소 1건 이상 | 품질점검 거부 판정 시 | REQ-ORD-072: 교환 판정도 사진 증빙 필수 |
 | `ord_claim.submitted_responsibility`는 신청 후 불변, `responsibility`만 CS가 갱신 | 귀책 판정 확정 시 | REQ-ORD-076: 자진신고 이력 보존 |
-| `ord_shipment.status` 전이는 상태머신(⑩) 배송 5상태 허용 전이만 가능 | 상태 변경 시 | 배송 금지 전이 위반 방지 |
+| `ord_shipment.status` 전이는 상태머신(DG) 배송 5상태 허용 전이만 가능 | 상태 변경 시 | 배송 금지 전이 위반 방지 |
 
 ---
 
@@ -459,11 +459,11 @@ Table ord_order_history {
 
 | 항목 | 출처 |
 |---|---|
-| 엔티티 도출 | `08-EARS기능요구(Order).md` 주어/목적어 명사 추출 |
-| 테이블 접두사 `ord_` | `05-도메인정의서.md` 스키마 그룹핑 |
+| 엔티티 도출 | `DE-EARS기능요구(Order).md` 주어/목적어 명사 추출 |
+| 테이블 접두사 `ord_` | `DB-도메인정의서.md` 스키마 그룹핑 |
 | 2계층 주문구조 | 도메인정의서 §4: Order-Vendor 관계 + 정산 단위 요구 |
 | 장바구니 50개 제한 | REQ-ORD-004 |
 | 스냅샷 원칙 (product_name, unit_price) | REQ-ORD-009 |
 | 반품 기한 10일 | REQ-ORD-030 |
-| 배송 실행 분리(ord_shipment) | 상태머신(⑩) v6 — "고객·판매자·CS 의사결정 지점만 order/claim status로, 택배사 이동 구간은 별도" 원칙 |
+| 배송 실행 분리(ord_shipment) | 상태머신(DG) v6 — "고객·판매자·CS 의사결정 지점만 order/claim status로, 택배사 이동 구간은 별도" 원칙 |
 | 판매자귀책 사진 필수 | REQ-ORD-058 |

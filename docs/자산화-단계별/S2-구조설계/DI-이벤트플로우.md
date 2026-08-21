@@ -5,7 +5,7 @@
 > **문서종류**: Design
 >
 > **작성 목적**: 도메인 간 비동기 이벤트 계약을 정의한다.
-> **흐름 내 위치**: ⑪ 비즈니스 프로세스 → **⑫ 이벤트 플로우** → Bolt 분할
+> **흐름 내 위치**: DH 비즈니스 프로세스 → **DI 이벤트 플로우** → Bolt 분할
 > **작성 주체**: 시니어 개발자 + AI 협업 (아키텍트 검토)
 
 | 항목 | 내용 |
@@ -17,7 +17,7 @@
 
 > **범위**: 1차 파트(Order + Payment) 간 이벤트. Catalog·Settlement·Member·Notification 연동은 해당 도메인 착수 시 보완.
 > **v2 (2026-08-20 현행화)**: 교환(EXCHANGE) 맞교환 원칙 반영 — 재배송·교환 SKU 차감을 CLAIM_COMPLETED(완료 시점)에서 PICKUP 진입(선출고) 시점으로 이동, CLAIM_EXCHANGE_SHIPPED 이벤트 신설.
-> **v3 (2026-08-20 현행화)**: 배송 실행(택배사 이동 구간)을 order/claim 공용 `ord_shipment`로 분리(상태머신⑩ v6). SHIPPING_STARTED/DELIVERY_COMPLETED/CLAIM_EXCHANGE_SHIPPED의 트리거를 shipment 상태 전이 기준으로 재정의. claim.status에서 PICKUP이 제거됨에 따라 "PICKUP 진입 시점" 표현을 "귀책판정 완료 시점"으로 정정.
+> **v3 (2026-08-20 현행화)**: 배송 실행(택배사 이동 구간)을 order/claim 공용 `ord_shipment`로 분리(상태머신DG v6). SHIPPING_STARTED/DELIVERY_COMPLETED/CLAIM_EXCHANGE_SHIPPED의 트리거를 shipment 상태 전이 기준으로 재정의. claim.status에서 PICKUP이 제거됨에 따라 "PICKUP 진입 시점" 표현을 "귀책판정 완료 시점"으로 정정.
 
 ---
 
@@ -404,8 +404,8 @@ note right of CAT: 선출고: 교환 SKU -N (귀책판정 완료 시점, shipmen
 
 | 항목 | 출처 |
 |---|---|
-| 이벤트 목록 | `11-비즈니스프로세스(Order).md`, `11-비즈니스프로세스(Payment).md` 이벤트 발행 지점 |
-| 발행/수신 관계 | `05-도메인정의서.md` §4 도메인 간 관계 |
-| Outbox 패턴 | `03-컴포넌트.md` 배포 구조·도메인 간 통신 방식 |
+| 이벤트 목록 | `DH-비즈니스프로세스(Order).md`, `DH-비즈니스프로세스(Payment).md` 이벤트 발행 지점 |
+| 발행/수신 관계 | `DB-도메인정의서.md` §4 도메인 간 관계 |
+| Outbox 패턴 | `D9-컴포넌트.md` 배포 구조·도메인 간 통신 방식 |
 | 동기/비동기 판단 | 응답 즉시성 요구 여부 (UX 대기 vs 후속 처리) |
-| 이벤트 스키마 | EARS(⑧) + 도메인 간 계약 합의 |
+| 이벤트 스키마 | EARS(DE) + 도메인 간 계약 합의 |

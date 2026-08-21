@@ -103,5 +103,5 @@
 ## 5.1 자가평가
 
 - **완전성**: 충족 — O2/O3 경계 명확, KR 체계(O2=KR2-x, O3=KR3-x, 전제=P-x) 일관
-- **일관성**: 충족 — 01-문제정의서 Impact/Opportunity와 정합, baseline 수치 일치
+- **일관성**: 충족 — D1-문제정의서 Impact/Opportunity와 정합, baseline 수치 일치
 - **추적성**: 충족 — 각 KR에 출처 명시

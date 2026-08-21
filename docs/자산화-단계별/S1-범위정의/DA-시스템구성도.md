@@ -239,7 +239,7 @@ Alert --> APM
 > - 프로토타입 단계: Mock JSON (DB 미사용)
 > - 본개발 초기: 단일 RDS 인스턴스 내 5개 스키마로 논리 분리
 > - 운영: 트래픽에 따라 스키마 단위로 RDS 인스턴스 분할 가능 (MSA 전환 대비)
-> - **스키마 간 직접 JOIN 금지** — `05-도메인정의서.md` Bounded Context 경계 규칙 참조
+> - **스키마 간 직접 JOIN 금지** — `DB-도메인정의서.md` Bounded Context 경계 규칙 참조
 
 ---
 
@@ -298,11 +298,11 @@ Alert --> APM
 | 서술 위치 | 출처 |
 |---|---|
 | Local 환경 | 프로젝트 구조 실측 (port, 실행 방법) |
-| Production 목표 | `02-NFR.md` NFR-SC-01~03 (확장성), NFR-RE-01~04 (신뢰성) |
-| 환경 분리 | `02-NFR.md` NFR-PO-03 (dev/staging/prod) |
-| 보안 그룹 | `01-제약사항.md` CT-3 (URL Prefix), `02-NFR.md` NFR-SE-03 (HTTPS) |
-| 스케일링 | `02-NFR.md` NFR-PE-05 (CPU 70%), NFR-SC-01 (Stateless) |
-| 배포 파이프라인 | `02-NFR.md` NFR-PO-02 (컨테이너화), NFR-MA-05 (빌드 3분) |
+| Production 목표 | `D8-NFR.md` NFR-SC-01~03 (확장성), NFR-RE-01~04 (신뢰성) |
+| 환경 분리 | `D8-NFR.md` NFR-PO-03 (dev/staging/prod) |
+| 보안 그룹 | `D7-제약사항.md` CT-3 (URL Prefix), `D8-NFR.md` NFR-SE-03 (HTTPS) |
+| 스케일링 | `D8-NFR.md` NFR-PE-05 (CPU 70%), NFR-SC-01 (Stateless) |
+| 배포 파이프라인 | `D8-NFR.md` NFR-PO-02 (컨테이너화), NFR-MA-05 (빌드 3분) |
 
 ## Human Review
 
@@ -316,6 +316,6 @@ Alert --> APM
 ## 5.1 자가평가
 
 - **완전성**: 충족 — 2개 환경(Local + Dev) 전부 기술, 네트워크·스케일링·배포 파이프라인 포함. Staging 분리는 2차 파트 검토 사항으로 명시
-- **일관성**: 충족 — `03-컴포넌트.md`의 모든 컴포넌트가 배치도에 등장, NFR 수치와 스케일링 트리거 정합
+- **일관성**: 충족 — `D9-컴포넌트.md`의 모든 컴포넌트가 배치도에 등장, NFR 수치와 스케일링 트리거 정합
 - **추적성**: 충족 — 각 설계 결정이 NFR/제약사항 ID로 역추적 가능
 - **실행가능성**: 충족 — Local 환경은 즉시 실행 가능, Production은 인프라 구성 시 참조 가능한 수준

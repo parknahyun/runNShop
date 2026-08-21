@@ -4,8 +4,8 @@
 > **문서범위**: Domain
 > **문서종류**: Design
 >
-> **작성 목적**: 상태머신(⑩)의 전이를 액티비티 흐름으로 확장하여, "누가 어떤 순서로 업무를 수행하는가"를 시각화한다.
-> **흐름 내 위치**: ⑩ 상태머신 → **⑪ 비즈니스 프로세스** → ⑫ 이벤트 플로우
+> **작성 목적**: 상태머신(DG)의 전이를 액티비티 흐름으로 확장하여, "누가 어떤 순서로 업무를 수행하는가"를 시각화한다.
+> **흐름 내 위치**: DG 상태머신 → **DH 비즈니스 프로세스** → DI 이벤트 플로우
 > **작성 주체**: 시니어 개발자 + AI 협업 (기획자·현업 검토·확인)
 
 | 항목 | 내용 |
@@ -19,7 +19,7 @@
 
 ## 1. 주문결제 프로세스
 
-> v2 (2026-08-20 현행화): 구모델 잔재 `PROCESSING` 제거 — 상태머신(⑩) TEMP→ORDER_RECEIVED→PAYMENT_PENDING 3단계로 정정
+> v2 (2026-08-20 현행화): 구모델 잔재 `PROCESSING` 제거 — 상태머신(DG) TEMP→ORDER_RECEIVED→PAYMENT_PENDING 3단계로 정정
 
 ```plantuml
 @startuml
@@ -74,7 +74,7 @@ stop
 
 ## 2. 배송·구매확정 프로세스
 
-> v2 (2026-08-20 현행화): 배송 실행(IN_DELIVERY)을 `ord_shipment`(OUTBOUND)로 분리 — 상태머신(⑩) v6
+> v2 (2026-08-20 현행화): 배송 실행(IN_DELIVERY)을 `ord_shipment`(OUTBOUND)로 분리 — 상태머신(DG) v6
 
 ```plantuml
 @startuml
@@ -121,7 +121,7 @@ stop
 
 ## 3. 취소 프로세스
 
-> v2 (2026-08-20 현행화): CS 예외취소가 PREPARING까지만 가능함을 명시(IN_DELIVERY→DELIVERED 등 배송 시작 이후는 CS도 취소 불가, 상태머신⑩ 금지전이)
+> v2 (2026-08-20 현행화): CS 예외취소가 PREPARING까지만 가능함을 명시(IN_DELIVERY→DELIVERED 등 배송 시작 이후는 CS도 취소 불가, 상태머신DG 금지전이)
 
 ```plantuml
 @startuml
@@ -166,7 +166,7 @@ endif
 > v2 (2026-08-12 현행화): 12상태 확장 반영 (배송비 결제→수거→품질점검→합격/거부→환불/폐기/반송)
 > v3 (2026-08-20 현행화): 14상태 반영 — 반송 배송비결제 대기(RETURN_PAYMENT_PENDING)·반송배송완료(RETURN_DELIVERED) 상태 보강
 > v4 (2026-08-20 현행화): 교환(EXCHANGE) "맞교환" 원칙 반영 — PICKUP 진입 시 교환상품 선출고, 품질점검 판정 기준을 EXCHANGE는 택(TAG) 유지 여부로 명시
-> v5 (2026-08-20 현행화): 배송 실행(PICKUP/RETURN_SHIPPING/RETURN_DELIVERED)을 `ord_shipment`로 분리(상태머신⑩ v6) — 11상태로 축소. 귀책판정 후 곧바로 INSPECTING으로 전이하며, 수거·반송 배송은 shipment 하위 흐름으로 표시. VENDOR귀책 신청 시 사진 1장 필수(REQ-ORD-058) 반영.
+> v5 (2026-08-20 현행화): 배송 실행(PICKUP/RETURN_SHIPPING/RETURN_DELIVERED)을 `ord_shipment`로 분리(상태머신DG v6) — 11상태로 축소. 귀책판정 후 곧바로 INSPECTING으로 전이하며, 수거·반송 배송은 shipment 하위 흐름으로 표시. VENDOR귀책 신청 시 사진 1장 필수(REQ-ORD-058) 반영.
 
 ```plantuml
 @startuml
@@ -271,8 +271,8 @@ stop
 
 | 항목 | 출처 |
 |---|---|
-| 상태 전이 | `10-상태머신(Order).md` |
-| 액터·업무 흐름 | `06-상위유스케이스(Order).md` |
-| 도메인 간 호출 | `05-도메인정의서.md` §4 관계도 |
+| 상태 전이 | `DG-상태머신(Order).md` |
+| 액터·업무 흐름 | `DC-상위유스케이스(Order).md` |
+| 도메인 간 호출 | `DB-도메인정의서.md` §4 관계도 |
 | 업무 규칙 | REQ-ORD-015 (D+7), REQ-ORD-019 (취소 제한), REQ-ORD-030 (반품 10일), REQ-ORD-058 (VENDOR귀책 사진 필수) |
 | 배송 실행 분리(ord_shipment) | REQ-ORD-059~062 |

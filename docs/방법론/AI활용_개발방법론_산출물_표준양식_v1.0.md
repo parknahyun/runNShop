@@ -39,42 +39,42 @@
 
 ## 1. 착수 (Project 단위, 6종)
 
-| 산출물 | 문서종류 | Scope | 필수 항목(표준양식) | 파일 형식(권장) |
-|---|---|---|---|---|
-| 문제정의서 | Proposal | Project | **BPIO 4단**(Background·Problem·Impact·Opportunity) + 근거출처매핑 + Human Review 목록 + 자가평가 | `.md` |
-| 목표·KPI | Proposal | Project | Objective N개 + 각 KR(목표수치/출처/비고) | `.md` (표) |
-| 이해관계자맵 | Proposal | Project | 이해관계자 표[이름·역할·관심사·영향력] + 방법론 역할 매핑표 | `.md` (표) |
-| 범위(Scope) | Proposal | Project | In-Scope(확정/검토중)·Out-of-Scope 표 + 제외 항목 리스크 수용 여부 | `.md` (표) |
-| 대안비교 | Proposal | Project | 대안 단위별 [후보·채택여부·채택이유] 표 | `.md` (표) |
-| 리스크·가정 | Proposal | Project | 리스크 표[리스크·영향도·대응] + 가정 표[가정·검증상태] | `.md` (표) |
+| ID | 산출물 | 문서종류 | Scope | 필수 항목(표준양식) | 파일 형식(권장) |
+|---|---|---|---|---|---|
+| D1 | 문제정의서 | Proposal | Project | **BPIO 4단**(Background·Problem·Impact·Opportunity) + 근거출처매핑 + Human Review 목록 + 자가평가 | `.md` |
+| D2 | 목표·KPI | Proposal | Project | Objective N개 + 각 KR(목표수치/출처/비고) | `.md` (표) |
+| D3 | 이해관계자맵 | Proposal | Project | 이해관계자 표[이름·역할·관심사·영향력] + 방법론 역할 매핑표 | `.md` (표) |
+| D4 | 범위(Scope) | Proposal | Project | In-Scope(확정/검토중)·Out-of-Scope 표 + 제외 항목 리스크 수용 여부 | `.md` (표) |
+| D5 | 대안비교 | Proposal | Project | 대안 단위별 [후보·채택여부·채택이유] 표 | `.md` (표) |
+| D6 | 리스크·가정 | Proposal | Project | 리스크 표[리스크·영향도·대응] + 가정 표[가정·검증상태] | `.md` (표) |
 
 ---
 
 ## 2. 범위정의 (Project 단위, 5종)
 
-| 산출물 | 문서종류 | Scope | 필수 항목(표준양식) | 파일 형식(권장) |
-|---|---|---|---|---|
-| 제약사항 | Spec | Project | 제약 표[제약ID·카테고리(법무/보안/기술/벤더)·내용·적용범위·예외승인] | `.md` (표) |
-| 비기능요구(NFR) | Spec | Project | 품질특성별 표[특성·기준치·측정방법·근거] | `.md` (표) |
-| 컴포넌트 | Design | Project | 모듈/서비스 목록 + 책임 정의 + 배포 경계 + 의존관계 다이어그램 | `.md` (plantuml component) |
-| 시스템구성도 | Design | Project | 인프라 배치 다이어그램 + 환경 구성 + 네트워크 + 데이터 저장소 + DB 스키마 그룹핑 + 스케일링 전략 | `.md` (plantuml) |
-| 도메인 정의서 | Design | Project | 도메인 목록(업무그룹) + 도메인별 책임(하는 것/안 하는 것) + 소유 데이터 + 도메인 간 관계 다이어그램 + 경계 규칙 | `.md` (plantuml + 표) |
+| ID | 산출물 | 문서종류 | Scope | 필수 항목(표준양식) | 파일 형식(권장) |
+|---|---|---|---|---|---|
+| D7 | 제약사항 | Spec | Project | 제약 표[제약ID·카테고리(법무/보안/기술/벤더)·내용·적용범위·예외승인] | `.md` (표) |
+| D8 | 비기능요구(NFR) | Spec | Project | 품질특성별 표[특성·기준치·측정방법·근거] | `.md` (표) |
+| D9 | 컴포넌트 | Design | Project | 모듈/서비스 목록 + 책임 정의 + 배포 경계 + 의존관계 다이어그램 | `.md` (plantuml component) |
+| DA | 시스템구성도 | Design | Project | 인프라 배치 다이어그램 + 환경 구성 + 네트워크 + 데이터 저장소 + DB 스키마 그룹핑 + 스케일링 전략 | `.md` (plantuml) |
+| DB | 도메인 정의서 | Design | Project | 도메인 목록(업무그룹) + 도메인별 책임(하는 것/안 하는 것) + 소유 데이터 + 도메인 간 관계 다이어그램 + 경계 규칙 | `.md` (plantuml + 표) |
 
 ---
 
 ## 3. 구조설계 (Domain 단위, 7종 + Tasks 6종)
 
-| 산출물 | 문서종류 | Scope | 필수 항목(표준양식) | 파일 형식(권장) |
-|---|---|---|---|---|
-| 상위 유스케이스 | Design | Domain | 액터 정의 + 업무그룹별 UC 목록(도출 근거 포함) + 관계도 + 권한 범위 | `.md` (plantuml usecase) |
-| 메뉴구조도(IA) | Design | Project(앱별) | 셸 구조 + 1depth/2depth/화면 계층 + 도메인 매핑 | `.md` (표) |
-| 기능요구(EARS) | Spec | Domain | 요구사항ID(`REQ-{DOM}-{SEQ}`) + EARS 5패턴 + 도출 근거(정책서/상위UC) | `.md` (표) |
-| 도메인 모델(ERD) | Design | Domain | DBML: 테이블·컬럼·PK/FK·인덱스 + 불변식 + soft delete 정책 + 감사컬럼 | `.md` (dbml 블록) |
-| 상태머신 | Design | Domain | 상태 목록 + 허용 전이표 + forbidden_transitions + 트리거 조건 | `.md` (plantuml state) |
-| 비즈니스 프로세스 | Design | Domain | 액티비티 다이어그램(스윔레인) + 시작/종료조건 + 예외흐름 | `.md` (plantuml activity) |
-| 이벤트 플로우 | Design | Domain 간 | 이벤트 카탈로그[이벤트명·발행도메인·구독도메인·스키마·동기/비동기] | `.md` (표) |
+| ID | 산출물 | 문서종류 | Scope | 필수 항목(표준양식) | 파일 형식(권장) |
+|---|---|---|---|---|---|
+| DC | 상위 유스케이스 | Design | Domain | 액터 정의 + 업무그룹별 UC 목록(도출 근거 포함) + 관계도 + 권한 범위 | `.md` (plantuml usecase) |
+| DD | 메뉴구조도(IA) | Design | Project(앱별) | 셸 구조 + 1depth/2depth/화면 계층 + 도메인 매핑 | `.md` (표) |
+| DE | 기능요구(EARS) | Spec | Domain | 요구사항ID(`REQ-{DOM}-{SEQ}`) + EARS 5패턴 + 도출 근거(정책서/상위UC) | `.md` (표) |
+| DF | 도메인 모델(ERD) | Design | Domain | DBML: 테이블·컬럼·PK/FK·인덱스 + 불변식 + soft delete 정책 + 감사컬럼 | `.md` (dbml 블록) |
+| DG | 상태머신 | Design | Domain | 상태 목록 + 허용 전이표 + forbidden_transitions + 트리거 조건 | `.md` (plantuml state) |
+| DH | 비즈니스 프로세스 | Design | Domain | 액티비티 다이어그램(스윔레인) + 시작/종료조건 + 예외흐름 | `.md` (plantuml activity) |
+| DI | 이벤트 플로우 | Design | Domain 간 | 이벤트 카탈로그[이벤트명·발행도메인·구독도메인·스키마·동기/비동기] | `.md` (표) |
 
-**Tasks 산출물 (구조설계 마지막)**
+**Tasks 산출물 (구조설계 마지막, 아직 ID 미부여 — 실제 산출물 생성 시 D자리 배정)**
 
 | 산출물 | 문서종류 | Scope | 필수 항목(표준양식) | 파일 형식(권장) |
 |---|---|---|---|---|
@@ -89,16 +89,16 @@
 
 ## 4. 상세설계 (Bolt 단위, 7종)
 
-| 산출물 | 문서종류 | Scope | 필수 항목(표준양식) | 파일 형식(권장) |
-|---|---|---|---|---|
-| 수용기준(GWT) | Spec | Bolt | 시나리오ID(`AC-{DOM}-{SEQ}`) + Given/When/Then + 카테고리(정상/경계값/예외) + 대응 EARS ID | `.md` (표) — 자동화 시 `.feature` |
-| 세부 유스케이스 | Design | Bolt | `[상위UC명]` 접두사 + 버튼/메뉴 단위 액터 행위 분해 + 기본흐름 + 대안흐름 | `.md` (표) |
-| 인터페이스 명세 | Spec | Bolt | OpenAPI 3.0: endpoint(method/path/auth), request/response, error_catalog | `.md` (yaml 블록) — Swagger 연동 시 `.yaml` |
-| 시퀀스 | Design | Bolt | `[API]`/`[컨슈머]`/`[배치]` 태그 + PlantUML + 트랜잭션 경계(rect) + 이벤트 발행 타이밍 + 실패 분기(alt/opt) | `.md` (plantuml) |
-| 화면 레이아웃 | Design | Bolt | 와이어프레임 + API 매핑표 + 상태별 UI + 채널별 경로(admin→tsx, mobile→Figma→tsx) | `.md` (+ Figma 링크) |
-| ADR | Design | 발생 시 | 제목 + 상태 + Context + Decision + Alternatives + Consequences | `.md` (1건=1파일) |
-| 클래스 설계 | Design | Bolt | 클래스 다이어그램(속성/메서드/관계) + 책임 분배 + 패키지 구조 | `.md` (plantuml class) |
-| 프로그램 목록 | Design | Domain | PGM-ID(유형별) + 유형(화면/API/컨슈머/배치) + 프로그램명 + 채널 + 세부UC참조 + 시퀀스참조 + endpoint/트리거 + 상태전이 | `.md` (표) |
+| ID | 산출물 | 문서종류 | Scope | 필수 항목(표준양식) | 파일 형식(권장) |
+|---|---|---|---|---|---|
+| DJ | 수용기준(GWT) | Spec | Bolt | 시나리오ID(`AC-{DOM}-{SEQ}`) + Given/When/Then + 카테고리(정상/경계값/예외) + 대응 EARS ID | `.md` (표) — 자동화 시 `.feature` |
+| DK | 세부 유스케이스 | Design | Bolt | `[상위UC명]` 접두사 + 버튼/메뉴 단위 액터 행위 분해 + 기본흐름 + 대안흐름 | `.md` (표) |
+| DL | 인터페이스 명세 | Spec | Bolt | OpenAPI 3.0: endpoint(method/path/auth), request/response, error_catalog | `.md` (yaml 블록) — Swagger 연동 시 `.yaml` |
+| DM | 시퀀스 | Design | Bolt | `[API]`/`[컨슈머]`/`[배치]` 태그 + PlantUML + 트랜잭션 경계(rect) + 이벤트 발행 타이밍 + 실패 분기(alt/opt) | `.md` (plantuml) |
+| DN | 화면 레이아웃 | Design | Bolt | 와이어프레임 + API 매핑표 + 상태별 UI + 채널별 경로(admin→tsx, mobile→Figma→tsx) | `.md` (+ Figma 링크) |
+| DO | ADR | Design | 발생 시 | 제목 + 상태 + Context + Decision + Alternatives + Consequences | `.md` (1건=1파일) |
+| DP | 클래스 설계 | Design | Bolt | 클래스 다이어그램(속성/메서드/관계) + 책임 분배 + 패키지 구조 | `.md` (plantuml class) |
+| DQ | 프로그램 목록 | Design | Domain | PGM-ID(유형별) + 유형(화면/API/컨슈머/배치) + 프로그램명 + 채널 + 세부UC참조 + 시퀀스참조 + endpoint/트리거 + 상태전이 | `.md` (표) |
 
 ---
 
@@ -154,16 +154,16 @@
 
 | ID | 컨벤션명 | 범주 | 수립 데드라인 | 필수 항목 (표준양식) | 파일 형식 |
 |---|---|---|---|---|---|
-| C-8 | 보안 컨벤션 | 보안 | S0 착수 중 (→ ②NFR) | 인증/인가 체계, 데이터 암호화, PII 마스킹, 세션 정책 | `.md` |
-| C-9 | 용어 컨벤션 | 업무 | S1 시작 전 (→ ③도메인정의서) | 한/영 매핑표, 약어 목록, 동의어 금지 목록 | `.md` (표) |
-| C-1 | 아키텍처 컨벤션 | 기술 | S2 시작 전 (→ ④컴포넌트, ⑨ERD) | 기술스택, 레이어 구조, 도메인 경계, 외부 연동 방식, 금지 패턴 | `.md` |
-| C-5 | 데이터 모델링 컨벤션 | 기술 | S2 ERD 전 (→ ⑨ERD, ⑩상태머신) | 네이밍(접두사), PK 전략(ULID), 인덱스 규칙, Soft Delete 정책 | `.md` |
-| C-6 | 이벤트 설계 컨벤션 | 기술 | S2 이벤트플로우 전 (→ ⑫이벤트플로우) | 이벤트명 컨벤션, payload 스키마, 멱등성, 재시도 정책 | `.md` |
-| C-4 | API 설계 컨벤션 | 기술 | S3 인터페이스명세 전 (→ ⑮인터페이스명세) | URL Path 체계, 응답 포맷, 에러 코드 체계, 버저닝 | `.md` |
-| C-3 | 디자인 시스템 | UX | S3 화면레이아웃 전 (→ ⑰화면레이아웃) | Foundation, Component, Pattern, Layout, Template | `.md` |
-| C-10 | UX Writing 컨벤션 | UX | S3 화면레이아웃 전 (→ ⑰화면레이아웃) | 에러 메시지, 버튼 레이블, 알림 문구, 톤앤매너 | `.md` |
-| C-2 | 코딩 컨벤션 | 기술 | S3 클래스설계 전 (→ ⑲클래스설계) | 네이밍, 패키지구조, 예외처리, 트랜잭션, 레이어 규칙 | `.md` |
-| C-7 | 테스트 컨벤션 | 품질 | S4 구현 시작 전 (→ 단위테스트) | 단위/통합/E2E 범위, 커버리지 기준, 테스트 데이터 정책 | `.md` |
+| C8 | 보안 컨벤션 | 보안 | S0 착수 중 (→ D8 NFR) | 인증/인가 체계, 데이터 암호화, PII 마스킹, 세션 정책 | `.md` |
+| C9 | 용어 컨벤션 | 업무 | S1 시작 전 (→ DB 도메인정의서) | 한/영 매핑표, 약어 목록, 동의어 금지 목록 | `.md` (표) |
+| C1 | 아키텍처 컨벤션 | 기술 | S2 시작 전 (→ D9 컴포넌트, DF ERD) | 기술스택, 레이어 구조, 도메인 경계, 외부 연동 방식, 금지 패턴 | `.md` |
+| C5 | 데이터 모델링 컨벤션 | 기술 | S2 ERD 전 (→ DF ERD, DG 상태머신) | 네이밍(접두사), PK 전략(ULID), 인덱스 규칙, Soft Delete 정책 | `.md` |
+| C6 | 이벤트 설계 컨벤션 | 기술 | S2 이벤트플로우 전 (→ DI 이벤트플로우) | 이벤트명 컨벤션, payload 스키마, 멱등성, 재시도 정책 | `.md` |
+| C4 | API 설계 컨벤션 | 기술 | S3 인터페이스명세 전 (→ DL 인터페이스명세) | URL Path 체계, 응답 포맷, 에러 코드 체계, 버저닝 | `.md` |
+| C3 | 디자인 시스템 | UX | S3 화면레이아웃 전 (→ DN 화면레이아웃) | Foundation, Component, Pattern, Layout, Template | `.md` |
+| CA | UX Writing 컨벤션 | UX | S3 화면레이아웃 전 (→ DN 화면레이아웃) | 에러 메시지, 버튼 레이블, 알림 문구, 톤앤매너 | `.md` |
+| C2 | 코딩 컨벤션 | 기술 | S3 클래스설계 전 (→ DP 클래스설계) | 네이밍, 패키지구조, 예외처리, 트랜잭션, 레이어 규칙 | `.md` |
+| C7 | 테스트 컨벤션 | 품질 | S4 구현 시작 전 (→ 단위테스트) | 단위/통합/E2E 범위, 커버리지 기준, 테스트 데이터 정책 | `.md` |
 
 ---
 
@@ -219,3 +219,9 @@ Project 직속, 도메인 무관)와 Domain Bolt(업무화면, 도메인 소속)
 Scope 4단계는 변경 없음. 컴포넌트 산출물에서 Platform Bolt를 식별하고, 의존성맵·WBS에서
 "Platform Bolt → Domain Bolt" 선후행을 Phase 0으로 배치하는 규칙 신규. 상위 유스케이스 Scope에
 "Platform Bolt는 Project 직속" 예외 명시.
+
+v1.1 (2026-08-21): §1~§4 표에 **ID 열 신설** — 착수~상세설계 26개 산출물(실제 파일 존재분)에
+2문자 코드 **D1~DQ** 부여(9까지는 숫자, 10부터 A~Z). §8 컨벤션 산출물 ID도 **C-1~C-10** →
+**C1~CA**로 정리. Tasks(§3) 및 구현·테스트·안정화(§5~§7)는 아직 실제 산출물이 없어 ID 미부여 —
+실제로 생성되는 시점에 이어지는 코드(DR~)를 배정한다. 이 과정에서 곳곳의 순환번호(①~⑳) 표기가
+실제 산출물명과 어긋나 있던 기존 오류(예: "④컴포넌트"가 실제로는 D9)도 함께 정정했다.

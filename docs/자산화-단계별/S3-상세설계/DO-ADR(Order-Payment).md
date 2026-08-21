@@ -230,8 +230,8 @@ ORDER_CANCELLED, CLAIM_COMPLETED 등 도메인 간 이벤트를 전달할 때,
 | 항목 | 출처 |
 |---|---|
 | ADR 형식 | Michael Nygard, "Documenting Architecture Decisions" |
-| 재고 선점 | 이벤트 플로우(⑫) §동기 vs 비동기 판단 |
-| 2계층 주문 구조 | ERD(⑨) ord_platform_order → ord_order |
-| PG 재시도 | EARS(⑧) REQ-PAY-003, REQ-PAY-005 |
-| 카드 미저장 | EARS(⑧) REQ-PAY-017, NFR-SE-08 |
-| Outbox 패턴 | 이벤트 플로우(⑫) §이벤트 운영 규칙 |
+| 재고 선점 | 이벤트 플로우(DI) §동기 vs 비동기 판단 |
+| 2계층 주문 구조 | ERD(DF) ord_platform_order → ord_order |
+| PG 재시도 | EARS(DE) REQ-PAY-003, REQ-PAY-005 |
+| 카드 미저장 | EARS(DE) REQ-PAY-017, NFR-SE-08 |
+| Outbox 패턴 | 이벤트 플로우(DI) §이벤트 운영 규칙 |

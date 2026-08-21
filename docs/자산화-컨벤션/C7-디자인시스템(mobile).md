@@ -3,7 +3,7 @@
 > **스타일링**: Tailwind CSS
 > **레이아웃**: Header + Content + BottomNav (App Router)
 > **뷰포트**: max-width 360px, 모바일 전용
-> **수립 데드라인**: S3 화면레이아웃 작성 전 | **참고 대상**: ⑰ 화면레이아웃, tsx 구현
+> **수립 데드라인**: S3 화면레이아웃 작성 전 | **참고 대상**: DN 화면레이아웃, tsx 구현
 
 ---
 

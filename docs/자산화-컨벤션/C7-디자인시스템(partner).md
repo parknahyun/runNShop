@@ -3,7 +3,7 @@
 > **스타일링**: 순수 CSS 클래스 (globals.css), BEM 네이밍 (Admin과 동일 구조, 테마 색상 변경)
 > **레이아웃**: NavBar + TabBar + TabContent (MDI 패턴)
 > **뷰포트**: 데스크톱 전용 (반응형 미적용)
-> **수립 데드라인**: S3 화면레이아웃 작성 전 | **참고 대상**: ⑰ 화면레이아웃, tsx 구현
+> **수립 데드라인**: S3 화면레이아웃 작성 전 | **참고 대상**: DN 화면레이아웃, tsx 구현
 
 ---
 
@@ -120,6 +120,6 @@ Admin과 동일한 MDI 구조:
 |---|---|
 | BEM 클래스 | `apps/runNshop-partner/src/app/globals.css` |
 | NavBar 색상 | globals.css `.navbar { background: #7c2d12 }` |
-| 배경색 구분 | 화면레이아웃(⑰) §14 배송관리 "배경색상으로 구분(흰/연노랑/연파랑)" |
+| 배경색 구분 | 화면레이아웃(DN) §14 배송관리 "배경색상으로 구분(흰/연노랑/연파랑)" |
 | 스타일링 규칙 | `.kiro/steering/coding-standards.md` — "순수 CSS 클래스 (globals.css, 틸 테마)" |
 | Admin 참조 | C3-디자인시스템(admin).md — 공통 구조 |

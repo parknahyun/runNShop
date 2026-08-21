@@ -4,8 +4,8 @@
 > **문서범위**: Domain
 > **문서종류**: Design
 >
-> **작성 목적**: EARS(⑧)에서 도출된 엔티티·속성·관계를 테이블 설계로 구체화한다.
-> **흐름 내 위치**: ⑧ EARS → **⑨ 도메인 모델(ERD)** → ⑩ 상태머신
+> **작성 목적**: EARS(DE)에서 도출된 엔티티·속성·관계를 테이블 설계로 구체화한다.
+> **흐름 내 위치**: DE EARS → **DF 도메인 모델(ERD)** → DG 상태머신
 > **작성 주체**: 시니어 개발자 + AI 협업 (DBA/아키텍트 검토)
 
 | 항목 | 내용 |
@@ -253,9 +253,9 @@ Table pay_card_fail_counter {
 
 | 항목 | 출처 |
 |---|---|
-| 엔티티 도출 | `08-EARS기능요구(Payment).md` 주어/목적어 명사 추출 |
-| 테이블 접두사 `pay_` | `05-도메인정의서.md` 스키마 그룹핑 (rns_trade) |
-| PCI DSS (카드 미저장) | `02-NFR.md` NFR-SE-08, REQ-PAY-017 |
+| 엔티티 도출 | `DE-EARS기능요구(Payment).md` 주어/목적어 명사 추출 |
+| 테이블 접두사 `pay_` | `DB-도메인정의서.md` 스키마 그룹핑 (rns_trade) |
+| PCI DSS (카드 미저장) | `D8-NFR.md` NFR-SE-08, REQ-PAY-017 |
 | 카드 3회 제한 | REQ-PAY-018 |
 | 재시도 3회 | REQ-PAY-003 |
 | 멱등 판별 (pg_transaction_id) | REQ-PAY-006 |

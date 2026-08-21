@@ -4,12 +4,12 @@
 > **문서범위**: Bolt (Order + Payment)  
 > **문서종류**: Spec  
 >
-> **작성 목적**: GWT(⑬)의 예외를 에러코드로, 세부UC(⑭)의 행위를 endpoint로 변환하여  
+> **작성 목적**: GWT(DJ)의 예외를 에러코드로, 세부UC(DK)의 행위를 endpoint로 변환하여  
 > API 계약(요청·응답·에러)을 확정한다. Frontend와 Backend 간의 명시적 계약 문서.
 >
 > **흐름 내 위치**:
 > ```
-> ⑬ GWT + ⑭ 세부UC → ⑮ 인터페이스 명세 → ⑯ 시퀀스
+> DJ GWT + DK 세부UC → DL 인터페이스 명세 → DM 시퀀스
 > ```
 
 ---
@@ -705,7 +705,7 @@
 { "code": "SUCCESS", "data": { "claimId": "clm-001", "status": "RECEIVED" } }
 ```
 
-> 클레임 11상태 모델(⑩)에는 별도의 `IN_PROGRESS` 상태가 없다. "처리 시작"은 CS가 클레임 상세를 열어 확인 중임을 표시하는 UI 동작일 뿐, 클레임 상태는 `RECEIVED`로 유지되며 이후 귀책 판정(§19-1 `blame-decision`)에서 `PAYMENT_PENDING`/`INSPECTING`으로 분기한다.
+> 클레임 11상태 모델(DG)에는 별도의 `IN_PROGRESS` 상태가 없다. "처리 시작"은 CS가 클레임 상세를 열어 확인 중임을 표시하는 UI 동작일 뿐, 클레임 상태는 `RECEIVED`로 유지되며 이후 귀책 판정(§19-1 `blame-decision`)에서 `PAYMENT_PENDING`/`INSPECTING`으로 분기한다.
 
 ---
 
@@ -1690,7 +1690,7 @@
 
 | HTTP | code | message | 조건 | 대응 |
 |---|---|---|---|---|
-| 400 | RESHIP_NOT_ALLOWED | FAILED 상태만 재발송 가능합니다 | shipment.status ≠ FAILED | 시퀀스(⑯) §22 |
+| 400 | RESHIP_NOT_ALLOWED | FAILED 상태만 재발송 가능합니다 | shipment.status ≠ FAILED | 시퀀스(DM) §22 |
 | 400 | TRACKING_NO_REQUIRED | 운송장번호를 입력해주세요 | 번호 누락 | — |
 | 404 | SHIPMENT_NOT_FOUND | 배송 건을 찾을 수 없습니다 | 존재하지 않는 shipmentId | — |
 
@@ -1700,8 +1700,8 @@
 
 | 항목 | 출처 |
 |---|---|
-| Endpoint 도출 | 세부 유스케이스(⑭) API 호출 행위 |
-| 에러코드 도출 | GWT(⑬) 예외 시나리오 Then절 |
-| Path Prefix | 컴포넌트(③) 인증 규칙: v1(고객), admin/v1(관리자), partner/v1(입점사) |
+| Endpoint 도출 | 세부 유스케이스(DK) API 호출 행위 |
+| 에러코드 도출 | GWT(DJ) 예외 시나리오 Then절 |
+| Path Prefix | 컴포넌트(D9) 인증 규칙: v1(고객), admin/v1(관리자), partner/v1(입점사) |
 | 응답 구조 | 코딩 표준 `{ "code": "SUCCESS", "data": {...} }` |
-| 응답 필드 | 화면 레이아웃(⑰) + mock JSON 데이터 |
+| 응답 필드 | 화면 레이아웃(DN) + mock JSON 데이터 |
