@@ -59,6 +59,8 @@
 
 ## 3. [주문서 제출] 주문서 작성·제출 Bolt
 
+> v2 (2026-08-21 바텀업 재검증): Step7~8을 "결제 즉시 성공/실패 확인" 동기 모델에서 "재고선점까지만 동기 확인, PG승인 결과는 비동기 알림"으로 정정(16-시퀀스 §4/§4-1, REQ-ORD-012~014와 일치). CARD_RESTRICTED 대안흐름 추가.
+
 ### 기본 흐름
 
 | Step | 액터 | 행위 | 시스템 응답 | 비고 |
@@ -69,8 +71,9 @@
 | 4 | 고객 | 포인트 입력 | 사용 가능 범위 내 입력 → 금액 재계산 | |
 | 5 | 고객 | 결제수단 선택 | 신용카드/계좌이체 등 버튼 선택 | |
 | 6 | 고객 | 약관 동의 체크 | 필수 약관 전체 동의 시 결제 버튼 활성화 | |
-| 7 | 고객 | "결제하기" 버튼 클릭 | API: POST /api/v1/orders/{sheetId}/pay → PG 연동 | |
-| 8 | 시스템 | — | 결제 성공 → 주문완료 화면 이동 | |
+| 7 | 고객 | "결제하기" 버튼 클릭 | API: POST /api/v1/orders/{sheetId}/pay → 재고선점(동기) 성공 시 즉시 202 응답 | |
+| 8 | 시스템 | — | "주문 접수 완료" 화면으로 즉시 이동 (status=PAYMENT_PENDING, "결제 진행 중" 안내). PG 승인 성공/실패 결과는 이 응답에 없음 | |
+| 9 | 시스템(비동기) | — | PAYMENT_APPROVED 수신 시 주문상세가 PAYMENT_COMPLETED로 갱신 + 알림톡/이메일 발송 (16-시퀀스 §4-1/§16) | |
 
 ### 대안 흐름
 
@@ -78,7 +81,9 @@
 |---|---|---|
 | 필수 약관 미동의 | Step 7에서 버튼 비활성화 | 결제 불가 |
 | 배송지 미입력 | Step 7에서 검증 실패 | "배송지를 입력해주세요" 토스트 |
-| 결제 실패 | Step 8에서 실패 응답 | "결제에 실패했습니다" 토스트, 재시도 안내 |
+| 재고 부족 | Step 7에서 즉시 실패 응답(동기) | "재고가 부족합니다" 토스트, STOCK_FAILED |
+| 결제수단 카드가 당일 결제 제한 상태 | Step 7에서 즉시 실패 응답(동기) | "카드가 당일 결제 제한 상태입니다" 토스트, CARD_RESTRICTED(REQ-PAY-018) |
+| PG 승인 실패 (3회 재시도 소진, 비동기) | Step 9에서 PAYMENT_FAILED 수신 | 주문상세가 PAYMENT_FAILED로 갱신, "결제에 실패했습니다" 알림톡 발송, 재고 복원 |
 
 ---
 
@@ -118,10 +123,16 @@
 
 | Step | 액터 | 행위 | 시스템 응답 | 비고 |
 |---|---|---|---|---|
-| 1 | CS 담당자 | 주문상세 > CS·클레임 탭 진입 | 주문 정보 + CS 액션 버튼 표시 | |
+| 1 | CS 담당자 | 주문상세 > CS·클레임 탭 진입 | 주문 정보 + CS 액션 버튼 표시 | PREPARING 상태만 버튼 활성화 |
 | 2 | CS 담당자 | "예외 취소" 버튼 클릭 | 취소 확인 다이얼로그 | |
 | 3 | CS 담당자 | 확인 클릭 | API: POST /api/admin/v1/orders/{orderId}/force-cancel | |
 | 4 | 시스템 | — | 주문 취소 + 환불 요청 + 상태 갱신 | |
+
+### 대안 흐름
+
+| 조건 | Step 변경 | 결과 |
+|---|---|---|
+| 주문이 DELIVERED 이후 상태 (배송완료/구매확정) | Step 1에서 "예외 취소" 버튼 비활성화 | "배송 시작 후에는 취소할 수 없습니다. 반품 신청으로 처리해주세요" 안내 (상태머신⑩ 금지 전이: CS 예외취소는 PREPARING까지만 허용) |
 
 ---
 
@@ -133,11 +144,11 @@
 |---|---|---|---|---|
 | 1 | 판매자 | 주문 목록에서 PAYMENT_COMPLETED 주문 선택 | 주문상세 탭 오픈 | |
 | 2 | 판매자 | "출고 처리" 버튼 클릭 | API: POST /api/partner/v1/orders/{orderId}/ship | |
-| 3 | 시스템 | — | 주문 상태→PREPARING | |
+| 3 | 시스템 | — | 주문 상태→PREPARING (+ shipment(OUTBOUND) 생성) | |
 | 4 | 판매자 | 배송관리에서 해당 건 선택 | 배송정보 입력 모달 표시 | |
 | 5 | 판매자 | 택배사 선택 + 운송장번호 입력 | — | |
 | 6 | 판매자 | "배송정보 입력" 버튼 클릭 | API: POST /api/partner/v1/shipping/{orderId} | |
-| 7 | 시스템 | — | 주문 상태→IN_DELIVERY, 배송 추적 시작 | |
+| 7 | 시스템 | — | shipment(OUTBOUND) 상태→IN_TRANSIT (주문 상태는 PREPARING 유지), 배송 추적 시작 | |
 
 ### 대안 흐름
 
@@ -194,21 +205,24 @@
 | 조건 | Step 변경 | 결과 |
 |---|---|---|
 | 배송완료 후 10일 초과 | Step 1에서 버튼 비노출 | "기한이 초과되었습니다" 안내 |
+| VENDOR(판매자) 귀책 사유 선택 시 사진 미첨부 | Step 3에서 검증 실패 | "상품 상태를 확인할 수 있는 사진을 1장 이상 첨부해주세요" 안내, 신청 거부 (사진 최소 1장 첨부 필수, REQ-ORD-058) |
 
 ---
 
-## 11. [클레임 접수/반려] CS 클레임 접수 확인·반려 Bolt (admin)
+## 11. [클레임 접수/반려] CS 클레임 접수 확인·반려·귀책판정 Bolt (admin)
 
 > **역할 경계**: §11은 클레임 접수 단계(RECEIVED→REJECTED)만 담당.
 > 수거완료 후 환불/폐기/반송 판정은 §22에서 처리.
+> v2 (2026-08-21 바텀업 재검증): Step 3a에 "CS가 고객 자진신고와 다르게 판정할 수 있다"는 REQ-ORD-066을 명시하고, 실제 호출 API(blame-decision)를 표기. EXCHANGE 재고부족 거부(REQ-ORD-069) 대안흐름 추가.
 
 ### 기본 흐름
 
 | Step | 액터 | 행위 | 시스템 응답 | 비고 |
 |---|---|---|---|---|
-| 1 | CS 담당자 | 클레임 관리 목록에서 RECEIVED 건 선택 | 클레임상세 MDI 탭 오픈 | |
-| 2 | CS 담당자 | 접수 내용·사유·첨부사진 확인 | — | |
-| 3a | CS 담당자 | 정상 접수 확인 → 귀책 판정 | 고객 귀책: 상태→PAYMENT_PENDING (배송비 결제 요청) / 판매자 귀책: 상태→PICKUP (즉시 수거) | |
+| 1 | CS 담당자 | 클레임 관리 목록에서 RECEIVED 건 선택 | 클레임상세 MDI 탭 오픈 | 고객이 신청 시 자진신고한 `submitted_responsibility`가 참고값으로 표시됨 |
+| 2 | CS 담당자 | 접수 내용·사유·첨부사진(고객 업로드분) 확인 | — | |
+| 3a | CS 담당자 | 귀책 판정 확정 (고객 신고값과 무관하게 최종 결정, REQ-ORD-066) | API: POST /api/admin/v1/claims/{claimId}/blame-decision {responsibility} → 고객 귀책: 상태→PAYMENT_PENDING (배송비 결제 요청) / 판매자 귀책: 클레임 상태 유지, shipment(PICKUP) 자동 생성 (즉시 수거 시작, §21로 이어짐) | CS가 고객이 제출한 값(`submitted_responsibility`)과 다르게 확정해도 `responsibility` 컬럼만 갱신되고 원신고값은 보존됨 |
+| 3a-1 | 판매자 | (EXCHANGE + 판매자 귀책인 경우) 귀책판정 즉시 교환상품 선출고 운송장 등록 | API: POST /api/partner/v1/claims/{claimId}/exchange-ship (REQ-ORD-056, 맞교환 원칙) | 고객 귀책 건은 §20 Step 6에서 동일하게 트리거 |
 | 3b | CS 담당자 | "반려" 클릭 + 사유 입력 | API: POST /api/admin/v1/claims/{claimId}/reject | |
 | 4b | 시스템 | — | 클레임 상태→REJECTED, 고객 알림톡 | |
 
@@ -217,6 +231,9 @@
 | 조건 | Step 변경 | 결과 |
 |---|---|---|
 | 반려 시 사유 미입력 | Step 3b에서 거부 | "반려 사유를 입력해주세요" |
+| claimType=EXCHANGE (귀책 무관) | Step 3a 직후 3a-1(또는 §20 Step 6) 트리거 | 원상품 수취 전 교환상품 선출고 완료 — §12에서 "이미 선출고됨"으로 조회됨 |
+| claimType=EXCHANGE + 판매자 귀책 판정 시 exchangeSkuId 재고 없음 | Step 3a에서 판정 자체가 거부됨 | "교환 가능한 재고가 없습니다" 안내, 판정 보류(REQ-ORD-069) — 선출고 이전 단계에서 차단 |
+| RECEIVED로 접수 후 24시간 경과, Step 1~4 미처리 | 배치가 CS에게 리마인드 알림 발송(16-시퀀스 §18-1) | REQ-ORD-068 |
 
 ---
 
@@ -370,7 +387,7 @@
 | 3 | 고객 | 결제수단 선택 (쿠폰 미적용 시) | 기등록 결제수단 선택 | |
 | 4 | 고객 | [결제하기] 클릭 | PG SDK 호출 → 인증 | |
 | 5 | 시스템 | PG 결제 완료 콜백 | 팝업 닫힘 → 클레임 상세 화면에서 결제완료 상태 반영 | API: POST /api/v1/claims/{claimId}/shipping-payment |
-| 6 | 시스템 | — | 수거 프로세스 시작 + 알림톡 발송 | |
+| 6 | 시스템 | — | shipment(PICKUP) 자동 생성 (클레임 상태는 PAYMENT_PENDING 유지), 수거 프로세스 시작 + 알림톡 발송. **claimType=EXCHANGE면 이 시점에 판매자가 교환상품 선출고 운송장 등록**(§11 Step 3a-1과 동일 트리거, REQ-ORD-056) | |
 
 ### 대안 흐름
 
@@ -393,9 +410,9 @@
 | 1 | 판매자 | 배송관리에서 회수 건(수거대기) 선택 | 수거정보 입력 모달 표시 | 배송비 ⦿결제완료 확인 후 |
 | 2 | 판매자 | 택배사 + 운송장번호 입력 | — | |
 | 3 | 판매자 | [수거정보 입력] 클릭 | API: POST /api/partner/v1/shipping/{claimId}/pickup | |
-| 4 | 시스템 | — | 클레임 상태 → PICKUP (수거중) | |
+| 4 | 시스템 | — | shipment(PICKUP) 상태 → IN_TRANSIT (수거중) | |
 | 5 | 판매자 | 상품 도착 후 [입고 확인 → 품질점검 시작] 클릭 | API: POST /api/partner/v1/claims/{claimId}/pickup-confirm | |
-| 6 | 시스템 | — | 클레임 상태 → INSPECTING (품질점검) | |
+| 6 | 시스템 | — | 클레임 상태 → INSPECTING (품질점검), shipment(PICKUP) 상태 → DELIVERED (동시 전환) | |
 | 7 | 판매자 | 품질 확인 후 [합격] 또는 [거부] 클릭 | API: POST /api/partner/v1/claims/{claimId}/inspect-pass 또는 /inspect-reject | 판정 기준: **RETURN 유형**은 상품 상태(훼손 여부), **EXCHANGE 유형**은 택(TAG) 유지 여부 |
 | 8a | 시스템 (합격) | — | 클레임 상태 → PICKED_UP (수거완료) → 어드민 환불 처리 대기 | |
 | 8b | 시스템 (거부) | — | 클레임 상태 → PICKUP_REJECTED (수거거부) + 사유 기록 → 어드민 판정 대기 | |
@@ -431,9 +448,9 @@
 | 2a | CS 담당자 | [폐기 처리] 클릭 | API: POST /api/admin/v1/claims/{claimId}/dispose | 상품 반송 불가 판단 시 |
 | 2b | CS 담당자 | [반송 배송비 추가결제 요청] 클릭 | API: POST /api/admin/v1/claims/{claimId}/request-return-payment | 고객에게 결제 알림톡 발송 |
 | 3b | 고객 | 알림톡 수신 → 클레임상세에서 반송 배송비 결제 | §20 배송비 결제 Bolt (paymentType=RETURN) | |
-| 4b | 판매자 | 반송 운송장 등록 | API: POST /api/partner/v1/claims/{claimId}/return-ship | 상태 → RETURN_SHIPPING |
-| 5b | 시스템 | 반송 배송완료 확인 (택배사 API) | 상태 → RETURN_DELIVERED | |
-| 6b | 시스템 | 배치 자동전환 | 상태 → COMPLETED | 고객 알림톡 발송 |
+| 4b | 판매자 | 반송 운송장 등록 | API: POST /api/partner/v1/claims/{claimId}/return-ship | shipment(RETURN) 생성, 상태 → IN_TRANSIT (클레임 상태는 RETURN_PAYMENT_PENDING 유지) |
+| 5b | 시스템 | 반송 배송완료 확인 (택배사 API) | shipment(RETURN) 상태 → DELIVERED | |
+| 6b | 시스템 | 배치 자동전환 | 배치가 클레임 상태를 COMPLETED로 자동 전환 | 고객 알림톡 발송 |
 
 ---
 
@@ -453,6 +470,48 @@
 | 조건 | Step 변경 | 결과 |
 |---|---|---|
 | 선택한 옵션 품절 | Step 2에서 선택 불가 | 해당 옵션 [×] 표시 |
+
+---
+
+## 24. [반품/교환 신청] 고객 클레임 자진 취소 Bolt (mobile — 신규)
+
+> 신규 (2026-08-21 바텀업 재검증): REQ-ORD-073/071 대응. RECEIVED/PAYMENT_PENDING 상태에서만 가능, 귀책판정(INSPECTING 진입) 이후는 불가.
+
+### 기본 흐름
+
+| Step | 액터 | 행위 | 시스템 응답 | 비고 |
+|---|---|---|---|---|
+| 1 | 고객 | 내 클레임 상세에서 "취소" 버튼 클릭 | 취소 확인 다이얼로그 | RECEIVED/PAYMENT_PENDING 상태만 버튼 노출 |
+| 2 | 고객 | 확인 클릭 | API: POST /api/v1/claims/{claimId}/cancel | |
+| 3 | 시스템 | — | 클레임 상태→REJECTED(사유="고객 자진 철회"), 취소완료 알림톡 | |
+
+### 대안 흐름
+
+| 조건 | Step 변경 | 결과 |
+|---|---|---|
+| 클레임이 INSPECTING 이후 상태 | Step 1에서 "취소" 버튼 비노출 | "귀책 판정/수거 시작 이후에는 취소할 수 없습니다" 안내(REQ-ORD-071) |
+
+---
+
+## 25. [배송실패 재발송] 판매자·CS 배송 재발송 처리 Bolt (partner/admin — 신규)
+
+> 신규 (2026-08-21 바텀업 재검증): REQ-ORD-062 대응. shipment_type 공통(OUTBOUND/PICKUP/RETURN/EXCHANGE_OUT).
+
+### 기본 흐름
+
+| Step | 액터 | 행위 | 시스템 응답 | 비고 |
+|---|---|---|---|---|
+| 1 | 판매자 또는 CS 담당자 | 배송관리에서 FAILED 상태 건 선택 | 재발송 처리 모달 표시 | 배송실패 뱃지 노출 건만 (16-시퀀스 §19 배치가 FAILED로 전환) |
+| 2 | 판매자/CS | 택배사 + 새 운송장번호 입력 | — | |
+| 3 | 판매자/CS | [재발송 처리] 클릭 | API: POST /api/partner/v1/shipping/{shipmentId}/reship | 인증: Partner 또는 Admin Bearer |
+| 4 | 시스템 | — | shipment 상태 FAILED→PENDING→IN_TRANSIT, 추적 재시작 | 이후 16-시퀀스 §19 배치가 다시 추적 |
+
+### 대안 흐름
+
+| 조건 | Step 변경 | 결과 |
+|---|---|---|
+| shipment 상태가 FAILED가 아님 | Step 3에서 거부 | "FAILED 상태만 재발송 가능합니다" (RESHIP_NOT_ALLOWED) |
+| 운송장번호 미입력 | Step 3에서 검증 실패 | "운송장번호를 입력해주세요" |
 
 ---
 

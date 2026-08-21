@@ -204,39 +204,89 @@ OS -> OR : save(platformOrder + orders)
 OR -> DB : INSERT ord_platform_order, ord_order, ord_order_item
 DB --> OR : OK
 
-== 재고 선점 ==
+== 주문 접수 (동기) ==
+OS -> OR : updateStatus(ORDER_RECEIVED)
+OR -> DB : UPDATE status
+
+== 재고 선점 (동기) ==
 OS -> CAT : reserveStock(items)
 activate CAT
 alt 재고 부족
   CAT --> OS : STOCK_NOT_AVAILABLE
-  OS -> OR : updateStatus(CANCELLED)
+  OS -> OR : updateStatus(STOCK_FAILED)
   OS --> OC : 400 에러
-else
+  OC --> Client : 400 STOCK_NOT_AVAILABLE
+else 재고 선점 성공
   CAT --> OS : 선점 성공
   deactivate CAT
-end
+  OS -> OR : updateStatus(PAYMENT_PENDING)
 
-== 결제 요청 (동기) ==
-OS -> PAY : requestPayment(orderId, amount, method)
-activate PAY
-PAY -> PAY : PG 승인 요청\n(재시도 최대 3회, 타임아웃 30초)
-alt PG 승인 성공
-  PAY --> OS : PAYMENT_APPROVED
-  OS -> OR : updateStatus(PAYMENT_COMPLETED)
-  OR -> DB : UPDATE status
-  OS --> OC : 성공 응답
-  OC --> Client : 200 SUCCESS
-else PG 실패 (3회 재시도 소진)
-  PAY --> OS : PAYMENT_FAILED
-  OS -> CAT : restoreStock(items)
-  OS -> OR : updateStatus(PAYMENT_FAILED)
-  OS --> OC : PAYMENT_FAILED
-  OC --> Client : 400 에러
+  == 결제 요청 접수 (동기 — PG 승인은 비동기) ==
+  OS -> PAY : requestPayment(orderId, amount, method, cardHash)
+  activate PAY
+  PAY -> PAY : checkCardRestriction(cardHash)\n(REQ-PAY-018, pay_card_restriction 조회)
+  alt 카드 당일 차단 상태
+    PAY --> OS : CARD_RESTRICTED
+    OS --> OC : CARD_RESTRICTED
+    OC --> Client : 400 에러\n"카드가 당일 결제 제한 상태입니다"
+  else 정상
+    PAY -> PAY : PG 승인 요청 큐 등록\n(재시도 최대 3회, 타임아웃 30초 — Payment 내부 비동기 처리)
+    PAY --> OS : 접수됨 (paymentId)
+    deactivate PAY
+    OS --> OC : 202 접수 (status=PAYMENT_PENDING)
+    OC --> Client : 200 SUCCESS\n"결제 진행 중" 화면 즉시 이동
+  end
 end
-deactivate PAY
 deactivate OS
 deactivate OC
 
+note right of PAY
+  PG 승인 성공/실패 결과는 이 응답에 포함되지 않는다.
+  Payment가 비동기로 PAYMENT_APPROVED/PAYMENT_FAILED
+  이벤트를 발행하면 §16에서 소비해 최종 상태를 확정한다.
+  PG 콜백 처리 자체는 §4-1 참조.
+end note
+
+@enduml
+```
+
+---
+
+## 4-1. [컨슈머] Payment 내부 — PG 콜백 처리 (비동기, 카드 실패 카운터 포함)
+
+> 신규 (2026-08-21 바텀업 재검증): §4에서 "Payment 내부 비동기 처리"로 블랙박스 처리했던 부분을 구체화. REQ-PAY-023(카드 연속실패 카운터)이 여기서 실제로 호출된다.
+
+- **트리거**: PG사 콜백(승인/실패 웹훅) 또는 Payment 자체 재시도 루프 종료
+- **상태전이**: Payment `PENDING` → `PAID`(승인) / 재시도 소진 시 그대로 유지하며 `PAYMENT_FAILED` 이벤트만 발행(REQ-PAY-004). `pay_card_fail_counter` 증가(실패) 또는 0 리셋(성공)
+
+```plantuml
+@startuml
+title [컨슈머] Payment 내부 — PG 콜백 처리 (카드 실패 카운터 포함)
+
+participant "PgWebhookListener" as Webhook
+participant "PaymentService" as PaySvc
+participant "PaymentRepository" as PayRepo
+participant "CardFailCounterRepository" as CFC
+participant "EventPublisher" as Event
+
+Webhook -> PaySvc : handlePgCallback(paymentId, result)
+activate PaySvc
+
+alt PG 승인 성공
+    PaySvc -> PayRepo : updateStatus(PAID)
+    PaySvc -> CFC : resetFailCount(cardHash)\n(REQ-PAY-023 — 성공 시 카운터 0으로 초기화)
+    PaySvc -> Event : publish(PAYMENT_APPROVED)
+else PG 승인 실패 (재시도 3회 소진, REQ-PAY-004)
+    PaySvc -> CFC : incrementFailCount(cardHash)
+    CFC --> PaySvc : consecutiveFailCount
+    alt consecutiveFailCount >= 3
+        PaySvc -> PayRepo : createCardRestriction(cardHash, today)\n(REQ-PAY-018, pay_card_restriction 생성)
+        PaySvc -> CFC : resetFailCount(cardHash)\n(제한 레코드 생성 후 카운터 초기화)
+    end
+    PaySvc -> Event : publish(PAYMENT_FAILED)
+end
+
+deactivate PaySvc
 @enduml
 ```
 
@@ -356,7 +406,7 @@ participant "ClaimRepository" as CR
 participant "EventPublisher" as EP
 database "DB (ord_*)" as DB
 
-Client -> CC : POST /api/v1/orders/{orderId}/claims\n{claimType, reason, detailReason}
+Client -> CC : POST /api/v1/orders/{orderId}/claims\n{claimType, reason, detailReason, responsibility, images[], exchangeSkuId?}
 activate CC
 
 CC -> CS : createClaim(memberId, orderId, request)
@@ -374,9 +424,18 @@ alt 주문 상태 != DELIVERED
 else 배송완료 후 10일 초과
   CS --> CC : CLAIM_PERIOD_EXPIRED
   CC --> Client : 400 에러
+else responsibility=VENDOR 인데 images가 빈 배열
+  CS --> CC : CLAIM_PHOTO_REQUIRED (REQ-ORD-058)
+  CC --> Client : 400 에러
+else claimType=EXCHANGE 인데 exchangeSkuId의 productId가 원 주문 상품과 다름
+  CS --> CC : EXCHANGE_SKU_MISMATCH (REQ-ORD-070)
+  CC --> Client : 400 에러
 else 정상
-  CS -> CR : save(newClaim{status=RECEIVED})
+  CS -> CR : save(newClaim{status=RECEIVED, submitted_responsibility=request.responsibility})
   CR -> DB : INSERT ord_claim
+  note right of CR: submitted_responsibility는 고객 자진신고값으로 보존(REQ-ORD-076)\nCS 귀책판정(§7-1)의 최종 responsibility와 별도 컬럼
+  CS -> CR : saveImages(claimId, images, uploadedBy=CUSTOMER)
+  CR -> DB : INSERT ord_claim_image (uploaded_by=CUSTOMER, 최대 3장, REQ-ORD-075)
   DB --> CR : OK
 
   CS -> EP : publish(CLAIM_RECEIVED)
@@ -385,6 +444,115 @@ else 정상
   CS --> CC : ClaimResponse(claimId, status)
   deactivate CS
   CC --> Client : 201 CREATED
+  deactivate CC
+end
+
+@enduml
+```
+
+---
+
+## 7-1. [API] POST /api/admin/v1/claims/{claimId}/blame-decision — 귀책 판정
+
+> 신규 (2026-08-21 바텀업 재검증): 인터페이스명세(⑮) §19-1에는 있었지만 시퀀스가 없던 것을 보완. CUSTOMER/VENDOR 분기와 EXCHANGE 재고선점 실패(REQ-ORD-069)까지 포함한 전체 분기를 다룬다.
+
+- **트리거**: CS 담당자가 클레임 접수 내용을 확인하고 귀책을 확정
+- **상태전이**: Claim `RECEIVED` → `PAYMENT_PENDING`(CUSTOMER) / `RECEIVED` 유지 + shipment(PICKUP) 생성 → 이후 §12/§14 경유 `INSPECTING`(VENDOR)
+
+```plantuml
+@startuml
+skinparam backgroundColor transparent
+skinparam defaultFontSize 11
+title POST /api/admin/v1/claims/{claimId}/blame-decision — 귀책 판정
+
+actor "CS 담당자" as Admin
+participant "AdminClaimController" as ACC
+participant "ClaimService" as CS
+participant "ClaimRepository" as CR
+participant "CatalogPublicApi" as CAT
+participant "ShipmentService" as Ship
+participant "EventPublisher" as EP
+
+Admin -> ACC : POST /api/admin/v1/claims/{claimId}/blame-decision\n{responsibility}
+activate ACC
+
+ACC -> CS : decideResponsibility(adminId, claimId, responsibility)
+activate CS
+
+CS -> CR : findById(claimId)
+CR --> CS : claim(submitted_responsibility, claimType)
+
+alt responsibility == CUSTOMER
+  CS -> CR : updateResponsibility(responsibility)\nupdateStatus(PAYMENT_PENDING)
+  note right of CR: submitted_responsibility는 그대로 유지(불변, REQ-ORD-076)\nresponsibility만 CS 확정값으로 갱신 — 고객 신고와 달라도 됨(REQ-ORD-066)
+  CS -> EP : publish(CLAIM_SHIPPING_PAID 대기 알림)
+else responsibility == VENDOR
+  alt claimType == EXCHANGE
+    CS -> CAT : reserveStock(exchangeSkuId)
+    alt 재고 없음
+      CAT --> CS : StockInsufficientException
+      CS --> ACC : EXCHANGE_STOCK_UNAVAILABLE (REQ-ORD-069)
+      ACC --> Admin : 409 에러\n"교환 가능한 재고가 없습니다"
+    else 재고 확보
+      CAT --> CS : success
+      CS -> Ship : createShipment(refType=CLAIM, shipmentType=EXCHANGE_OUT)
+      CS -> Ship : createShipment(refType=CLAIM, shipmentType=PICKUP)
+      CS -> CR : updateResponsibility(responsibility)
+      CS -> EP : publish(CLAIM_EXCHANGE_SHIPPED)
+    end
+  else claimType == RETURN/CANCEL
+    CS -> Ship : createShipment(refType=CLAIM, shipmentType=PICKUP)
+    CS -> CR : updateResponsibility(responsibility)
+  end
+end
+
+CS --> ACC : ClaimResponse(responsibility, status)
+deactivate CS
+ACC --> Admin : 200 SUCCESS
+deactivate ACC
+
+@enduml
+```
+
+---
+
+## 7-2. [API] POST /api/v1/claims/{claimId}/cancel — 고객 클레임 자진 취소
+
+> 신규 (2026-08-21 바텀업 재검증): REQ-ORD-073/071 대응. RECEIVED/PAYMENT_PENDING 상태까지만 허용, INSPECTING 이후는 거부.
+
+- **트리거**: 고객이 마이페이지 클레임상세에서 취소 요청
+- **상태전이**: Claim `RECEIVED`/`PAYMENT_PENDING` → `REJECTED`(사유="고객 자진 철회")
+
+```plantuml
+@startuml
+skinparam backgroundColor transparent
+skinparam defaultFontSize 11
+title POST /api/v1/claims/{claimId}/cancel — 고객 클레임 자진 취소
+
+actor 고객 as Client
+participant "ClaimController" as CC
+participant "ClaimService" as CS
+participant "ClaimRepository" as CR
+participant "NotificationPublicApi" as Noti
+
+Client -> CC : POST /api/v1/claims/{claimId}/cancel
+activate CC
+
+CC -> CS : cancelClaim(memberId, claimId)
+activate CS
+
+CS -> CR : findById(claimId)
+CR --> CS : claim(status)
+
+alt status NOT IN [RECEIVED, PAYMENT_PENDING]
+  CS --> CC : CLAIM_CANCEL_NOT_ALLOWED (REQ-ORD-071)
+  CC --> Client : 400 에러\n"귀책 판정/수거 시작 이후에는 취소할 수 없습니다"
+else 정상
+  CS -> CR : updateStatus(REJECTED, reason="고객 자진 철회")
+  CS -> Noti : sendKakaoAlimtalk("클레임 취소 완료")
+  CS --> CC : ClaimResponse(status=REJECTED)
+  deactivate CS
+  CC --> Client : 200 SUCCESS
   deactivate CC
 end
 
@@ -405,6 +573,7 @@ actor 판매자 as Partner
 participant "PartnerOrderController" as POC
 participant "ShippingService" as SS
 participant "OrderRepository" as OR
+participant "ShipmentRepository" as SR
 database "DB (ord_*)" as DB
 
 Partner -> POC : POST /api/partner/v1/orders/{orderId}/ship
@@ -425,6 +594,11 @@ else
   SS -> OR : updateStatus(PREPARING)
   OR -> DB : UPDATE + INSERT ord_order_history
   DB --> OR : OK
+
+  SS -> SR : save(shipment{refType=ORDER, refId=orderId, type=OUTBOUND, status=PENDING})
+  SR -> DB : INSERT ord_shipment
+  DB --> SR : OK
+  note right of SR: 배송 실행(운송장 등록·이동·완료)은\nord_shipment(v6, §3)가 전담.\n운송장 등록은 §9에서 PENDING→IN_TRANSIT 전이
 
   SS --> POC : ShipResponse(status=PREPARING)
   deactivate SS
@@ -448,8 +622,7 @@ title POST /api/partner/v1/shipping/{orderId} — 운송장 등록
 actor 판매자 as Partner
 participant "ShippingController" as SC
 participant "ShippingService" as SS
-participant "OrderRepository" as OR
-participant "ShippingRepository" as SR
+participant "ShipmentRepository" as SR
 participant "EventPublisher" as EP
 database "DB (ord_*)" as DB
 
@@ -463,18 +636,15 @@ alt 운송장번호 누락
   SS --> SC : TRACKING_NO_REQUIRED
   SC --> Partner : 400 에러
 else
-  SS -> SR : save(shipping{carrier, trackingNumber, shippedAt})
-  SR -> DB : INSERT/UPDATE ord_shipping
+  SS -> SR : updateStatus(refType=ORDER, refId=orderId, type=OUTBOUND,\nstatus=IN_TRANSIT, carrier, trackingNumber, shippedAt)
+  SR -> DB : UPDATE ord_shipment (PENDING → IN_TRANSIT)
   DB --> SR : OK
-
-  SS -> OR : updateStatus(IN_DELIVERY)
-  OR -> DB : UPDATE + INSERT ord_order_history
-  DB --> OR : OK
+  note right of SR: 주문 자체(ord_order.status)는 변경 없음 — PREPARING 유지.\n"배송 중" 표시는 PREPARING + shipment(OUTBOUND).status=IN_TRANSIT\n조인으로 화면에서 계산(상태머신⑩ v6 참조). 배송완료 파생 전환은 §19 배치 참조.
 
   SS -> EP : publish(SHIPPING_STARTED)
   note right of EP: Notification* → 고객 알림톡\n("상품 발송, 송장번호")
 
-  SS --> SC : TrackingResponse(status=IN_DELIVERY, shippedAt)
+  SS --> SC : TrackingResponse(shipmentStatus=IN_TRANSIT, shippedAt)
   deactivate SS
   SC --> Partner : 200 SUCCESS
   deactivate SC
@@ -489,7 +659,7 @@ end
 
 - **트리거**: 스케줄러 (매 시간 정각)
 - **상태전이**: Claim `REFUNDED` → `COMPLETED`, Claim `DISPOSED` → `COMPLETED` (배치 자동 전환)
-- **비고**: 14상태 모델(⑩)에는 어드민이 직접 호출하는 "클레임 완료" API가 없다. `PICKED_UP → REFUNDED`는 §13(환불 처리), `PICKUP_REJECTED → DISPOSED`는 §20(폐기 처리)에서 각각 어드민이 수행하고, `REFUNDED`/`DISPOSED`에 도달한 클레임은 본 배치가 주기적으로 스캔해 `COMPLETED`로 자동 전환한다. `RETURN_DELIVERED → COMPLETED` 자동전환은 택배사 반송완료 확인과 같은 배치에서 처리하므로 §19를 참조.
+- **비고**: 14상태 모델(⑩)에는 어드민이 직접 호출하는 "클레임 완료" API가 없다. `PICKED_UP → REFUNDED`는 §13(환불 처리), `PICKUP_REJECTED → DISPOSED`는 §20(폐기 처리)에서 각각 어드민이 수행하고, `REFUNDED`/`DISPOSED`에 도달한 클레임은 본 배치가 주기적으로 스캔해 `COMPLETED`로 자동 전환한다. `RETURN_PAYMENT_PENDING → COMPLETED`(shipment(RETURN) DELIVERED 기준) 자동전환은 택배사 반송완료 확인과 같은 배치에서 처리하므로 §19를 참조.
 
 ```plantuml
 @startuml
@@ -595,6 +765,7 @@ participant "ClaimPaymentController" as CPC
 participant "ClaimService" as CS
 participant "ClaimRepository" as CR
 participant "ClaimPaymentRepository" as CPR
+participant "ShipmentRepository" as SR
 participant "PromotionPublicApi" as PROMO
 participant "PaymentPublicApi" as PAY
 participant "CatalogPublicApi" as CAT
@@ -643,8 +814,10 @@ else 정상
   CPR -> DB : INSERT ord_claim_payment
 
   alt paymentType == PICKUP
-    CS -> CR : updateStatus(PICKUP)
-    CR -> DB : UPDATE ord_claim
+    CS -> SR : save(shipment{refType=CLAIM, refId=claimId, type=PICKUP, status=PENDING})
+    SR -> DB : INSERT ord_shipment
+    DB --> SR : OK
+    note right of CR: claim.status는 PAYMENT_PENDING 유지 (변경 없음).\n수거 shipment 입고확인 시 §19 배치가\nshipmentRepo.updateStatus(DELIVERED) + claimRepo.updateStatus(INSPECTING)을\n함께 호출해 파생 전환한다.
 
     CS -> EP : publish(CLAIM_SHIPPING_PAID)
     note right of EP: Notification* → 고객 알림톡+이메일\n("배송비 결제 완료, 수거 진행")
@@ -658,13 +831,23 @@ else 정상
       CS -> Courier : requestReShipment(claimId, address)\n(교환상품 선출고 — 원상품 수취 이전, 맞교환 원칙)
       Courier --> CS : trackingRegistered
 
+      CS -> SR : save(shipment{refType=CLAIM, refId=claimId, type=EXCHANGE_OUT, status=IN_TRANSIT, trackingNo})
+      SR -> DB : INSERT ord_shipment
+      DB --> SR : OK
+      note right of SR: 귀책판정 완료 시점(본 케이스는 고객귀책+배송비결제 완료 시점)에\nshipment(EXCHANGE_OUT) 병렬 생성 — 맞교환 원칙(REQ-ORD-056).\nclaim.status에는 영향 없음(§10 배치 참조)
+
       CS -> EP : publish(CLAIM_EXCHANGE_SHIPPED)
       note right of EP: Notification* → 교환상품 발송 알림톡\n(원 SKU 재고 복원은 §14 검수합격 시점)
     end
   else paymentType == RETURN
     CS -> CR : recordReturnPaymentPaid(claimId)
     CR -> DB : UPDATE ord_claim (returnPaymentPaidAt)
-    note right of CR: 상태는 RETURN_PAYMENT_PENDING 유지\n(RETURN_SHIPPING 전환은 입점사\n반송 운송장 등록과 결합되어 완료됨)
+    note right of CR: 상태는 RETURN_PAYMENT_PENDING 유지 (변경 없음)
+
+    CS -> SR : save(shipment{refType=CLAIM, refId=claimId, type=RETURN, status=PENDING})
+    SR -> DB : INSERT ord_shipment
+    DB --> SR : OK
+    note right of SR: 판매자 [반송운송장등록] 시 PENDING→IN_TRANSIT.\n택배사 반송완료 확인 시 §19 배치가 shipmentRepo.updateStatus(DELIVERED)\n호출 → 이어서 같은 배치가 claim을 COMPLETED로 자동전환
 
     CS -> EP : publish(CLAIM_RETURN_SHIPPING_PAID)
     note right of EP: Notification* → 고객 알림톡+이메일\n("반송 배송비 결제 완료")
@@ -785,7 +968,7 @@ else 정상
     activate CAT
     CAT --> CS : success
     deactivate CAT
-    note right of CAT: 원상품 재고 복원\n(교환 SKU는 §12 PICKUP 진입 시점에 이미 선출고·차감됨 — 맞교환 원칙)
+    note right of CAT: 원상품 재고 복원\n(교환 SKU는 §12 귀책판정 완료 시점에 shipment(EXCHANGE_OUT)으로\n이미 선출고·차감됨 — 맞교환 원칙)
 
     CS -> EP : publish(CLAIM_COMPLETED)
     note right of EP
@@ -858,15 +1041,17 @@ end
 
 ---
 
-## 16. [컨슈머] PAYMENT_APPROVED 이벤트 수신 — 재고확보·주문확정
+## 16. [컨슈머] PAYMENT_APPROVED/PAYMENT_FAILED 이벤트 수신 — 결제 완료·실패 후처리
 
-- **트리거**: Payment 도메인 → `PAYMENT_APPROVED` 이벤트 발행
+> v2 (2026-08-21 현행화): 재고선점은 §4(결제 요청)에서 이미 완료된 상태이므로 이 컨슈머는 재고 호출을 하지 않는다. 상태전이도 REQ-ORD-013/014에 맞게 `PAYMENT_PENDING→PAYMENT_COMPLETED`/`PAYMENT_FAILED`로 정정(구모델 `ORDER_RECEIVED`/`ORDER_FAILED` 제거).
+
+- **트리거**: Payment 도메인 → `PAYMENT_APPROVED` 또는 `PAYMENT_FAILED` 이벤트 발행
 - **세부UC 참조**: [주문접수] UC-ORD-004 결제완료 후처리
-- **상태전이**: Order `PAYMENT_PENDING` → `ORDER_RECEIVED`
+- **상태전이**: Order `PAYMENT_PENDING` → `PAYMENT_COMPLETED`(승인) / `PAYMENT_FAILED`(실패, REQ-ORD-014)
 
 ```plantuml
 @startuml
-title [컨슈머] PAYMENT_APPROVED 수신 — 재고확보·주문확정
+title [컨슈머] PAYMENT_APPROVED/PAYMENT_FAILED 수신 — 결제 완료·실패 후처리
 
 participant "EventListener\n(OrderPaymentEventListener)" as Listener
 participant "OrderService" as Service
@@ -875,28 +1060,26 @@ participant "CatalogPublicApi" as Catalog
 participant "EventPublisher" as Event
 participant "NotificationPublicApi" as Noti
 
-Listener -> Service : handlePaymentApproved(orderId, paymentId)
-activate Service
-
-Service -> Repo : findById(orderId)
-Repo --> Service : Order(status=PAYMENT_PENDING)
-
-Service -> Catalog : reserveStock(items)
-alt 재고확보 성공
-    Catalog --> Service : success
-    Service -> Repo : updateStatus(ORDER_RECEIVED)
+alt PAYMENT_APPROVED 수신
+    Listener -> Service : handlePaymentApproved(orderId, paymentId)
+    activate Service
+    Service -> Repo : findById(orderId)
+    Repo --> Service : Order(status=PAYMENT_PENDING)
+    Service -> Repo : updateStatus(PAYMENT_COMPLETED)
     Service -> Event : publish(ORDER_PAID)
-    Service -> Noti : sendKakaoAlimtalk("주문접수완료")
-    Service -> Noti : sendEmail("주문접수완료")
-else 재고확보 실패
-    Catalog --> Service : StockInsufficientException
-    Service -> Repo : updateStatus(ORDER_FAILED)
-    Service -> Event : publish(STOCK_FAILED)
-    Service -> Noti : sendKakaoAlimtalk("재고부족 주문실패")
-    Service -> Noti : sendEmail("재고부족 주문실패")
+    Service -> Noti : sendKakaoAlimtalk("주문확인")
+    Service -> Noti : sendEmail("주문확인")
+    deactivate Service
+else PAYMENT_FAILED 수신 (PG 3회 재시도 소진)
+    Listener -> Service : handlePaymentFailed(orderId, paymentId, reason)
+    activate Service
+    Service -> Repo : findById(orderId)
+    Repo --> Service : Order(status=PAYMENT_PENDING)
+    Service -> Catalog : restoreStock(items)
+    Service -> Repo : updateStatus(PAYMENT_FAILED)
+    Service -> Noti : sendKakaoAlimtalk("결제 실패 안내")
+    deactivate Service
 end
-
-deactivate Service
 @enduml
 ```
 
@@ -906,7 +1089,7 @@ deactivate Service
 
 - **트리거**: 스케줄러 (매일 02:00)
 - **세부UC 참조**: [구매확정] UC-ORD-006 자동구매확정
-- **상태전이**: Order `DELIVERED` → `PURCHASE_CONFIRMED`, Payment `PAID` → `SETTLED`
+- **상태전이**: Order `DELIVERED` → `CONFIRMED` (Payment 상태는 변경 없음 — 정산은 Settlement 도메인이 `ORDER_CONFIRMED` 이벤트를 구독해 비동기 처리)
 
 ```plantuml
 @startuml
@@ -915,7 +1098,6 @@ title [배치] D+7 자동구매확정
 participant "Scheduler\n(AutoConfirmBatch)" as Batch
 participant "OrderService" as Service
 participant "OrderRepository" as Repo
-participant "PaymentPublicApi" as Payment
 participant "EventPublisher" as Event
 participant "NotificationPublicApi" as Noti
 
@@ -926,10 +1108,9 @@ Service -> Repo : findDeliveredBefore(now - 7days)
 Repo --> Service : List<Order>
 
 loop 각 주문
-    Service -> Repo : updateStatus(PURCHASE_CONFIRMED)
-    Service -> Payment : settlePayment(paymentId)
-    Payment --> Service : success (PAID→SETTLED)
-    Service -> Event : publish(PURCHASE_CONFIRMED)
+    Service -> Repo : updateStatus(CONFIRMED)
+    Service -> Event : publish(ORDER_CONFIRMED)
+    note right: → Settlement(정산 확정)\n→ Member(포인트 적립)
     Service -> Noti : sendKakaoAlimtalk("자동구매확정 안내")
 end
 
@@ -975,29 +1156,65 @@ deactivate Service
 
 ---
 
+## 18-1. [배치] RECEIVED 24시간 CS 미처리 리마인드
+
+> 신규 (2026-08-21 바텀업 재검증): REQ-ORD-068 대응. 지금까지는 화면 대시보드 집계 표시만 있고 실제 발송 배치가 없었다.
+
+- **트리거**: 스케줄러 (매 시간 정각)
+- **세부UC 참조**: [클레임접수] CS 접수확인 SLA
+- **상태전이**: 없음 (알림만 발송, claim.status는 RECEIVED 유지)
+
+```plantuml
+@startuml
+title [배치] RECEIVED 24시간 CS 미처리 리마인드
+
+participant "Scheduler\n(ClaimReceivedSlaBatch)" as Batch
+participant "ClaimService" as Service
+participant "ClaimRepository" as Repo
+participant "NotificationPublicApi" as Noti
+
+Batch -> Service : remindUnprocessedReceived()
+activate Service
+
+Service -> Repo : findByStatusAndCreatedBefore(RECEIVED, now - 24h)
+Repo --> Service : List<Claim>
+
+loop 각 미처리 클레임 (last_reminded_at이 24h 이상 지났거나 NULL인 건만)
+    Service -> Noti : sendAdminAlert("접수 24시간 경과 미처리 클레임", claimId)
+    Service -> Repo : updateLastRemindedAt(now)
+    note right of Noti: CS 대시보드 "미처리임박" 집계(17-화면레이아웃)의 실제 발송 트리거
+end
+
+deactivate Service
+@enduml
+```
+
+---
+
 ## 19. [배치] 배송상태 갱신 — 택배사 API 조회 (60분 주기)
 
 - **트리거**: 스케줄러 (매 60분)
 - **세부UC 참조**: [배송관리] UC-ORD-008 배송상태 동기화
-- **상태전이**: Order `SHIPPING` → `DELIVERED` (배송완료 시)
+- **상태전이**: `ord_shipment.status` `IN_TRANSIT` → `DELIVERED`/`FAILED` (v6, 배송 실행 전용·order/claim 공용). 파생 전환: Order `PREPARING` → `DELIVERED`(shipment type=OUTBOUND 구독), Claim `PAYMENT_PENDING`/`INSPECTING` 진입(shipment type=PICKUP 구독), Claim `RETURN_PAYMENT_PENDING` → `COMPLETED`(shipment type=RETURN 구독)
 
 ```plantuml
 @startuml
-title [배치] 배송상태 갱신 (60분 주기)
+title [배치] 배송상태 갱신 (60분 주기, v6 — ord_shipment 전용)
 
-participant "Scheduler\n(ShippingStatusSyncBatch)" as Batch
-participant "ShippingService" as Service
-participant "ShippingRepository" as Repo
+participant "Scheduler\n(ShipmentStatusSyncBatch)" as Batch
+participant "ShipmentService" as Service
+participant "ShipmentRepository" as Repo
 participant "CourierApi\n(택배사 외부API)" as Courier
+participant "ClaimRepository" as ClaimRepo
 participant "OrderRepository" as OrderRepo
 participant "EventPublisher" as Event
 participant "NotificationPublicApi" as Noti
 
-Batch -> Service : syncShippingStatus()
+Batch -> Service : syncShipmentStatus()
 activate Service
 
-Service -> Repo : findInTransit()
-Repo --> Service : List<Shipping>(status IN [SHIPPING, PICKUP_SHIPPING, RETURN_SHIPPING])
+Service -> Repo : findByStatus(IN_TRANSIT)
+Repo --> Service : List<Shipment>(shipment_type IN [OUTBOUND, PICKUP, RETURN, EXCHANGE_OUT])
 
 loop 각 배송건
     Service -> Courier : getTrackingStatus(trackingNo)
@@ -1005,29 +1222,45 @@ loop 각 배송건
 
     alt 배송완료
         Service -> Repo : updateStatus(DELIVERED)
-        Service -> OrderRepo : updateOrderStatus(DELIVERED)
-        Service -> Event : publish(DELIVERY_COMPLETED)
-        Service -> Noti : sendKakaoAlimtalk("배송완료 안내")
-    else 수거완료 (반품/교환)
-        Service -> Repo : updateStatus(PICKED_UP)
-        Service -> OrderRepo : updateClaimStatus(PICKED_UP)
-        Service -> Noti : sendKakaoAlimtalk("수거완료 안내")
-    else 반송완료 (RETURN_SHIPPING → RETURN_DELIVERED)
-        Service -> Repo : updateStatus(RETURN_DELIVERED)
-        Service -> OrderRepo : updateClaimStatus(RETURN_DELIVERED)
-        Service -> Noti : sendKakaoAlimtalk("반송 배송완료 안내")
+        Repo -> Repo : (DB) UPDATE ord_shipment
+
+        alt shipment_type == OUTBOUND
+            Service -> Event : publish(SHIPMENT_DELIVERED, refType=ORDER, refId=orderId)
+            note right of Event: order.status는 이 배치가 직접 갱신하지 않는다.\nOrderService가 이벤트를 구독해 파생 전환(아래 == 섹션 참조) — 2단계 분리
+            Service -> Noti : sendKakaoAlimtalk("배송완료 안내")
+        else shipment_type == PICKUP
+            Service -> ClaimRepo : updateStatus(INSPECTING)
+            note right of ClaimRepo: claim.status PAYMENT_PENDING 또는 RECEIVED(판매자귀책)\n→ INSPECTING. shipmentRepo.updateStatus(DELIVERED)와\n같은 트랜잭션에서 함께 호출(§12 참조)
+            Service -> Noti : sendKakaoAlimtalk("수거완료, 품질점검 진행 안내")
+        else shipment_type == RETURN
+            note right of Service: claim.status는 변경하지 않음(RETURN_PAYMENT_PENDING 유지)\nCOMPLETED 자동전환은 아래 "클레임 자동완료" 섹션에서 별도 처리
+            Service -> Noti : sendKakaoAlimtalk("반송 배송완료 안내")
+        else shipment_type == EXCHANGE_OUT
+            note right of Service: claim.status 영향 없음\n(교환상품 발송 완료, 맞교환 원칙 — §12/§14 참조)
+            Service -> Noti : sendKakaoAlimtalk("교환상품 배송완료 안내")
+        end
+    else 배송실패/반송 신호
+        Service -> Repo : updateStatus(FAILED)
+        Repo -> Repo : (DB) UPDATE ord_shipment
+        Service -> Noti : sendKakaoAlimtalk("배송 실패 안내, CS 확인 요청")
     else 상태변경 없음
         note right: skip
     end
 end
 
-== 클레임 자동완료 (RETURN_DELIVERED → COMPLETED, 배치 자동전환) ==
+== 주문 배송완료 파생 전환 (OrderService, SHIPMENT_DELIVERED 이벤트 구독) ==
 
-Service -> OrderRepo : findClaimsByStatus(RETURN_DELIVERED)
-OrderRepo --> Service : List<Claim>
+Event -> OrderRepo : updateStatus(DELIVERED)\n(shipment type=OUTBOUND 구독분만, orderId 기준)
+OrderRepo -> OrderRepo : (DB) UPDATE ord_order
+note right of OrderRepo: D+7 자동확정 타이머 시작(§17), 고객 알림톡
+
+== 클레임 자동완료 (RETURN_PAYMENT_PENDING → COMPLETED, shipment(RETURN) DELIVERED 기준 배치 자동전환) ==
+
+Service -> ClaimRepo : findByStatusWithReturnShipmentDelivered(RETURN_PAYMENT_PENDING)
+ClaimRepo --> Service : List<Claim>(연관 shipment(RETURN).status = DELIVERED)
 
 loop 각 클레임 (CLAIM_REFUNDED류 알림톡 발행 패턴 참고)
-    Service -> OrderRepo : updateClaimStatus(COMPLETED)
+    Service -> ClaimRepo : updateStatus(COMPLETED)
     Service -> Event : publish(CLAIM_COMPLETED)
     Service -> Noti : sendKakaoAlimtalk("클레임 완료 안내")
 end
@@ -1131,6 +1364,57 @@ else 정상
   deactivate CS
   ACC --> Admin : 200 SUCCESS
   deactivate ACC
+end
+
+@enduml
+```
+
+---
+
+## 22. [API] POST /api/partner/v1/shipping/{shipmentId}/reship — 배송 실패 재발송 처리 (신규)
+
+> v6 후속 보완 (2026-08-21): REQ-ORD-062 대응. FAILED 상태의 shipment(어떤 shipment_type이든 공통)를 재발송 처리한다.
+
+- **트리거**: 판매자 또는 CS 담당자 수동 처리 (§19 배치가 FAILED로 전환한 건)
+- **상태전이**: `ord_shipment.status` `FAILED` → `PENDING` → (운송장 재등록 시) `IN_TRANSIT`
+
+```plantuml
+@startuml
+skinparam backgroundColor transparent
+skinparam defaultFontSize 11
+title POST /api/partner/v1/shipping/{shipmentId}/reship — 배송 실패 재발송 처리
+
+actor "판매자 / CS 담당자" as Actor
+participant "ShippingController" as SC
+participant "ShipmentService" as Service
+participant "ShipmentRepository" as Repo
+database "DB (ord_shipment)" as DB
+
+Actor -> SC : POST /api/partner/v1/shipping/{shipmentId}/reship\n{carrier, trackingNo}
+activate SC
+
+SC -> Service : reship(shipmentId, carrier, trackingNo)
+activate Service
+
+Service -> Repo : findById(shipmentId)
+Repo --> Service : Shipment
+
+alt 상태 != FAILED
+  Service --> SC : RESHIP_NOT_ALLOWED (FAILED 상태만 재발송 가능)
+  SC --> Actor : 400 에러
+else 정상
+  Service -> Repo : updateStatus(PENDING)
+  Repo -> DB : UPDATE ord_shipment
+  Service -> Repo : registerTracking(carrier, trackingNo)
+  Repo -> DB : UPDATE ord_shipment (carrier, trackingNo)
+  Service -> Repo : updateStatus(IN_TRANSIT)
+  Repo -> DB : UPDATE ord_shipment
+  note right: 이후 §19 배치가 다시 추적(60분 주기)
+
+  Service --> SC : ShipmentResponse(status=IN_TRANSIT)
+  deactivate Service
+  SC --> Actor : 200 SUCCESS
+  deactivate SC
 end
 
 @enduml

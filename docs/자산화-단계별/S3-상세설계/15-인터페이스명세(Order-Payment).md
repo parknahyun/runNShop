@@ -28,6 +28,7 @@
 | 8 | POST | /api/v1/orders/{orderId}/confirm | 구매확정 | mobile |
 | 9 | PUT | /api/v1/orders/{orderId}/shipping-address | 배송지 변경 | mobile |
 | 10 | POST | /api/v1/orders/{orderId}/claims | 반품/교환 신청 | mobile |
+| 10-1 | POST | /api/v1/claims/{claimId}/cancel | 클레임 자진 취소 (본문 §10-1, 시퀀스 §7-2) | mobile |
 | 11 | GET | /api/v1/members/me/orders | 내 주문 목록 | mobile |
 | 12 | GET | /api/v1/payment-methods | 결제수단 목록 | mobile |
 | 13 | POST | /api/v1/payment-methods | 결제수단 등록 | mobile |
@@ -44,6 +45,7 @@
 | 22 | POST | /api/admin/v1/orders/{orderId}/force-cancel | 예외 취소 | admin |
 | 23 | GET | /api/admin/v1/claims | 클레임 목록 | admin |
 | 24 | POST | /api/admin/v1/claims/{claimId}/start | 클레임 처리 시작 | admin |
+| 24-1 | POST | /api/admin/v1/claims/{claimId}/blame-decision | 귀책 판정 (API-026, 본문 §19-1) | admin |
 | 25 | POST | /api/admin/v1/claims/{claimId}/complete | 클레임 완료 (환불 진행) | admin |
 | 26 | POST | /api/admin/v1/claims/{claimId}/reject | 클레임 반려 | admin |
 | 27 | POST | /api/admin/v1/claims/{claimId}/refund | 환불 처리 (수동) | admin |
@@ -65,6 +67,7 @@
 | 41 | GET | /api/v1/members/me/payments | 내 결제 이력 조회 | mobile |
 | 42 | GET | /api/admin/v1/payments/search | CS 결제 검색 | admin |
 | 43 | GET | /api/admin/v1/payments/{paymentId}/pg-logs | PG 거래 로그 조회 | admin |
+| 44 | POST | /api/partner/v1/shipping/{shipmentId}/reship | 배송 실패 재발송 처리 | partner/admin |
 
 ---
 
@@ -259,7 +262,7 @@
 | Method | POST |
 | Path | /api/v1/orders/{orderSheetId}/pay |
 | 인증 | Bearer {memberId} (필수) |
-| 설명 | 주문서 기반 결제 실행. 재고 선점 → PG 결제 승인 → 주문 확정 |
+| 설명 | 배송지·약관 검증 → 주문 생성(ORDER_RECEIVED) → Catalog 재고 선점(동기, 성공 시 PAYMENT_PENDING) → Payment에 결제 요청 전달(동기 호출이나 PG 승인 자체는 기다리지 않고 "접수됨"만 확인) 까지 처리 후 즉시 200 응답한다. **PG 승인 성공/실패 결과는 이 응답에 포함되지 않는다** — 이후 Payment가 비동기로 발행하는 PAYMENT_APPROVED/PAYMENT_FAILED 이벤트를 Order가 소비해 주문 상태를 PAYMENT_COMPLETED 또는 PAYMENT_FAILED로 확정한다(REQ-ORD-012~014, 시퀀스 §4/§16 참조). |
 
 #### Request Body
 
@@ -280,11 +283,15 @@
   "code": "SUCCESS",
   "data": {
     "platformOrderId": "pord-ulid-001",
+    "orderId": "ord-001",
     "totalPayment": 415000,
-    "paidAt": "2026-06-26T09:15:00Z"
+    "status": "PAYMENT_PENDING",
+    "message": "결제 진행중입니다"
   }
 }
 ```
+
+> 이 응답은 PG 승인 완료를 의미하지 않는다. 최종 결제 성공/실패는 클라이언트가 주문 상세(#17 `GET /api/v1/members/me/orders/{orderId}`) 조회 또는 푸시 알림으로 확인한다(status가 `PAYMENT_COMPLETED`/`PAYMENT_FAILED`로 갱신됨).
 
 #### Error Responses
 
@@ -293,8 +300,9 @@
 | 400 | ADDRESS_REQUIRED | 배송지를 입력해주세요 | 배송지 미선택 | AC-ORD-012 |
 | 400 | TERMS_NOT_AGREED | 필수 약관에 동의해주세요 | 필수 약관 미동의 | — |
 | 400 | STOCK_NOT_AVAILABLE | 재고가 부족합니다 | 재고 선점 실패 | — |
-| 400 | PAYMENT_FAILED | 결제에 실패했습니다 | PG 승인 실패 (3회 재시도 후) | AC-PAY-006 |
-| 408 | PAYMENT_TIMEOUT | 결제 처리 시간이 초과되었습니다 | PG 타임아웃 | AC-PAY-007 |
+| 400 | CARD_RESTRICTED | 카드가 당일 결제 제한 상태입니다 | 동일 카드 3회 연속 결제 실패로 당일 차단됨 (Payment가 접수 단계에서 동기 반환) | REQ-PAY-018(제한 규칙), REQ-PAY-023(카운터 저장·리셋 메커니즘) |
+
+> PG 승인 실패(`PAYMENT_FAILED`)·타임아웃은 이 API의 동기 에러가 아니다. 재고 선점 성공 후에는 Payment 결제 요청 접수(큐 등록)까지만 동기로 확인하며, PG 승인 결과는 §16(컨슈머)에서 비동기로 반영된다.
 
 ---
 
@@ -403,7 +411,9 @@
 {
   "claimType": "RETURN",
   "reason": "단순 변심",
-  "detailReason": "사이즈가 맞지 않습니다"
+  "detailReason": "사이즈가 맞지 않습니다",
+  "responsibility": "CUSTOMER",
+  "images": []
 }
 ```
 
@@ -414,11 +424,25 @@
   "claimType": "EXCHANGE",
   "reason": "사이즈 교환",
   "detailReason": "270 사이즈로 교환 원합니다",
-  "exchangeSkuId": "sku-002"
+  "exchangeSkuId": "sku-002",
+  "responsibility": "CUSTOMER",
+  "images": []
 }
 ```
 
 > `exchangeSkuId`: 교환 대상 SKU ID. `claimType=EXCHANGE`일 때 **필수** (Catalog 도메인 SKU 참조, 선출고 시 사용)
+
+> `responsibility`: `CUSTOMER`(단순변심 등) / `VENDOR`(상품불량 등). `images`: 첨부 이미지 URL 배열, 최대 3장. **`responsibility=VENDOR`일 때 최소 1장 필수**(REQ-ORD-058), CUSTOMER는 선택. 서버는 이 이미지를 `uploaded_by=CUSTOMER`로 저장하며, "최대 3장" 제한은 이후 품질점검 거부(#38)에서 판매자가 첨부하는 사진(`uploaded_by=VENDOR`)과 완전히 독립적으로 적용된다(REQ-ORD-075).
+
+```json
+{
+  "claimType": "RETURN",
+  "reason": "상품불량",
+  "detailReason": "박음질이 뜯어져 있습니다",
+  "responsibility": "VENDOR",
+  "images": ["https://cdn.runnshop.com/claims/img-001.jpg"]
+}
+```
 
 #### Response 201
 
@@ -438,6 +462,38 @@
 | 400 | CLAIM_PERIOD_EXPIRED | 기한이 초과되었습니다 (배송완료 후 10일 이내) | 10일 초과 | AC-ORD-032 |
 | 400 | CLAIM_NOT_ALLOWED | 배송완료 후에만 신청할 수 있습니다 | DELIVERED 아닌 상태 | — |
 | 400 | EXCHANGE_SKU_REQUIRED | 교환할 옵션(SKU)을 선택해주세요 | claimType=EXCHANGE인데 exchangeSkuId 누락 | REQ-ORD-056 |
+| 400 | EXCHANGE_SKU_MISMATCH | 교환은 동일 상품 내 옵션 변경만 가능합니다 | claimType=EXCHANGE인데 exchangeSkuId의 productId가 원 주문 상품(productId)과 다름 | REQ-ORD-070 |
+| 400 | CLAIM_PHOTO_REQUIRED | 상품 상태를 확인할 수 있는 사진을 1장 이상 첨부해주세요 | responsibility=VENDOR인데 images가 빈 배열 | REQ-ORD-058 |
+
+---
+
+## 10-1. POST /api/v1/claims/{claimId}/cancel — 클레임 자진 취소
+
+> 신규 (시퀀스 §7-2 대응). 고객이 마이페이지 클레임상세에서 접수한 클레임을 스스로 취소한다. CS 귀책판정(#19-1) 또는 수거(PICKUP) 프로세스가 시작되기 전, 즉 `RECEIVED`/`PAYMENT_PENDING` 상태에서만 허용한다.
+
+| 항목 | 내용 |
+|---|---|
+| Method | POST |
+| Path | /api/v1/claims/{claimId}/cancel |
+| 인증 | Bearer {memberId} (필수) |
+| 설명 | 클레임 상태가 `RECEIVED` 또는 `PAYMENT_PENDING`일 때만 자진 취소를 허용한다. 취소 시 상태 → `REJECTED`(사유="고객 자진 철회"), 고객에게 알림톡 발송. `INSPECTING` 등 CS 귀책판정 이후 상태에서는 거부한다(REQ-ORD-073, REQ-ORD-071). |
+
+#### Request Body
+
+없음 (Body 없이 호출)
+
+#### Response 200
+
+```json
+{ "code": "SUCCESS", "data": { "claimId": "clm-001", "status": "REJECTED" } }
+```
+
+#### Error Responses
+
+| HTTP | code | message | 조건 | 대응 GWT |
+|---|---|---|---|---|
+| 400 | CLAIM_CANCEL_NOT_ALLOWED | 귀책 판정/수거 시작 이후에는 취소할 수 없습니다 | claim.status가 `RECEIVED`/`PAYMENT_PENDING`이 아님 (예: `INSPECTING` 이후) | REQ-ORD-071 |
+| 403 | FORBIDDEN | 본인 클레임만 취소할 수 있습니다 | 타인 클레임 | — |
 
 ---
 
@@ -617,7 +673,7 @@
 | Method | GET |
 | Path | /api/admin/v1/claims |
 | 인증 | Admin Bearer (필수) |
-| Query | `?keyword=&claimType=ALL&status=ALL&blameType=ALL&from=&to=&page=1&size=10` |
+| Query | `?keyword=&claimType=ALL&status=ALL&responsibility=ALL&from=&to=&page=1&size=10` |
 
 #### Response 200
 
@@ -627,7 +683,7 @@
   "data": {
     "totalCount": 8,
     "claims": [
-      { "claimId": "clm-001", "claimNo": "CLM-20260626-001", "platformOrderNo": "ORD-20260626-001", "claimType": "RETURN", "status": "RECEIVED", "blameType": "CUSTOMER", "channel": "SELF", "refundAmount": 152000, "createdAt": "2026-06-26 10:30", "completedAt": null }
+      { "claimId": "clm-001", "claimNo": "CLM-20260626-001", "platformOrderNo": "ORD-20260626-001", "claimType": "RETURN", "status": "RECEIVED", "responsibility": "CUSTOMER", "channel": "SELF", "refundAmount": 152000, "createdAt": "2026-06-26 10:30", "completedAt": null }
     ]
   }
 }
@@ -646,8 +702,55 @@
 #### Response 200
 
 ```json
-{ "code": "SUCCESS", "data": { "claimId": "clm-001", "status": "IN_PROGRESS" } }
+{ "code": "SUCCESS", "data": { "claimId": "clm-001", "status": "RECEIVED" } }
 ```
+
+> 클레임 11상태 모델(⑩)에는 별도의 `IN_PROGRESS` 상태가 없다. "처리 시작"은 CS가 클레임 상세를 열어 확인 중임을 표시하는 UI 동작일 뿐, 클레임 상태는 `RECEIVED`로 유지되며 이후 귀책 판정(§19-1 `blame-decision`)에서 `PAYMENT_PENDING`/`INSPECTING`으로 분기한다.
+
+---
+
+## 19-1. POST /api/admin/v1/claims/{claimId}/blame-decision — 귀책 판정 (API-026)
+
+| 항목 | 내용 |
+|---|---|
+| Method | POST |
+| Path | /api/admin/v1/claims/{claimId}/blame-decision |
+| 인증 | Admin Bearer (필수) |
+| 설명 | 고객이 신청 시 제출한 `responsibility`를 CS가 최종 확정한다(고객 제출값과 달라도 CS 판정이 최종, 덮어쓰기 가능 — REQ-ORD-066). `CUSTOMER` 판정 시 상태 → `PAYMENT_PENDING`(수거 배송비 결제 대기). `VENDOR` 판정 시 상태 → `INSPECTING` + shipment(PICKUP) 자동생성. `claimType=EXCHANGE`이고 `VENDOR` 판정인 경우 교환 SKU 재고를 즉시 선점하고 shipment(EXCHANGE_OUT)를 병행 생성해 선출고한다(맞교환 원칙, REQ-ORD-056). |
+
+#### Request Body
+
+```json
+{ "responsibility": "VENDOR" }
+```
+
+> `responsibility`: `CUSTOMER`(단순변심 등) | `VENDOR`(상품불량 등). 고객이 신청 시 제출한 값을 참고값으로만 쓰고 CS가 최종 확정한다(REQ-ORD-066).
+
+#### Response 200
+
+`CUSTOMER` 판정:
+```json
+{ "code": "SUCCESS", "data": { "claimId": "clm-001", "responsibility": "CUSTOMER", "status": "PAYMENT_PENDING" } }
+```
+
+`VENDOR` 판정 (`claimType=RETURN`):
+```json
+{ "code": "SUCCESS", "data": { "claimId": "clm-001", "responsibility": "VENDOR", "status": "INSPECTING", "shipment": { "shipmentType": "PICKUP", "status": "PENDING" } } }
+```
+
+`VENDOR` 판정 (`claimType=EXCHANGE`, 교환 SKU 즉시 선출고):
+```json
+{ "code": "SUCCESS", "data": { "claimId": "clm-002", "responsibility": "VENDOR", "status": "INSPECTING", "shipment": { "shipmentType": "PICKUP", "status": "PENDING" }, "exchangeShipment": { "shipmentType": "EXCHANGE_OUT", "status": "PENDING" } } }
+```
+
+#### Error Responses
+
+| HTTP | code | message | 조건 | 대응 |
+|---|---|---|---|---|
+| 400 | CLAIM_ALREADY_DECIDED | 이미 귀책 판정이 완료된 클레임입니다 | claim.status ≠ RECEIVED | — |
+| 409 | EXCHANGE_STOCK_UNAVAILABLE | 교환 가능한 재고가 없습니다 | `claimType=EXCHANGE`인 클레임의 귀책판정 시점에 `exchangeSkuId` 재고 선점 실패 (선출고 전 단계에서 판정 자체를 차단; 이전에는 39-1 exchange-ship 시점 에러로 잘못 배치돼 있었음) | REQ-ORD-069 |
+
+> `EXCHANGE_STOCK_UNAVAILABLE`은 이 endpoint(귀책판정 시점)에서만 반환된다. 39-1(exchange-ship, 운송장 등록)은 이미 재고 선점이 끝난 뒤의 배송 등록 단계이므로 이 에러가 발생하지 않는다.
 
 ---
 
@@ -819,8 +922,10 @@
 #### Response 200
 
 ```json
-{ "code": "SUCCESS", "data": { "orderId": "ord-001", "status": "IN_DELIVERY", "shippedAt": "2026-06-27 10:00" } }
+{ "code": "SUCCESS", "data": { "orderId": "ord-001", "status": "PREPARING", "shipment": { "shipmentType": "OUTBOUND", "status": "IN_TRANSIT", "carrier": "CJ대한통운", "trackingNumber": "1234567890", "shippedAt": "2026-06-27 10:00" } } }
 ```
+
+> v6: order.status는 `IN_DELIVERY`로 전환되지 않고 `PREPARING`을 유지한다. 배송 실행은 신규 `ord_shipment`(shipmentType=OUTBOUND)로 표현되며, "배송 중" 화면 표시는 `PREPARING + shipment.status=IN_TRANSIT` 조인으로 계산한다(REQ-ORD-059).
 
 #### Error Responses
 
@@ -870,7 +975,7 @@
         "vendorName": "나이키코리아",
         "vendorStatus": "DELIVERED",
         "items": [
-          { "productName": "나이키 페가수스 41", "optionName": "블랙/265", "orderQuantity": 1, "claimInProgress": 0, "claimCompleted": 0, "amount": 152000 }
+          { "productName": "나이키 페가수스 41", "optionName": "블랙/265", "orderQuantity": 1, "claimInProgress": 0, "claimCompleted": 0, "claimableQuantity": 1, "amount": 152000 }
         ]
       }
     ],
@@ -880,6 +985,8 @@
   }
 }
 ```
+
+> `claimableQuantity`(재신청 가능 수량) = `orderQuantity` − 진행 중/완료된 클레임 수량. `REJECTED`(반려)·`PAYMENT_EXPIRED`(배송비 결제 만료)로 종료된 클레임은 차감 대상에서 제외하여 원래 구매수량 그대로 재신청 가능하도록 복원한다(REQ-ORD-067, REQ-ORD-074). 반품/교환 신청 화면(#10)은 이 값을 참조해 신청 가능 최대 수량을 노출한다.
 
 ---
 
@@ -910,9 +1017,11 @@
 ```json
 {
   "code": "SUCCESS",
-  "data": { "claimId": "clm-001", "paymentType": "PICKUP", "paidAmount": 0, "couponApplied": true, "status": "PICKUP" }
+  "data": { "claimId": "clm-001", "paymentType": "PICKUP", "paidAmount": 0, "couponApplied": true, "status": "INSPECTING" }
 }
 ```
+
+> v6: 수거 배송비 결제 완료 시 `status`는 `PICKUP`이 아니라 `INSPECTING`으로 전환된다(shipment(PICKUP)가 `ord_shipment`에 자동 생성되며 배송 실행은 그쪽에서 추적). `paymentType=RETURN`(반송 배송비 결제)인 경우 `status`는 변경 없이 `RETURN_PAYMENT_PENDING`을 유지한다.
 
 #### Error Responses
 
@@ -1152,8 +1261,10 @@
 #### Response 200
 
 ```json
-{ "code": "SUCCESS", "data": { "claimId": "clm-001", "status": "PICKUP", "shippedAt": "2026-06-29 09:00" } }
+{ "code": "SUCCESS", "data": { "claimId": "clm-001", "shipment": { "shipmentType": "PICKUP", "status": "IN_TRANSIT", "carrier": "CJ대한통운", "trackingNumber": "9876543210", "shippedAt": "2026-06-29 09:00" } } }
 ```
+
+> v6: 이 endpoint는 `ord_shipment`(shipmentType=PICKUP)를 PENDING→IN_TRANSIT으로 전환할 뿐, claim.status는 변경하지 않는다(귀책판정 시점에 이미 INSPECTING 또는 PAYMENT_PENDING 상태).
 
 ---
 
@@ -1194,10 +1305,11 @@
 #### Request Body
 
 ```json
-{ "rejectReason": "상품 택 제거 및 사용 흔적으로 반품 불가", "tagIntact": false }
+{ "rejectReason": "상품 택 제거 및 사용 흔적으로 반품 불가", "tagIntact": false, "images": ["https://cdn.runnshop.com/claims/inspect-001.jpg"] }
 ```
 
 > `tagIntact`: 택(TAG) 부착 유지 여부. `claimType=EXCHANGE` 건은 택 제거·훼손이 거부 사유인 경우 `false`로 전달 (REQ-ORD-057). RETURN 건은 생략 가능
+> `images`: 상품 상태(훼손/택 제거 등)를 확인할 수 있는 증빙 사진 URL 배열. **`claimType=EXCHANGE` 건은 최소 1장 필수**(REQ-ORD-072, REQ-ORD-058 VENDOR귀책 사진 필수와 대칭). RETURN 건은 선택. 서버는 이 이미지를 `uploaded_by=VENDOR`로 저장하며, 고객 접수 시 첨부한 사진(`uploaded_by=CUSTOMER`, #10)과는 별도로 최대 3장 제한이 독립 적용된다(REQ-ORD-075).
 
 #### Response 200
 
@@ -1207,9 +1319,10 @@
 
 #### Error Responses
 
-| HTTP | code | message | 조건 |
-|---|---|---|---|
-| 400 | REASON_REQUIRED | 거부 사유를 입력해주세요 | 사유 누락 |
+| HTTP | code | message | 조건 | 대응 |
+|---|---|---|---|---|
+| 400 | REASON_REQUIRED | 거부 사유를 입력해주세요 | 사유 누락 | — |
+| 400 | INSPECT_PHOTO_REQUIRED | 상품 상태를 확인할 수 있는 사진을 1장 이상 첨부해주세요 | `claimType=EXCHANGE`인데 `images`가 빈 배열(0장) | REQ-ORD-072 |
 
 ---
 
@@ -1231,8 +1344,10 @@
 #### Response 200
 
 ```json
-{ "code": "SUCCESS", "data": { "claimId": "clm-001", "status": "RETURN_SHIPPING" } }
+{ "code": "SUCCESS", "data": { "claimId": "clm-001", "status": "RETURN_PAYMENT_PENDING", "shipment": { "shipmentType": "RETURN", "status": "IN_TRANSIT", "carrier": "CJ대한통운", "trackingNumber": "1111222233" } } }
 ```
+
+> v6: 이 endpoint는 `ord_shipment`(shipmentType=RETURN)를 PENDING→IN_TRANSIT으로 전환할 뿐, claim.status는 `RETURN_PAYMENT_PENDING`을 그대로 유지한다(반송 배송비 결제 완료 후 진입한 상태). shipment(RETURN)이 DELIVERED로 전환되어야 배치가 클레임을 COMPLETED로 자동전환한다(39-2. 참조).
 
 ---
 
@@ -1243,7 +1358,7 @@
 | Method | POST |
 | Path | /api/partner/v1/claims/{claimId}/exchange-ship |
 | 인증 | Partner Bearer (필수) |
-| 설명 | `claimType=EXCHANGE` 건이 PICKUP 상태로 전환될 때, 교환 대상 SKU(`exchange_sku_id`)를 원상품 수취 이전에 선출고하기 위한 택배사 + 운송장 등록 (REQ-ORD-056, 맞교환 원칙: 선출고 후 수취). 반송 운송장 등록(39.)과 동일한 패턴 |
+| 설명 | `claimType=EXCHANGE` 건이 귀책판정되어 `INSPECTING` 상태로 전환될 때(또는 그 이전), 교환 대상 SKU(`exchange_sku_id`)를 원상품 수취 이전에 선출고하기 위한 택배사 + 운송장 등록 (REQ-ORD-056, 맞교환 원칙: 선출고 후 수취). 재고 선점은 이 endpoint 이전 §19-1(`blame-decision`)에서 이미 완료된 상태이므로 이 endpoint는 재고를 다시 확인하지 않는다. 반송 운송장 등록(39.)과 동일한 패턴 |
 
 #### Request Body
 
@@ -1254,8 +1369,10 @@
 #### Response 200
 
 ```json
-{ "code": "SUCCESS", "data": { "claimId": "clm-001", "exchangeSkuId": "sku-002", "status": "PICKUP", "exchangeShippedAt": "2026-06-29 09:30" } }
+{ "code": "SUCCESS", "data": { "claimId": "clm-001", "exchangeSkuId": "sku-002", "shipment": { "shipmentType": "EXCHANGE_OUT", "status": "IN_TRANSIT", "carrier": "CJ대한통운", "trackingNumber": "4444555566", "shippedAt": "2026-06-29 09:30" } } }
 ```
+
+> v6: 이 endpoint는 `ord_shipment`(shipmentType=EXCHANGE_OUT)를 PENDING→IN_TRANSIT으로 전환할 뿐, claim.status는 변경하지 않는다. shipment(EXCHANGE_OUT)의 DELIVERED 전환은 claim.status에 영향을 주지 않는다(교환상품 발송 완료로 종료, 원상품 수취는 별도 shipment(PICKUP)로 추적).
 
 #### Error Responses
 
@@ -1263,7 +1380,8 @@
 |---|---|---|---|
 | 400 | TRACKING_NO_REQUIRED | 운송장번호를 입력해주세요 | 번호 누락 |
 | 400 | NOT_EXCHANGE_CLAIM | 교환 클레임이 아닙니다 | claimType≠EXCHANGE |
-| 409 | EXCHANGE_STOCK_UNAVAILABLE | 교환 대상 재고가 없습니다 | exchange_sku_id 재고 선점 실패 |
+
+> `EXCHANGE_STOCK_UNAVAILABLE`(교환 재고 없음)은 이 endpoint의 에러가 아니다 — 재고 선점은 귀책판정(§19-1 `blame-decision`) 시점에 이미 끝났어야 하므로, 재고 부족은 그때 차단된다(REQ-ORD-069). 이 endpoint는 운송장 등록만 수행한다.
 
 ---
 
@@ -1274,7 +1392,7 @@
 | Method | POST |
 | Path | /api/admin/v1/claims/{claimId}/return-delivered |
 | 인증 | System/Admin Bearer (필수) — 택배사 배송완료 콜백 수신 또는 배송추적 배치가 호출 |
-| 설명 | RETURN_SHIPPING(반송중) 상태의 클레임에 대해 택배사로부터 배송완료를 수신(또는 배치가 택배사 API 조회 결과 확인)하면 상태를 RETURN_DELIVERED(반송 배송완료)로 전환한다. 상태 갱신 후 클레임 완료(COMPLETED) 처리로 이어짐 |
+| 설명 | v6: `RETURN_SHIPPING`/`RETURN_DELIVERED`는 더 이상 claim.status가 아니다. 이 endpoint는 `ord_shipment`(shipmentType=RETURN, 즉 claim.status=RETURN_PAYMENT_PENDING 건에 연결된 shipment)가 IN_TRANSIT 상태일 때 택배사로부터 배송완료를 수신(또는 배치가 택배사 API 조회 결과 확인)하면 shipment.status를 DELIVERED로 전환한다. claim.status 자체는 이 시점에는 RETURN_PAYMENT_PENDING을 유지하며, 이후 별도 배치(shipment DELIVERED 이벤트 구독)가 클레임을 COMPLETED로 자동전환한다 |
 
 #### Request Body
 
@@ -1287,14 +1405,16 @@
 #### Response 200
 
 ```json
-{ "code": "SUCCESS", "data": { "claimId": "clm-001", "status": "RETURN_DELIVERED", "deliveredAt": "2026-07-01 11:20" } }
+{ "code": "SUCCESS", "data": { "claimId": "clm-001", "status": "RETURN_PAYMENT_PENDING", "shipment": { "shipmentType": "RETURN", "status": "DELIVERED", "deliveredAt": "2026-07-01 11:20" } } }
 ```
+
+> v6: 응답의 `status`는 `RETURN_DELIVERED`가 아니라 여전히 `RETURN_PAYMENT_PENDING`이다(claim.status는 이 API로 전환되지 않음). 배송완료 확인은 `shipment.status=DELIVERED`로만 표현되며, 클레임 완료(COMPLETED) 전환은 이 이벤트를 구독하는 별도 배치가 수행한다.
 
 #### Error Responses
 
 | HTTP | code | message | 조건 |
 |---|---|---|---|
-| 400 | RETURN_DELIVER_NOT_ALLOWED | 반송중 상태에서만 배송완료 처리할 수 있습니다 | RETURN_SHIPPING 아닌 상태 |
+| 400 | RETURN_DELIVER_NOT_ALLOWED | 반송 배송 중(이동중) 상태에서만 배송완료 처리할 수 있습니다 | shipment(RETURN).status가 IN_TRANSIT 아님 |
 | 404 | CLAIM_NOT_FOUND | 클레임을 찾을 수 없습니다 | 존재하지 않는 claimId |
 
 ---
@@ -1317,7 +1437,7 @@
   "data": {
     "totalCount": 8,
     "claims": [
-      { "claimId": "clm-001", "claimNo": "CLM-20260628-001", "platformOrderNo": "ORD-20260622-008", "claimType": "RETURN", "productName": "호카 클리프턴 9", "customerName": "이*미", "status": "PICKUP", "shippingFee": 5000, "shippingFeeStatus": "PAID", "createdAt": "2026-06-28" }
+      { "claimId": "clm-001", "claimNo": "CLM-20260628-001", "platformOrderNo": "ORD-20260622-008", "claimType": "RETURN", "productName": "호카 클리프턴 9", "customerName": "이*미", "status": "INSPECTING", "shippingFee": 5000, "shippingFeeStatus": "PAID", "createdAt": "2026-06-28" }
     ]
   }
 }
@@ -1347,8 +1467,8 @@
         "claimNo": "CLM-20260628-001",
         "claimType": "RETURN",
         "claimTypeLabel": "반품",
-        "status": "IN_PROGRESS",
-        "statusLabel": "처리중",
+        "status": "RECEIVED",
+        "statusLabel": "접수됨",
         "orderId": "ord-003",
         "platformOrderNo": "ORD-20260622-008",
         "productName": "호카 클리프턴 9",
@@ -1386,8 +1506,8 @@
     "claimNo": "CLM-20260628-001",
     "claimType": "RETURN",
     "claimTypeLabel": "반품",
-    "status": "IN_PROGRESS",
-    "statusLabel": "처리중",
+    "status": "RECEIVED",
+    "statusLabel": "접수됨",
     "orderId": "ord-003",
     "platformOrderNo": "ORD-20260622-008",
     "productName": "호카 클리프턴 9",
@@ -1402,10 +1522,11 @@
     "responsibilityLabel": "구매자 귀책",
     "returnShippingFee": 5000,
     "createdAt": "2026-06-28 10:30",
-    "pickup": {
+    "shipment": {
+      "shipmentType": "PICKUP",
       "carrier": "CJ대한통운",
-      "trackingNo": "9876543210",
-      "status": "수거중",
+      "trackingNumber": "9876543210",
+      "status": "IN_TRANSIT",
       "requestedAt": "2026-06-29 09:00"
     },
     "refund": {
@@ -1421,6 +1542,8 @@
   }
 }
 ```
+
+> v6: 기존 `pickup` 객체를 `shipment` 객체로 대체(신규 `ord_shipment` 엔티티 반영). `shipmentType`은 클레임 유형에 따라 `PICKUP`/`RETURN`/`EXCHANGE_OUT`이며, `status`는 `PENDING`/`IN_TRANSIT`/`DELIVERED`/`FAILED`/`CANCELLED` 중 하나다.
 
 #### Error Responses
 
@@ -1498,6 +1621,8 @@
 }
 ```
 
+> `pgTransactionNo`는 `pay_payment_log.pg_transaction_id`에서 조인해 채운다(`pay_payment` 자체 컬럼이 아님).
+
 #### Error Responses
 
 | HTTP | code | message | 조건 |
@@ -1535,6 +1660,39 @@
 | HTTP | code | message | 조건 |
 |---|---|---|---|
 | 404 | PAYMENT_NOT_FOUND | 결제 건을 찾을 수 없습니다 | 존재하지 않는 paymentId |
+
+---
+
+## 44. POST /api/partner/v1/shipping/{shipmentId}/reship — 배송 실패 재발송 처리
+
+| 항목 | 내용 |
+|---|---|
+| Method | POST |
+| Path | /api/partner/v1/shipping/{shipmentId}/reship |
+| 인증 | Partner Bearer 또는 Admin Bearer (필수) |
+| 설명 | `FAILED` 상태의 shipment(`shipment_type` 공용 — OUTBOUND/PICKUP/RETURN/EXCHANGE_OUT 모두 대상)를 재발송 처리한다. 배송상태 갱신 배치(BAT-003, 60분 주기)가 `FAILED`로 전환시킨 건을 판매자 또는 CS 담당자가 새 운송장으로 재등록한다 (REQ-ORD-062). |
+
+#### Request Body
+
+```json
+{ "carrier": "CJ대한통운", "trackingNo": "5555666677" }
+```
+
+#### Response 200
+
+```json
+{ "code": "SUCCESS", "data": { "shipmentId": "shp-001", "status": "IN_TRANSIT", "carrier": "CJ대한통운", "trackingNumber": "5555666677" } }
+```
+
+> 상태전이: `ord_shipment.status` `FAILED` → `PENDING`(재발송 등록 접수) → `PENDING`에 운송장 등록 시 `IN_TRANSIT`. 재발송 이후에는 §19 배치가 다시 60분 주기로 추적한다. shipment_type이 무엇이든(출고/수거/반송/교환선출고) 동일 로직이 적용된다.
+
+#### Error Responses
+
+| HTTP | code | message | 조건 | 대응 |
+|---|---|---|---|---|
+| 400 | RESHIP_NOT_ALLOWED | FAILED 상태만 재발송 가능합니다 | shipment.status ≠ FAILED | 시퀀스(⑯) §22 |
+| 400 | TRACKING_NO_REQUIRED | 운송장번호를 입력해주세요 | 번호 누락 | — |
+| 404 | SHIPMENT_NOT_FOUND | 배송 건을 찾을 수 없습니다 | 존재하지 않는 shipmentId | — |
 
 ---
 

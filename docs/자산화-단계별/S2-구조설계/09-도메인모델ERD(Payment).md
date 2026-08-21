@@ -13,7 +13,7 @@
 | ID | DESIGN-ERD-PAYMENT-001 |
 | 상태 | **Finalized** |
 | 작성일 | 2026-08-11 |
-| 갱신일 | 2026-08-12 |
+| 갱신일 | 2026-08-21 |
 
 ---
 
@@ -91,6 +91,14 @@ entity "pay_card_restriction" as crestr {
   <<UQ>> card_hash + restricted_date
 }
 
+' ===== Card Fail Counter (신규 v2 — REQ-PAY-023) =====
+entity "pay_card_fail_counter" as cfcnt {
+  * card_hash : varchar <<PK>>
+  --
+  * consecutive_fail_count : int [0]
+  * updated_at : timestamp
+}
+
 ' ===== Relations =====
 payment ||--o{ plog : "1:N\nPG 이력"
 
@@ -118,6 +126,7 @@ pay_payment (결제 트랜잭션, 1 order : 1 payment)
 
 pay_payment_method (고객 결제수단)
 pay_card_restriction (카드 일일 제한)
+pay_card_fail_counter (카드 연속실패 카운터, v2 신설 — REQ-PAY-023)
 ```
 
 ---
@@ -204,6 +213,14 @@ Table pay_card_restriction {
 
   note: 'REQ-PAY-018: 동일 카드 3회 연속 실패 시 당일 제한'
 }
+
+Table pay_card_fail_counter {
+  card_hash varchar [pk, note: '카드 식별 해시 (원본 미저장)']
+  consecutive_fail_count int [not null, default: 0, note: '결제 성공 시 0으로 초기화 (REQ-PAY-023)']
+  updated_at timestamp [not null]
+
+  note: 'REQ-PAY-023: 3회 도달 시 pay_card_restriction 레코드 생성 후 이 카운터는 0으로 리셋'
+}
 ```
 
 ---
@@ -216,6 +233,7 @@ Table pay_card_restriction {
 | `pay_payment_log`의 APPROVE 이벤트는 payment당 최대 1건 | 승인 처리 시 | 멱등성 보장 |
 | `pay_card_restriction` 동일 card_hash+date는 unique | 제한 생성 시 | 중복 제한 방지 |
 | 환불 금액 합계 ≤ 원결제 금액 | 환불 요청 시 | 과잉 환불 방지 |
+| 부분환불(PARTIAL_REFUNDED) 금액은 배송비를 제외한 상품 결제금액 기준 | 부분 환불 요청 시 | REQ-PAY-024 |
 
 ---
 
@@ -227,6 +245,7 @@ Table pay_card_restriction {
 | pay_payment_log | 물리 삭제 없음, 영구 보존 | PG 거래 감사 이력 |
 | pay_payment_method | `is_deleted = true` | 고객 삭제 요청 시 논리 삭제 |
 | pay_card_restriction | 90일 후 배치 물리 삭제 | 일시적 보안 데이터 |
+| pay_card_fail_counter | 물리 삭제 없음(카드별 1행 upsert) | 상시 갱신되는 카운터 |
 
 ---
 
@@ -240,3 +259,5 @@ Table pay_card_restriction {
 | 카드 3회 제한 | REQ-PAY-018 |
 | 재시도 3회 | REQ-PAY-003 |
 | 멱등 판별 (pg_transaction_id) | REQ-PAY-006 |
+| 카드 연속실패 카운터(pay_card_fail_counter) | REQ-PAY-023 (바텀업 검토 보완, 2026-08-21) |
+| 부분환불 배송비 미차감 | REQ-PAY-024 (바텀업 검토 보완, 2026-08-21) |
