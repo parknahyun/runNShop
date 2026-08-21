@@ -1,12 +1,12 @@
 {
   "code": "SUCCESS",
   "data": {
-    "total_count": 3,
+    "total_count": 4,
     "vendors": [
       {
         "vendor_id": 10,
         "vendor_name": "나이키코리아",
-        "shipping_fee": 3000,
+        "shipping_fee": 0,
         "free_threshold": 50000,
         "items": [
           {
@@ -40,7 +40,7 @@
       {
         "vendor_id": 20,
         "vendor_name": "아식스코리아",
-        "shipping_fee": 3000,
+        "shipping_fee": 0,
         "free_threshold": 50000,
         "items": [
           {
@@ -55,9 +55,26 @@
             "quantity": 1,
             "stock": 3,
             "status": "ON_SALE"
+          },
+          {
+            "cart_item_id": 4,
+            "product_id": 103,
+            "product_name": "아식스 매직스피드 4",
+            "image_url": "https://placehold.co/80x80/f5f5f5/333?text=MagicSpeed4",
+            "color": "블루",
+            "size": "265",
+            "price_original": 249000,
+            "price_sale": 249000,
+            "quantity": 1,
+            "stock": 0,
+            "status": "SOLD_OUT"
           }
         ]
       }
+    ],
+    "cart_promotions": [
+      { "promotion_name": "나이키 2개 이상 구매 시 할인", "discount_amount": 2000, "applied": true },
+      { "promotion_name": "러닝화+의류 세트 할인", "discount_amount": 1000, "applied": true }
     ],
     "summary": {
       "total_product_price": 469000,

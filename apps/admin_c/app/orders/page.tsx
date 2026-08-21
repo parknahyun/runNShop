@@ -98,7 +98,7 @@ export default function OrderHistoryPage() {
   }
 
   function handleRowClick(order: OrderRow) {
-    alert(`MDI 탭 오픈: ${order.order_number}\n(주문상세 탭 구현 예정)`);
+    window.location.href = `/orders/${order.order_id}`;
   }
 
   return (

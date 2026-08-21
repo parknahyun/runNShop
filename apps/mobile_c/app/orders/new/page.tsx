@@ -203,15 +203,17 @@ export default function OrderNewPage() {
         </section>
 
         {/* 쿠폰 */}
-        <section className="bg-white rounded-lg border border-gray-200 p-3 flex items-center justify-between">
-          <span className="text-sm text-secondary">쿠폰</span>
-          <span className="text-xs text-primary">사용 가능 {sheet.coupons.available_count}장 [&gt;]</span>
+        <section className="bg-white rounded-lg border border-gray-200 p-3">
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-bold text-secondary">쿠폰</span>
+            <button className="text-xs text-primary">사용 가능 {sheet.coupons.available_count}장 [&gt;]</button>
+          </div>
         </section>
 
         {/* 포인트 */}
         <section className="bg-white rounded-lg border border-gray-200 p-3">
-          <div className="flex items-center justify-between">
-            <span className="text-sm text-secondary">포인트</span>
+          <div className="flex items-center justify-between mb-1">
+            <span className="text-sm font-bold text-secondary">포인트</span>
             <span className="text-xs text-gray-400">보유 {sheet.point.balance.toLocaleString()}P</span>
           </div>
           <div className="flex items-center gap-2 mt-2">
@@ -222,7 +224,7 @@ export default function OrderNewPage() {
               className="flex-1 border border-gray-300 rounded px-2 py-1 text-sm"
               placeholder="0"
             />
-            <span className="text-xs">P</span>
+            <span className="text-xs">P 사용</span>
             <button
               onClick={() => setPointInput(sheet.point.usable)}
               className="text-xs text-primary border border-primary rounded px-2 py-1"
@@ -235,7 +237,9 @@ export default function OrderNewPage() {
 
         {/* 결제수단 */}
         <section className="bg-white rounded-lg border border-gray-200 p-3">
-          <p className="text-sm text-secondary mb-2">결제 수단</p>
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-sm font-bold text-secondary">결제 수단</span>
+          </div>
           <div className="flex gap-2 flex-wrap">
             {sheet.payment_methods.map((pm) => (
               <button
