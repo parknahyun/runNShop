@@ -57,25 +57,78 @@
 > 설계 산출물(축 1)의 각 단계에서 **참고**하는 표준화 기준.
 > 블로커가 아니며, 해당 설계 산출물 작성 전까지 초판 수립을 권장한다.
 
+```plantuml
+@startuml
+skinparam backgroundColor transparent
+skinparam defaultFontSize 11
+skinparam rectangleBorderColor #666666
+skinparam noteBorderColor #999999
+title 컨벤션 산출물 (축 2) — 수평 참조 구조
+
+' === 단계 수평 흐름 (축 1: 설계 산출물) ===
+rectangle "S0\n착수" as S0 #E8F5E9
+rectangle "S1\n요구정의" as S1 #E8F5E9
+rectangle "S2\n구조설계" as S2 #E8F5E9
+rectangle "S3\n상세설계" as S3 #E8F5E9
+rectangle "S4\n구현" as S4 #E8F5E9
+
+S0 -right-> S1
+S1 -right-> S2
+S2 -right-> S3
+S3 -right-> S4
+
+' === 설계 산출물 (각 단계 아래) ===
+rectangle "② NFR" as NFR #BBDEFB
+rectangle "③ 도메인정의서\n④ 컴포넌트" as S1_ART #BBDEFB
+rectangle "⑨ ERD\n⑩ 상태머신\n⑫ 이벤트플로우" as S2_ART #BBDEFB
+rectangle "⑮ 인터페이스명세\n⑯ 시퀀스\n⑰ 화면레이아웃\n⑲ 클래스설계\n⑳ 프로그램목록" as S3_ART #BBDEFB
+rectangle "코드구현\n단위테스트" as S4_ART #BBDEFB
+
+S0 -down-> NFR
+S1 -down-> S1_ART
+S2 -down-> S2_ART
+S3 -down-> S3_ART
+S4 -down-> S4_ART
+
+' === 컨벤션 산출물 (상단, 수평으로 참고 공급) ===
+rectangle "C-8\n보안" as C8 #FFF9C4
+rectangle "C-9\n용어" as C9 #FFF9C4
+rectangle "C-1 아키텍처\nC-5 데이터\nC-6 이벤트" as C156 #FFF9C4
+rectangle "C-4 API\nC-3 디자인시스템\nC-10 UX Writing\nC-2 코딩" as C2340 #FFF9C4
+rectangle "C-7\n테스트" as C7 #FFF9C4
+
+' === 컨벤션 → 설계 산출물 참고 연결 (점선) ===
+C8 ..down..> NFR : 참고
+C9 ..down..> S1_ART : 참고
+C156 ..down..> S2_ART : 참고
+C2340 ..down..> S3_ART : 참고
+C7 ..down..> S4_ART : 참고
+
+' === 위치 정렬 ===
+C8 -[hidden]right-> C9
+C9 -[hidden]right-> C156
+C156 -[hidden]right-> C2340
+C2340 -[hidden]right-> C7
+
+' === 범례 ===
+legend bottom left
+  |= 색상 |= 의미 |
+  | <#E8F5E9> | 단계 (수직 흐름) |
+  | <#BBDEFB> | 설계 산출물 (축 1) |
+  | <#FFF9C4> | 컨벤션 산출물 (축 2) |
+  | 점선 화살표 | 참고 (비강제) |
+endlegend
+
+note bottom of S3_ART
+  컨벤션 미비 시:
+  현업 즉시 판단 → 진행
+  프로젝트 종료 시 역축적
+end note
+
+@enduml
 ```
-단계     S0-착수      S1-요구       S2-구조          S3-상세              S4-구현
-         │            │             │                │                   │
-컨벤션   C-8 보안     C-9 용어      C-1 아키텍처      C-4 API             C-7 테스트
-산출물   │            │             C-5 데이터        C-3 디자인시스템     │
-수립     │            │             C-6 이벤트        C-10 UX Writing     │
-시점     │            │             │                C-2 코딩            │
-         ▼            ▼             ▼                ▼                   ▼
-설계     ②NFR        ③도메인정의   ⑨ERD            ⑮인터페이스명세     코드구현
-산출물   ←C-8        ←C-9          ←C-1,C-5        ←C-4               ←C-2,C-7
-(참고)                ④컴포넌트    ⑩상태머신        ⑯시퀀스
-                      ←C-1,C-9     ←C-5            ←C-1,C-4,C-6
-                                   ⑫이벤트플로우    ⑰화면레이아웃
-                                   ←C-6            ←C-3,C-10
-                                                   ⑲클래스설계
-                                                   ←C-2
-                                                   ⑳프로그램목록
-                                                   ←C-4
-```
+
+### 매핑 테이블
 
 | ID | 컨벤션명 | 수립 데드라인 | 참고하는 설계 산출물 |
 |---|---|---|---|
