@@ -38,3 +38,7 @@ Thumbs.db
 # === Misc ===
 *.tsbuildinfo
 next-env.d.ts
+apps/mobile_c/node_modules/
+apps/admin_c/node_modules/
+apps/mobile_c/.next/
+apps/admin_c/.next/
