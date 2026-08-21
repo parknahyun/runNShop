@@ -37,6 +37,12 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; f
 .summary-card--warn { border-color: #f59e0b; background: #fffbeb; }
 .summary-card--warn .summary-card__count { color: #d97706; }
 
+/* SummaryBar compact (8개 이상 카드 한 줄) */
+.summary-bar--compact { margin-bottom: 16px; }
+.summary-bar--compact .summary-card { padding: 0 14px; display: flex; flex-direction: row; align-items: center; gap: 6px; min-height: 36px; white-space: nowrap; flex: initial; }
+.summary-bar--compact .summary-card__label { font-size: 12px; margin-bottom: 0; }
+.summary-bar--compact .summary-card__count { font-size: 13px; font-weight: 700; }
+
 /* FilterBar */
 .filter-bar { display: flex; gap: 8px; align-items: center; background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 14px 16px; margin-bottom: 16px; flex-wrap: wrap; }
 .filter-bar__input { height: 32px; padding: 0 10px; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 13px; min-width: 180px; }

@@ -69,7 +69,7 @@ Admin과 동일
 ### 나머지 컴포넌트
 
 Admin과 동일:
-- Shell, TabBar, Page, SummaryBar, FilterBar, Table, Badge, Modal, Form, Timeline, Toast, Skeleton, Pagination
+- Shell, TabBar, Page, SummaryBar (+ compact 변형 + Toolbar 한 줄 패턴), FilterBar, Table, Badge, Modal, Form, Timeline, Toast, Skeleton, Pagination
 
 ---
 

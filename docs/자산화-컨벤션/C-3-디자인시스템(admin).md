@@ -118,11 +118,28 @@
 | 클래스 | 역할 |
 |---|---|
 | `.summary-bar` | flex, gap:12px, mb:20px |
+| `.summary-bar--compact` | 카드 다수(5+)일 때 — 카드를 가로 배치, 내용 크기 기반 폭 |
 | `.summary-card` | flex:1, bg:#fff, border, radius:8px, padding:16px 20px |
-| `.summary-card__label` | 12px, color:#64748b |
-| `.summary-card__count` | 24px, 700 |
+| `.summary-card` (compact 내) | flex:initial, flex-direction:row, min-height:36px, padding:0 14px, gap:6px |
+| `.summary-card__label` | 12px, color:#64748b (compact: mb:0) |
+| `.summary-card__count` | 24px, 700 (compact: 13px, 700) |
 | `.summary-card--warn` | border:#f59e0b, bg:#fffbeb, count:#d97706 |
 | `.summary-card--info` | border:#60a5fa, bg:#eff6ff, count:#1d4ed8 |
+
+#### SummaryBar + Toolbar 한 줄 패턴
+
+SummaryBar 옆에 액션 버튼([엑셀 다운로드] 등)을 같은 행에 배치하는 패턴:
+
+```
+┌─ 한 줄 row (flex, align-items:center, gap:12px) ─────────────┐
+│ [summary-bar--compact: 카드1 카드2 ... 카드N]  [엑셀 다운로드] │
+│  ← flex:1                                    ← flex-shrink:0  │
+└───────────────────────────────────────────────────────────────┘
+```
+
+- 래퍼: `display:flex; align-items:center; gap:12px; margin-bottom:16px;`
+- SummaryBar: `flex:1; margin-bottom:0;`
+- 버튼: `flex-shrink:0;`
 
 ### FilterBar
 
