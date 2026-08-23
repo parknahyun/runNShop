@@ -71,6 +71,68 @@
 
 ---
 
+## 공통 규칙 (C6 API설계컨벤션 준수)
+
+> 이하 개별 API의 에러 응답 테이블은 `code`/`message`/`조건`/`대응 GWT` 컬럼만 표기하여 가독성을 확보한다.
+> **모든 에러 응답은 아래 Envelope을 따르며**, 개별 API 섹션에서 생략된 `errors[]`/`traceId`도 실제 응답에는 포함된다(C6 §6.3).
+
+### 1. 에러 응답 Envelope (전체 형태)
+
+```json
+{
+  "code": "STOCK_NOT_AVAILABLE",
+  "message": "재고가 부족합니다",
+  "errors": [
+    { "field": "skuId", "code": "INSUFFICIENT_STOCK", "message": "요청 수량이 재고를 초과합니다." }
+  ],
+  "traceId": "trc_01HXYZ..."
+}
+```
+
+- `errors[]`: 필드 단위 유효성 검증 실패 시에만 포함(예: `INVALID_QUANTITY`, `TERMS_NOT_AGREED`, `ADDRESS_REQUIRED` 등 입력값 문제). 단일 비즈니스 규칙 위반(예: `CLAIM_PERIOD_EXPIRED`)은 `errors[]` 없이 `code`+`message`만으로 충분.
+- `traceId`: 운영 환경에서 항상 포함(로그 추적용). 프로토타입 Mock 응답에도 `trc_` 접두 ULID를 고정 포함한다.
+
+### 2. HTTP Status 코드 사용 기준 (C6 §7)
+
+| HTTP | 적용 대상 | 본 문서 내 해당 코드 |
+|---|---|---|
+| 400 | 요청 자체의 유효성 검증 실패 (필수값 누락·형식 오류) | `INVALID_QUANTITY`, `TRACKING_NO_REQUIRED`, `ADDRESS_REQUIRED`, `TERMS_NOT_AGREED`, `REASON_REQUIRED`, `EXCHANGE_SKU_REQUIRED`, `CLAIM_PHOTO_REQUIRED`, `INSPECT_PHOTO_REQUIRED`, `NOT_EXCHANGE_CLAIM`, `INVALID_DATE_RANGE`, `PAYMENT_FAILED`(PG 승인 거절) |
+| 409 | 리소스/상태 충돌 (재고 부족, 이미 처리된 상태, 중복 요청) | `STOCK_NOT_AVAILABLE`, `EXCEED_STOCK`, `OPTION_SOLD_OUT`, `PRODUCT_NOT_AVAILABLE`, `CANCEL_NOT_ALLOWED`, `CONFIRM_NOT_ALLOWED`, `ADDRESS_CHANGE_NOT_ALLOWED`, `SHIP_NOT_ALLOWED`, `CLAIM_NOT_ALLOWED`, `CLAIM_CANCEL_NOT_ALLOWED`, `CLAIM_ALREADY_DECIDED`, `EXCHANGE_STOCK_UNAVAILABLE`, `CARD_RESTRICTED`, `RESHIP_NOT_ALLOWED`, `RETURN_DELIVER_NOT_ALLOWED` |
+| 422 | 비즈니스 규칙 위반 (기한 초과, 한도 초과, 조합 불일치) | `CLAIM_PERIOD_EXPIRED`, `PAYMENT_EXPIRED`, `CART_FULL`, `EXCHANGE_SKU_MISMATCH`, `COUPON_NOT_APPLICABLE`, `COUPON_EXPIRED`, `POINT_EXCEED` |
+| 404 | 리소스 없음 | `CART_ITEM_NOT_FOUND`, `CLAIM_NOT_FOUND`, `PAYMENT_NOT_FOUND`, `SHIPMENT_NOT_FOUND` |
+
+> 아래 개별 API 에러 테이블의 HTTP 컬럼은 위 기준에 따라 정정되어 있다. (예: 기존 400으로 뭉뚱그려졌던 재고부족/상태충돌류 → 409, 기한초과류 → 422)
+
+### 3. Pagination (목록 API 공통, C6 §6.2)
+
+목록 조회 API는 Query Parameter로 `sort`(필드명, camelCase)와 `direction`(`asc`|`desc`)을 추가로 지원하며,
+Response는 `totalCount` 단일 필드 대신 `pagination` 객체를 포함한다.
+
+```json
+{
+  "code": "SUCCESS",
+  "data": {
+    "orders": [ ... ],
+    "pagination": { "page": 1, "size": 10, "totalCount": 12, "totalPages": 2 }
+  }
+}
+```
+
+> 배열 필드명은 도메인 가독성을 위해 `orders`/`claims`/`payments` 등 리소스명을 유지한다(C6 예시의 `items`는 범용 표기이며, 도메인 문서에서는 리소스명 사용을 허용).
+> `sort` 기본값은 API별로 다르며 각 섹션의 Query 예시에 명시한다. `direction` 기본값은 `desc`.
+
+### 4. Idempotency-Key (C6 §4)
+
+금액이 오가거나 중복 실행 시 부작용이 있는 POST API는 `Idempotency-Key: {ULID}` 헤더를 지원한다(유효기간 24시간, 동일 Key 재요청 시 최초 처리 결과를 그대로 반환).
+
+| API | 대상 이유 |
+|---|---|
+| #5 POST /api/v1/orders/sheet | 주문서 중복 생성 방지 |
+| #6 POST /api/v1/orders/{orderSheetId}/pay | 결제 요청 중복 접수 방지 (재고 이중 선점·이중 결제 방지) |
+| #31 POST /api/v1/claims/{claimId}/shipping-payment | 배송비 결제 중복 접수 방지 |
+
+---
+
 ## 1. POST /api/v1/cart/items — 장바구니 담기
 
 | 항목 | 내용 |
@@ -110,8 +172,8 @@
 
 | HTTP | code | message | 조건 | 대응 GWT |
 |---|---|---|---|---|
-| 400 | CART_FULL | 장바구니가 가득 찼습니다 (최대 50개) | 50개 초과 | AC-ORD-005 |
-| 400 | PRODUCT_NOT_AVAILABLE | 현재 구매할 수 없는 상품입니다 | 품절·판매중지 | AC-ORD-008 |
+| 422 | CART_FULL | 장바구니가 가득 찼습니다 (최대 50개) | 50개 초과 | AC-ORD-005 |
+| 409 | PRODUCT_NOT_AVAILABLE | 현재 구매할 수 없는 상품입니다 | 품절·판매중지 | AC-ORD-008 |
 | 400 | INVALID_QUANTITY | 수량은 1~99 사이여야 합니다 | 수량 범위 초과 | — |
 | 401 | UNAUTHORIZED | 로그인이 필요합니다 | 토큰 없음/만료 | — |
 
@@ -198,7 +260,7 @@
 | HTTP | code | message | 조건 |
 |---|---|---|---|
 | 400 | INVALID_QUANTITY | 수량은 1~99 사이여야 합니다 | 범위 초과 |
-| 400 | EXCEED_STOCK | 재고 수량을 초과합니다 | 재고 부족 |
+| 409 | EXCEED_STOCK | 재고 수량을 초과합니다 | 재고 부족 |
 | 404 | CART_ITEM_NOT_FOUND | 장바구니 항목을 찾을 수 없습니다 | 존재하지 않는 ID |
 
 ---
@@ -226,6 +288,7 @@
 | Method | POST |
 | Path | /api/v1/orders/sheet |
 | 인증 | Bearer {memberId} (필수) |
+| Header | `Idempotency-Key: {ULID}` (선택, 중복 생성 방지) |
 | 설명 | 장바구니 선택 상품으로 주문서 생성. 배송지·쿠폰·포인트·결제수단 정보 반환 |
 
 #### Request Body
@@ -262,6 +325,7 @@
 | Method | POST |
 | Path | /api/v1/orders/{orderSheetId}/pay |
 | 인증 | Bearer {memberId} (필수) |
+| Header | `Idempotency-Key: {ULID}` (필수 권장, 재고 이중 선점·이중 결제 방지) |
 | 설명 | 배송지·약관 검증 → 주문 생성(ORDER_RECEIVED) → Catalog 재고 선점(동기, 성공 시 PAYMENT_PENDING) → Payment에 결제 요청 전달(동기 호출이나 PG 승인 자체는 기다리지 않고 "접수됨"만 확인) 까지 처리 후 즉시 200 응답한다. **PG 승인 성공/실패 결과는 이 응답에 포함되지 않는다** — 이후 Payment가 비동기로 발행하는 PAYMENT_APPROVED/PAYMENT_FAILED 이벤트를 Order가 소비해 주문 상태를 PAYMENT_COMPLETED 또는 PAYMENT_FAILED로 확정한다(REQ-ORD-012~014, 시퀀스 §4/§16 참조). |
 
 #### Request Body
@@ -299,8 +363,8 @@
 |---|---|---|---|---|
 | 400 | ADDRESS_REQUIRED | 배송지를 입력해주세요 | 배송지 미선택 | AC-ORD-012 |
 | 400 | TERMS_NOT_AGREED | 필수 약관에 동의해주세요 | 필수 약관 미동의 | — |
-| 400 | STOCK_NOT_AVAILABLE | 재고가 부족합니다 | 재고 선점 실패 | — |
-| 400 | CARD_RESTRICTED | 카드가 당일 결제 제한 상태입니다 | 동일 카드 3회 연속 결제 실패로 당일 차단됨 (Payment가 접수 단계에서 동기 반환) | REQ-PAY-018(제한 규칙), REQ-PAY-023(카운터 저장·리셋 메커니즘) |
+| 409 | STOCK_NOT_AVAILABLE | 재고가 부족합니다 | 재고 선점 실패 | — |
+| 409 | CARD_RESTRICTED | 카드가 당일 결제 제한 상태입니다 | 동일 카드 3회 연속 결제 실패로 당일 차단됨 (Payment가 접수 단계에서 동기 반환) | REQ-PAY-018(제한 규칙), REQ-PAY-023(카운터 저장·리셋 메커니즘) |
 
 > PG 승인 실패(`PAYMENT_FAILED`)·타임아웃은 이 API의 동기 에러가 아니다. 재고 선점 성공 후에는 Payment 결제 요청 접수(큐 등록)까지만 동기로 확인하며, PG 승인 결과는 §16(컨슈머)에서 비동기로 반영된다.
 
@@ -333,7 +397,7 @@
 
 | HTTP | code | message | 조건 | 대응 GWT |
 |---|---|---|---|---|
-| 400 | CANCEL_NOT_ALLOWED | 출고 준비 중에는 취소할 수 없습니다. 반품 신청을 이용해주세요 | PREPARING 이후 상태 | AC-ORD-018 |
+| 409 | CANCEL_NOT_ALLOWED | 출고 준비 중에는 취소할 수 없습니다. 반품 신청을 이용해주세요 | PREPARING 이후 상태 | AC-ORD-018 |
 | 403 | FORBIDDEN | 본인 주문만 취소할 수 있습니다 | 타인 주문 | — |
 
 ---
@@ -359,7 +423,7 @@
 
 | HTTP | code | message | 조건 |
 |---|---|---|---|
-| 400 | CONFIRM_NOT_ALLOWED | 배송완료 상태에서만 구매확정이 가능합니다 | DELIVERED 아닌 상태 |
+| 409 | CONFIRM_NOT_ALLOWED | 배송완료 상태에서만 구매확정이 가능합니다 | DELIVERED 아닌 상태 |
 
 ---
 
@@ -393,7 +457,7 @@
 
 | HTTP | code | message | 조건 | 대응 GWT |
 |---|---|---|---|---|
-| 400 | ADDRESS_CHANGE_NOT_ALLOWED | 출고 후에는 변경할 수 없습니다 | PREPARING 이후 | AC-ORD-025 |
+| 409 | ADDRESS_CHANGE_NOT_ALLOWED | 출고 후에는 변경할 수 없습니다 | PREPARING 이후 | AC-ORD-025 |
 
 ---
 
@@ -432,7 +496,7 @@
 
 > `exchangeSkuId`: 교환 대상 SKU ID. `claimType=EXCHANGE`일 때 **필수** (Catalog 도메인 SKU 참조, 선출고 시 사용)
 
-> `responsibility`: `CUSTOMER`(단순변심 등) / `VENDOR`(상품불량 등). `images`: 첨부 이미지 URL 배열, 최대 3장. **`responsibility=VENDOR`일 때 최소 1장 필수**(REQ-ORD-058), CUSTOMER는 선택. 서버는 이 이미지를 `uploaded_by=CUSTOMER`로 저장하며, "최대 3장" 제한은 이후 품질점검 거부(#38)에서 판매자가 첨부하는 사진(`uploaded_by=VENDOR`)과 완전히 독립적으로 적용된다(REQ-ORD-075).
+> `responsibility`: `CUSTOMER`(단순변심 등) / `VENDOR`(상품불량 등). `images`: 첨부 이미지 URL 배열, 최대 3장. **`responsibility=VENDOR`일 때 최소 1장 필수**(REQ-ORD-058), CUSTOMER는 선택. 서버는 이 이미지를 `uploaded_by=CUSTOMER`로 저장하며, "최대 3장" 제한은 이후 품질점검 거부(#38)에서 입점사가 첨부하는 사진(`uploaded_by=VENDOR`)과 완전히 독립적으로 적용된다(REQ-ORD-075).
 
 ```json
 {
@@ -459,10 +523,10 @@
 
 | HTTP | code | message | 조건 | 대응 GWT |
 |---|---|---|---|---|
-| 400 | CLAIM_PERIOD_EXPIRED | 기한이 초과되었습니다 (배송완료 후 10일 이내) | 10일 초과 | AC-ORD-032 |
-| 400 | CLAIM_NOT_ALLOWED | 배송완료 후에만 신청할 수 있습니다 | DELIVERED 아닌 상태 | — |
+| 422 | CLAIM_PERIOD_EXPIRED | 기한이 초과되었습니다 (배송완료 후 10일 이내) | 10일 초과 | AC-ORD-032 |
+| 409 | CLAIM_NOT_ALLOWED | 배송완료 후에만 신청할 수 있습니다 | DELIVERED 아닌 상태 | — |
 | 400 | EXCHANGE_SKU_REQUIRED | 교환할 옵션(SKU)을 선택해주세요 | claimType=EXCHANGE인데 exchangeSkuId 누락 | REQ-ORD-056 |
-| 400 | EXCHANGE_SKU_MISMATCH | 교환은 동일 상품 내 옵션 변경만 가능합니다 | claimType=EXCHANGE인데 exchangeSkuId의 productId가 원 주문 상품(productId)과 다름 | REQ-ORD-070 |
+| 422 | EXCHANGE_SKU_MISMATCH | 교환은 동일 상품 내 옵션 변경만 가능합니다 | claimType=EXCHANGE인데 exchangeSkuId의 productId가 원 주문 상품(productId)과 다름 | REQ-ORD-070 |
 | 400 | CLAIM_PHOTO_REQUIRED | 상품 상태를 확인할 수 있는 사진을 1장 이상 첨부해주세요 | responsibility=VENDOR인데 images가 빈 배열 | REQ-ORD-058 |
 
 ---
@@ -492,7 +556,7 @@
 
 | HTTP | code | message | 조건 | 대응 GWT |
 |---|---|---|---|---|
-| 400 | CLAIM_CANCEL_NOT_ALLOWED | 귀책 판정/수거 시작 이후에는 취소할 수 없습니다 | claim.status가 `RECEIVED`/`PAYMENT_PENDING`이 아님 (예: `INSPECTING` 이후) | REQ-ORD-071 |
+| 409 | CLAIM_CANCEL_NOT_ALLOWED | 귀책 판정/수거 시작 이후에는 취소할 수 없습니다 | claim.status가 `RECEIVED`/`PAYMENT_PENDING`이 아님 (예: `INSPECTING` 이후) | REQ-ORD-071 |
 | 403 | FORBIDDEN | 본인 클레임만 취소할 수 있습니다 | 타인 클레임 | — |
 
 ---
@@ -504,7 +568,7 @@
 | Method | GET |
 | Path | /api/v1/members/me/orders |
 | 인증 | Bearer {memberId} (필수) |
-| Query | `?page=1&size=10&status=ALL` |
+| Query | `?page=1&size=10&status=ALL&sort=orderDate&direction=desc` |
 
 #### Response 200
 
@@ -512,10 +576,10 @@
 {
   "code": "SUCCESS",
   "data": {
-    "totalCount": 5,
     "orders": [
       { "orderId": "ord-001", "platformOrderNo": "ORD-20260626-001", "productName": "나이키 페가수스 41", "status": "DELIVERED", "amount": 152000, "orderDate": "2026-06-26" }
-    ]
+    ],
+    "pagination": { "page": 1, "size": 10, "totalCount": 5, "totalPages": 1 }
   }
 }
 ```
@@ -592,7 +656,7 @@
 | Method | GET |
 | Path | /api/admin/v1/orders |
 | 인증 | Admin Bearer (필수) |
-| Query | `?keyword=&status=ALL&from=2026-06-01&to=2026-06-30&page=1&size=10` |
+| Query | `?keyword=&status=ALL&from=2026-06-01&to=2026-06-30&page=1&size=10&sort=orderDate&direction=desc` |
 
 #### Response 200
 
@@ -600,10 +664,10 @@
 {
   "code": "SUCCESS",
   "data": {
-    "totalCount": 12,
     "orders": [
       { "orderId": "ord-001", "platformOrderNo": "ORD-20260626-001", "productName": "나이키 페가수스 41", "customer": "홍*동", "vendorName": "나이키코리아", "status": "PAYMENT_COMPLETED", "amount": 152000, "orderDate": "2026-06-26 09:15" }
-    ]
+    ],
+    "pagination": { "page": 1, "size": 10, "totalCount": 12, "totalPages": 2 }
   }
 }
 ```
@@ -673,7 +737,7 @@
 | Method | GET |
 | Path | /api/admin/v1/claims |
 | 인증 | Admin Bearer (필수) |
-| Query | `?keyword=&claimType=ALL&status=ALL&responsibility=ALL&from=&to=&page=1&size=10` |
+| Query | `?keyword=&claimType=ALL&status=ALL&responsibility=ALL&from=&to=&page=1&size=10&sort=createdAt&direction=desc` |
 
 #### Response 200
 
@@ -681,10 +745,10 @@
 {
   "code": "SUCCESS",
   "data": {
-    "totalCount": 8,
     "claims": [
       { "claimId": "clm-001", "claimNo": "CLM-20260626-001", "platformOrderNo": "ORD-20260626-001", "claimType": "RETURN", "status": "RECEIVED", "responsibility": "CUSTOMER", "channel": "SELF", "refundAmount": 152000, "createdAt": "2026-06-26 10:30", "completedAt": null }
-    ]
+    ],
+    "pagination": { "page": 1, "size": 10, "totalCount": 8, "totalPages": 1 }
   }
 }
 ```
@@ -747,7 +811,7 @@
 
 | HTTP | code | message | 조건 | 대응 |
 |---|---|---|---|---|
-| 400 | CLAIM_ALREADY_DECIDED | 이미 귀책 판정이 완료된 클레임입니다 | claim.status ≠ RECEIVED | — |
+| 409 | CLAIM_ALREADY_DECIDED | 이미 귀책 판정이 완료된 클레임입니다 | claim.status ≠ RECEIVED | — |
 | 409 | EXCHANGE_STOCK_UNAVAILABLE | 교환 가능한 재고가 없습니다 | `claimType=EXCHANGE`인 클레임의 귀책판정 시점에 `exchangeSkuId` 재고 선점 실패 (선출고 전 단계에서 판정 자체를 차단; 이전에는 39-1 exchange-ship 시점 에러로 잘못 배치돼 있었음) | REQ-ORD-069 |
 
 > `EXCHANGE_STOCK_UNAVAILABLE`은 이 endpoint(귀책판정 시점)에서만 반환된다. 39-1(exchange-ship, 운송장 등록)은 이미 재고 선점이 끝난 뒤의 배송 등록 단계이므로 이 에러가 발생하지 않는다.
@@ -811,7 +875,7 @@
 | Method | GET |
 | Path | /api/partner/v1/orders |
 | 인증 | Partner Bearer (필수) |
-| Query | `?status=ALL&from=&to=&keyword=&page=1&size=10` |
+| Query | `?status=ALL&from=&to=&keyword=&page=1&size=10&sort=orderDate&direction=desc` |
 
 #### Response 200
 
@@ -819,10 +883,10 @@
 {
   "code": "SUCCESS",
   "data": {
-    "totalCount": 10,
     "orders": [
       { "orderId": "ord-001", "platformOrderNo": "ORD-20260626-001", "productName": "나이키 페가수스 41", "customerName": "홍*동", "quantity": 1, "amount": 152000, "status": "PAYMENT_COMPLETED", "orderDate": "2026-06-26" }
-    ]
+    ],
+    "pagination": { "page": 1, "size": 10, "totalCount": 10, "totalPages": 1 }
   }
 }
 ```
@@ -876,7 +940,7 @@
 
 | HTTP | code | message | 조건 |
 |---|---|---|---|
-| 400 | SHIP_NOT_ALLOWED | 결제완료 상태에서만 출고 처리할 수 있습니다 | PAYMENT_COMPLETED 아닌 상태 |
+| 409 | SHIP_NOT_ALLOWED | 결제완료 상태에서만 출고 처리할 수 있습니다 | PAYMENT_COMPLETED 아닌 상태 |
 
 ---
 
@@ -887,7 +951,7 @@
 | Method | GET |
 | Path | /api/partner/v1/shipping |
 | 인증 | Partner Bearer (필수) |
-| Query | `?status=ALL&keyword=&page=1&size=10` |
+| Query | `?status=ALL&keyword=&page=1&size=10&sort=shippedAt&direction=desc` |
 
 #### Response 200
 
@@ -895,10 +959,10 @@
 {
   "code": "SUCCESS",
   "data": {
-    "totalCount": 5,
     "items": [
       { "orderId": "ord-001", "platformOrderNo": "ORD-20260626-001", "productName": "나이키 페가수스 41", "customerName": "홍*동", "status": "PREPARING", "deliveryCompany": null, "trackingNo": null, "shippedAt": null }
-    ]
+    ],
+    "pagination": { "page": 1, "size": 10, "totalCount": 5, "totalPages": 1 }
   }
 }
 ```
@@ -997,6 +1061,7 @@
 | Method | POST |
 | Path | /api/v1/claims/{claimId}/shipping-payment |
 | 인증 | Bearer {memberId} (필수) |
+| Header | `Idempotency-Key: {ULID}` (필수 권장, 중복 결제 방지) |
 | 설명 | 클레임 수거/반송 배송비 결제. PG SDK 인증 후 서버 확인. 쿠폰 적용 가능 |
 
 #### Request Body
@@ -1027,7 +1092,7 @@
 
 | HTTP | code | message | 조건 |
 |---|---|---|---|
-| 400 | PAYMENT_EXPIRED | 결제 기한이 초과되었습니다 | 24시간 초과 → 자동취소 |
+| 422 | PAYMENT_EXPIRED | 결제 기한이 초과되었습니다 | 24시간 초과 → 자동취소 |
 | 400 | PAYMENT_FAILED | 결제에 실패했습니다 | PG 승인 실패 |
 | 404 | CLAIM_NOT_FOUND | 클레임을 찾을 수 없습니다 | 존재하지 않는 클레임 |
 
@@ -1061,7 +1126,7 @@
 
 | HTTP | code | message | 조건 |
 |---|---|---|---|
-| 400 | OPTION_SOLD_OUT | 해당 옵션은 품절입니다 | 잔여수량 ≤ 0 |
+| 409 | OPTION_SOLD_OUT | 해당 옵션은 품절입니다 | 잔여수량 ≤ 0 |
 | 404 | CART_ITEM_NOT_FOUND | 장바구니 항목을 찾을 수 없습니다 | 존재하지 않는 ID |
 
 ---
@@ -1160,9 +1225,9 @@
 
 | HTTP | code | message | 조건 |
 |---|---|---|---|
-| 400 | COUPON_EXPIRED | 쿠폰이 만료되었습니다 | 팝업 열린 동안 쿠폰 만료 |
-| 400 | COUPON_NOT_APPLICABLE | 적용 조건을 충족하지 않습니다 | 최소주문금액 미달 등 |
-| 400 | POINT_EXCEED | 사용 가능 포인트를 초과했습니다 | 잔액 부족 |
+| 422 | COUPON_EXPIRED | 쿠폰이 만료되었습니다 | 팝업 열린 동안 쿠폰 만료 |
+| 422 | COUPON_NOT_APPLICABLE | 적용 조건을 충족하지 않습니다 | 최소주문금액 미달 등 |
+| 422 | POINT_EXCEED | 사용 가능 포인트를 초과했습니다 | 잔액 부족 |
 
 ---
 
@@ -1379,7 +1444,7 @@
 | HTTP | code | message | 조건 |
 |---|---|---|---|
 | 400 | TRACKING_NO_REQUIRED | 운송장번호를 입력해주세요 | 번호 누락 |
-| 400 | NOT_EXCHANGE_CLAIM | 교환 클레임이 아닙니다 | claimType≠EXCHANGE |
+| 409 | NOT_EXCHANGE_CLAIM | 교환 클레임이 아닙니다 | claimType≠EXCHANGE |
 
 > `EXCHANGE_STOCK_UNAVAILABLE`(교환 재고 없음)은 이 endpoint의 에러가 아니다 — 재고 선점은 귀책판정(§19-1 `blame-decision`) 시점에 이미 끝났어야 하므로, 재고 부족은 그때 차단된다(REQ-ORD-069). 이 endpoint는 운송장 등록만 수행한다.
 
@@ -1414,7 +1479,7 @@
 
 | HTTP | code | message | 조건 |
 |---|---|---|---|
-| 400 | RETURN_DELIVER_NOT_ALLOWED | 반송 배송 중(이동중) 상태에서만 배송완료 처리할 수 있습니다 | shipment(RETURN).status가 IN_TRANSIT 아님 |
+| 409 | RETURN_DELIVER_NOT_ALLOWED | 반송 배송 중(이동중) 상태에서만 배송완료 처리할 수 있습니다 | shipment(RETURN).status가 IN_TRANSIT 아님 |
 | 404 | CLAIM_NOT_FOUND | 클레임을 찾을 수 없습니다 | 존재하지 않는 claimId |
 
 ---
@@ -1426,7 +1491,7 @@
 | Method | GET |
 | Path | /api/partner/v1/claims |
 | 인증 | Partner Bearer (필수) |
-| Query | `?claimType=ALL&status=ALL&from=&to=&keyword=&page=1&size=10` |
+| Query | `?claimType=ALL&status=ALL&from=&to=&keyword=&page=1&size=10&sort=createdAt&direction=desc` |
 | 설명 | 취소/반품/교환 통합 목록. 입점사 자기 건만 반환 |
 
 #### Response 200
@@ -1435,23 +1500,24 @@
 {
   "code": "SUCCESS",
   "data": {
-    "totalCount": 8,
     "claims": [
       { "claimId": "clm-001", "claimNo": "CLM-20260628-001", "platformOrderNo": "ORD-20260622-008", "claimType": "RETURN", "productName": "호카 클리프턴 9", "customerName": "이*미", "status": "INSPECTING", "shippingFee": 5000, "shippingFeeStatus": "PAID", "createdAt": "2026-06-28" }
-    ]
+    ],
+    "pagination": { "page": 1, "size": 10, "totalCount": 8, "totalPages": 1 }
   }
 }
 ```
 
 ---
 
-## 근거
+## 28. GET /api/v1/members/me/claims — 내 클레임 목록
 
 | 항목 | 내용 |
 |---|---|
 | Method | GET |
 | Path | /api/v1/members/me/claims |
 | 인증 | Bearer {memberId} (필수) |
+| Query | `?status=ALL&page=1&size=10&sort=createdAt&direction=desc` |
 | 설명 | 본인이 접수한 클레임(취소/반품/교환) 목록을 최신순으로 반환 |
 
 #### Response 200
@@ -1460,7 +1526,6 @@
 {
   "code": "SUCCESS",
   "data": {
-    "totalCount": 3,
     "claims": [
       {
         "claimId": "clm-001",
@@ -1480,7 +1545,8 @@
         "createdAt": "2026-06-28",
         "updatedAt": "2026-06-29"
       }
-    ]
+    ],
+    "pagination": { "page": 1, "size": 10, "totalCount": 3, "totalPages": 1 }
   }
 }
 ```
@@ -1572,7 +1638,7 @@
 | Method | GET |
 | Path | /api/v1/members/me/payments |
 | 인증 | Bearer {memberId} (필수) |
-| Query | `?from=&to=&page=1&size=10` |
+| Query | `?from=&to=&page=1&size=10&sort=paidAt&direction=desc` |
 | 설명 | 본인 결제 건만 최신순으로 반환 (REQ-PAY-020) |
 
 #### Response 200
@@ -1581,10 +1647,10 @@
 {
   "code": "SUCCESS",
   "data": {
-    "totalCount": 3,
     "payments": [
       { "paymentId": "pay-001", "platformOrderNo": "ORD-20260626-001", "amount": 152000, "paymentMethod": "신용카드 (****-1234)", "status": "PAID", "paidAt": "2026-06-26 09:14" }
-    ]
+    ],
+    "pagination": { "page": 1, "size": 10, "totalCount": 3, "totalPages": 1 }
   }
 }
 ```
@@ -1604,7 +1670,7 @@
 | Method | GET |
 | Path | /api/admin/v1/payments/search |
 | 인증 | Admin Bearer (필수) |
-| Query | `?status=ALL&platformOrderNo=&pgTransactionNo=&from=&to=&page=1&size=10` |
+| Query | `?status=ALL&platformOrderNo=&pgTransactionNo=&from=&to=&page=1&size=10&sort=paidAt&direction=desc` |
 | 설명 | 상태·기간·주문번호·PG거래번호 필터로 결제 건 검색 (REQ-PAY-021) |
 
 #### Response 200
@@ -1613,10 +1679,10 @@
 {
   "code": "SUCCESS",
   "data": {
-    "totalCount": 1,
     "payments": [
       { "paymentId": "pay-001", "platformOrderNo": "ORD-20260626-001", "customerName": "홍*동", "amount": 152000, "pgTransactionNo": "PG-20260626-99001", "status": "PAID", "paidAt": "2026-06-26 09:14" }
-    ]
+    ],
+    "pagination": { "page": 1, "size": 10, "totalCount": 1, "totalPages": 1 }
   }
 }
 ```
@@ -1627,7 +1693,7 @@
 
 | HTTP | code | message | 조건 |
 |---|---|---|---|
-| 400 | INVALID_DATE_RANGE | 조회 기간이 올바르지 않습니다 | from > to |
+| 400 | INVALID_DATE_RANGE | 조회 기간이 올바르지 않습니다 (from > to) | from > to |
 
 ---
 
@@ -1670,7 +1736,7 @@
 | Method | POST |
 | Path | /api/partner/v1/shipping/{shipmentId}/reship |
 | 인증 | Partner Bearer 또는 Admin Bearer (필수) |
-| 설명 | `FAILED` 상태의 shipment(`shipment_type` 공용 — OUTBOUND/PICKUP/RETURN/EXCHANGE_OUT 모두 대상)를 재발송 처리한다. 배송상태 갱신 배치(BAT-003, 60분 주기)가 `FAILED`로 전환시킨 건을 판매자 또는 CS 담당자가 새 운송장으로 재등록한다 (REQ-ORD-062). |
+| 설명 | `FAILED` 상태의 shipment(`shipment_type` 공용 — OUTBOUND/PICKUP/RETURN/EXCHANGE_OUT 모두 대상)를 재발송 처리한다. 배송상태 갱신 배치(BAT-003, 60분 주기)가 `FAILED`로 전환시킨 건을 입점사 또는 CS 담당자가 새 운송장으로 재등록한다 (REQ-ORD-062). |
 
 #### Request Body
 
@@ -1690,7 +1756,7 @@
 
 | HTTP | code | message | 조건 | 대응 |
 |---|---|---|---|---|
-| 400 | RESHIP_NOT_ALLOWED | FAILED 상태만 재발송 가능합니다 | shipment.status ≠ FAILED | 시퀀스(DM) §22 |
+| 409 | RESHIP_NOT_ALLOWED | FAILED 상태만 재발송 가능합니다 | shipment.status ≠ FAILED | 시퀀스(DM) §22 |
 | 400 | TRACKING_NO_REQUIRED | 운송장번호를 입력해주세요 | 번호 누락 | — |
 | 404 | SHIPMENT_NOT_FOUND | 배송 건을 찾을 수 없습니다 | 존재하지 않는 shipmentId | — |
 

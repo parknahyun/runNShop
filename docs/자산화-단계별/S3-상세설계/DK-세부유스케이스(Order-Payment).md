@@ -58,7 +58,7 @@ else (실패)
   stop
 endif
 
-|판매자 (partner)|
+|입점사 (partner)|
 :§7 **출고 처리**
 POST /orders/{id}/ship
 → PREPARING;
@@ -92,11 +92,11 @@ if (고객 귀책?) then (예)
   |고객 (mobile)|
   :§20 **배송비 결제**
   POST /claims/{id}/shipping-payment;
-else (판매자 귀책)
+else (입점사 귀책)
   :배송비 면제, 즉시 수거;
 endif
 
-|판매자 (partner)|
+|입점사 (partner)|
 :§21 **수거·품질점검**;
 :수거 운송장 등록
 → PICKUP → INSPECTING;
@@ -116,7 +116,7 @@ else (거부)
     |고객 (mobile)|
     :§20 반송 배송비 결제
     → RETURN_PAYMENT_PENDING;
-    |판매자 (partner)|
+    |입점사 (partner)|
     :반송 운송장 등록
     → RETURN_SHIPPING
     → RETURN_DELIVERED
@@ -454,15 +454,15 @@ stop
 
 ---
 
-## 7. [출고·운송장 등록] 판매자 출고·배송 Bolt (partner)
+## 7. [출고·운송장 등록] 입점사 출고·배송 Bolt (partner)
 
 ```plantuml
 @startuml
 skinparam backgroundColor transparent
 skinparam defaultFontSize 11
-title §7 [출고·운송장 등록] 판매자 출고·배송
+title §7 [출고·운송장 등록] 입점사 출고·배송
 
-|판매자|
+|입점사|
 start
 :주문 목록에서 PAYMENT_COMPLETED 주문 선택;
 :"출고 처리" 버튼 클릭;
@@ -471,7 +471,7 @@ start
 :POST /api/partner/v1/orders/{orderId}/ship;
 :주문 상태→PREPARING\n+ shipment(OUTBOUND) 생성;
 
-|판매자|
+|입점사|
 :배송관리에서 해당 건 선택;
 :택배사 선택 + 운송장번호 입력;
 
@@ -493,12 +493,12 @@ stop
 
 | Step | 액터 | 행위 | 시스템 응답 | 비고 |
 |---|---|---|---|---|
-| 1 | 판매자 | 주문 목록에서 PAYMENT_COMPLETED 주문 선택 | 주문상세 탭 오픈 | |
-| 2 | 판매자 | "출고 처리" 버튼 클릭 | API: POST /api/partner/v1/orders/{orderId}/ship | |
+| 1 | 입점사 | 주문 목록에서 PAYMENT_COMPLETED 주문 선택 | 주문상세 탭 오픈 | |
+| 2 | 입점사 | "출고 처리" 버튼 클릭 | API: POST /api/partner/v1/orders/{orderId}/ship | |
 | 3 | 시스템 | — | 주문 상태→PREPARING (+ shipment(OUTBOUND) 생성) | |
-| 4 | 판매자 | 배송관리에서 해당 건 선택 | 배송정보 입력 모달 표시 | |
-| 5 | 판매자 | 택배사 선택 + 운송장번호 입력 | — | |
-| 6 | 판매자 | "배송정보 입력" 버튼 클릭 | API: POST /api/partner/v1/shipping/{orderId} | |
+| 4 | 입점사 | 배송관리에서 해당 건 선택 | 배송정보 입력 모달 표시 | |
+| 5 | 입점사 | 택배사 선택 + 운송장번호 입력 | — | |
+| 6 | 입점사 | "배송정보 입력" 버튼 클릭 | API: POST /api/partner/v1/shipping/{orderId} | |
 | 7 | 시스템 | — | shipment(OUTBOUND) 상태→IN_TRANSIT (주문 상태는 PREPARING 유지), 배송 추적 시작 | |
 
 ### 대안 흐름
@@ -606,7 +606,7 @@ endif
 
 :사유 선택 + 상세 입력;
 
-if (판매자 귀책 + 사진 미첨부?) then (예)
+if (입점사 귀책 + 사진 미첨부?) then (예)
   :"사진을 1장 이상 첨부해주세요" 안내;
   stop
 else (아니오)
@@ -634,7 +634,7 @@ stop
 | 조건 | Step 변경 | 결과 |
 |---|---|---|
 | 배송완료 후 10일 초과 | Step 1에서 버튼 비노출 | "기한이 초과되었습니다" 안내 |
-| VENDOR(판매자) 귀책 사유 선택 시 사진 미첨부 | Step 3에서 검증 실패 | "상품 상태를 확인할 수 있는 사진을 1장 이상 첨부해주세요" 안내, 신청 거부 (사진 최소 1장 첨부 필수, REQ-ORD-058) |
+| VENDOR(입점사) 귀책 사유 선택 시 사진 미첨부 | Step 3에서 검증 실패 | "상품 상태를 확인할 수 있는 사진을 1장 이상 첨부해주세요" 안내, 신청 거부 (사진 최소 1장 첨부 필수, REQ-ORD-058) |
 
 ---
 
@@ -673,12 +673,12 @@ endif
 |시스템|
 if (고객 귀책?) then (예)
   :상태→PAYMENT_PENDING\n(배송비 결제 요청);
-else (판매자 귀책)
+else (입점사 귀책)
   :shipment(PICKUP) 자동 생성\n(즉시 수거 시작 → §21);
 endif
 
 if (claimType=EXCHANGE?) then (예)
-  |판매자|
+  |입점사|
   :교환상품 선출고 운송장 등록\nPOST /api/partner/v1/claims/{claimId}/exchange-ship;
 else (아니오)
 endif
@@ -692,8 +692,8 @@ stop
 |---|---|---|---|---|
 | 1 | CS 담당자 | 클레임 관리 목록에서 RECEIVED 건 선택 | 클레임상세 MDI 탭 오픈 | 고객이 신청 시 자진신고한 `submitted_responsibility`가 참고값으로 표시됨 |
 | 2 | CS 담당자 | 접수 내용·사유·첨부사진(고객 업로드분) 확인 | — | |
-| 3a | CS 담당자 | 귀책 판정 확정 (고객 신고값과 무관하게 최종 결정, REQ-ORD-066) | API: POST /api/admin/v1/claims/{claimId}/blame-decision {responsibility} → 고객 귀책: 상태→PAYMENT_PENDING (배송비 결제 요청) / 판매자 귀책: 클레임 상태 유지, shipment(PICKUP) 자동 생성 (즉시 수거 시작, §21로 이어짐) | CS가 고객이 제출한 값(`submitted_responsibility`)과 다르게 확정해도 `responsibility` 컬럼만 갱신되고 원신고값은 보존됨 |
-| 3a-1 | 판매자 | (EXCHANGE + 판매자 귀책인 경우) 귀책판정 즉시 교환상품 선출고 운송장 등록 | API: POST /api/partner/v1/claims/{claimId}/exchange-ship (REQ-ORD-056, 맞교환 원칙) | 고객 귀책 건은 §20 Step 6에서 동일하게 트리거 |
+| 3a | CS 담당자 | 귀책 판정 확정 (고객 신고값과 무관하게 최종 결정, REQ-ORD-066) | API: POST /api/admin/v1/claims/{claimId}/blame-decision {responsibility} → 고객 귀책: 상태→PAYMENT_PENDING (배송비 결제 요청) / 입점사 귀책: 클레임 상태 유지, shipment(PICKUP) 자동 생성 (즉시 수거 시작, §21로 이어짐) | CS가 고객이 제출한 값(`submitted_responsibility`)과 다르게 확정해도 `responsibility` 컬럼만 갱신되고 원신고값은 보존됨 |
+| 3a-1 | 입점사 | (EXCHANGE + 입점사 귀책인 경우) 귀책판정 즉시 교환상품 선출고 운송장 등록 | API: POST /api/partner/v1/claims/{claimId}/exchange-ship (REQ-ORD-056, 맞교환 원칙) | 고객 귀책 건은 §20 Step 6에서 동일하게 트리거 |
 | 3b | CS 담당자 | "반려" 클릭 + 사유 입력 | API: POST /api/admin/v1/claims/{claimId}/reject | |
 | 4b | 시스템 | — | 클레임 상태→REJECTED, 고객 알림톡 | |
 
@@ -703,12 +703,12 @@ stop
 |---|---|---|
 | 반려 시 사유 미입력 | Step 3b에서 거부 | "반려 사유를 입력해주세요" |
 | claimType=EXCHANGE (귀책 무관) | Step 3a 직후 3a-1(또는 §20 Step 6) 트리거 | 원상품 수취 전 교환상품 선출고 완료 — §12에서 "이미 선출고됨"으로 조회됨 |
-| claimType=EXCHANGE + 판매자 귀책 판정 시 exchangeSkuId 재고 없음 | Step 3a에서 판정 자체가 거부됨 | "교환 가능한 재고가 없습니다" 안내, 판정 보류(REQ-ORD-069) — 선출고 이전 단계에서 차단 |
+| claimType=EXCHANGE + 입점사 귀책 판정 시 exchangeSkuId 재고 없음 | Step 3a에서 판정 자체가 거부됨 | "교환 가능한 재고가 없습니다" 안내, 판정 보류(REQ-ORD-069) — 선출고 이전 단계에서 차단 |
 | RECEIVED로 접수 후 24시간 경과, Step 1~4 미처리 | 배치가 CS에게 리마인드 알림 발송(DM-시퀀스 §18-1) | REQ-ORD-068 |
 
 ---
 
-## 12. [클레임 접수/반려] 판매자 클레임 조회 Bolt (partner)
+## 12. [클레임 접수/반려] 입점사 클레임 조회 Bolt (partner)
 
 > 접수·처리 판정은 어드민 담당. 입점사는 클레임 현황 조회 + 클레임상세 MDI에서 수거·품질점검 수행 (§21 참조). 교환상품은 이미 선출고됨(맞교환 원칙) — 원상품 회수만 진행.
 
@@ -716,16 +716,16 @@ stop
 @startuml
 skinparam backgroundColor transparent
 skinparam defaultFontSize 11
-title §12 [클레임 접수/반려] 판매자 클레임 조회
+title §12 [클레임 접수/반려] 입점사 클레임 조회
 
-|판매자|
+|입점사|
 start
 :클레임 현황 화면에서 필터 설정 + 조회;
 
 |시스템|
 :GET /api/partner/v1/claims → 통합 목록;
 
-|판매자|
+|입점사|
 :클레임번호 클릭;
 :클레임상세 MDI 탭 오픈;
 :수거·품질점검 수행 (§21 참조);
@@ -737,9 +737,9 @@ stop
 
 | Step | 액터 | 행위 | 시스템 응답 | 비고 |
 |---|---|---|---|---|
-| 1 | 판매자 | 클레임 현황 화면에서 필터 설정 + 조회 | API: GET /api/partner/v1/claims → 통합 목록 | 유형(취소/반품/교환) + 상태 필터 |
-| 2 | 판매자 | 클레임번호 클릭 | 클레임상세 MDI 탭 오픈 | |
-| 3 | 판매자 | 클레임상세에서 수거·품질점검 수행 | (§21 참조) | 교환상품은 이미 선출고됨(맞교환 원칙) — 원상품 회수만 진행 |
+| 1 | 입점사 | 클레임 현황 화면에서 필터 설정 + 조회 | API: GET /api/partner/v1/claims → 통합 목록 | 유형(취소/반품/교환) + 상태 필터 |
+| 2 | 입점사 | 클레임번호 클릭 | 클레임상세 MDI 탭 오픈 | |
+| 3 | 입점사 | 클레임상세에서 수거·품질점검 수행 | (§21 참조) | 교환상품은 이미 선출고됨(맞교환 원칙) — 원상품 회수만 진행 |
 
 ---
 
@@ -829,14 +829,14 @@ skinparam backgroundColor transparent
 skinparam defaultFontSize 11
 title §15 [입점사 주문 조회] 주문 조회 (partner)
 
-|판매자|
+|입점사|
 start
 :주문 목록 화면 진입 + 조회;
 
 |시스템|
 :GET /api/partner/v1/orders\n→ 자기 매장 주문 표시;
 
-|판매자|
+|입점사|
 :테이블 행 클릭;
 :주문상세 MDI 탭 오픈\n(주문정보/처리이력);
 stop
@@ -847,8 +847,8 @@ stop
 
 | Step | 액터 | 행위 | 시스템 응답 | 비고 |
 |---|---|---|---|---|
-| 1 | 판매자 | 주문 목록 화면 진입 + 조회 | API: GET /api/partner/v1/orders → 자기 매장 주문 표시 | |
-| 2 | 판매자 | 테이블 행 클릭 | 주문상세 MDI 탭 오픈 (주문정보/처리이력) | |
+| 1 | 입점사 | 주문 목록 화면 진입 + 조회 | API: GET /api/partner/v1/orders → 자기 매장 주문 표시 | |
+| 2 | 입점사 | 테이블 행 클릭 | 주문상세 MDI 탭 오픈 (주문정보/처리이력) | |
 
 ---
 
@@ -1097,7 +1097,7 @@ endif
 :shipment(PICKUP) 자동 생성\n수거 프로세스 시작 + 알림톡;
 
 if (claimType=EXCHANGE?) then (예)
-  |판매자|
+  |입점사|
   :교환상품 선출고 운송장 등록;
 else (아니오)
 endif
@@ -1114,7 +1114,7 @@ stop
 | 3 | 고객 | 결제수단 선택 (쿠폰 미적용 시) | 기등록 결제수단 선택 | |
 | 4 | 고객 | [결제하기] 클릭 | PG SDK 호출 → 인증 | |
 | 5 | 시스템 | PG 결제 완료 콜백 | 팝업 닫힘 → 클레임 상세 화면에서 결제완료 상태 반영 | API: POST /api/v1/claims/{claimId}/shipping-payment |
-| 6 | 시스템 | — | shipment(PICKUP) 자동 생성 (클레임 상태는 PAYMENT_PENDING 유지), 수거 프로세스 시작 + 알림톡 발송. **claimType=EXCHANGE면 이 시점에 판매자가 교환상품 선출고 운송장 등록**(§11 Step 3a-1과 동일 트리거, REQ-ORD-056) | |
+| 6 | 시스템 | — | shipment(PICKUP) 자동 생성 (클레임 상태는 PAYMENT_PENDING 유지), 수거 프로세스 시작 + 알림톡 발송. **claimType=EXCHANGE면 이 시점에 입점사가 교환상품 선출고 운송장 등록**(§11 Step 3a-1과 동일 트리거, REQ-ORD-056) | |
 
 ### 대안 흐름
 
@@ -1136,7 +1136,7 @@ skinparam backgroundColor transparent
 skinparam defaultFontSize 11
 title §21 [수거·재고복구] 입점사 수거·품질점검
 
-|판매자|
+|입점사|
 start
 :배송관리에서 회수 건(수거대기) 선택;
 
@@ -1152,14 +1152,14 @@ endif
 :POST /api/partner/v1/shipping/{claimId}/pickup;
 :shipment(PICKUP) 상태→IN_TRANSIT;
 
-|판매자|
+|입점사|
 :상품 도착 후\n[입고 확인 → 품질점검 시작] 클릭;
 
 |시스템|
 :POST /api/partner/v1/claims/{claimId}/pickup-confirm;
 :클레임 상태→INSPECTING\nshipment(PICKUP)→DELIVERED;
 
-|판매자|
+|입점사|
 if (품질점검 결과?) then (합격)
   :POST /api/partner/v1/claims/{claimId}/inspect-pass;
   |시스템|
@@ -1182,13 +1182,13 @@ stop
 
 | Step | 액터 | 행위 | 시스템 응답 | 비고 |
 |---|---|---|---|---|
-| 1 | 판매자 | 배송관리에서 회수 건(수거대기) 선택 | 수거정보 입력 모달 표시 | 배송비 ⦿결제완료 확인 후 |
-| 2 | 판매자 | 택배사 + 운송장번호 입력 | — | |
-| 3 | 판매자 | [수거정보 입력] 클릭 | API: POST /api/partner/v1/shipping/{claimId}/pickup | |
+| 1 | 입점사 | 배송관리에서 회수 건(수거대기) 선택 | 수거정보 입력 모달 표시 | 배송비 ⦿결제완료 확인 후 |
+| 2 | 입점사 | 택배사 + 운송장번호 입력 | — | |
+| 3 | 입점사 | [수거정보 입력] 클릭 | API: POST /api/partner/v1/shipping/{claimId}/pickup | |
 | 4 | 시스템 | — | shipment(PICKUP) 상태 → IN_TRANSIT (수거중) | |
-| 5 | 판매자 | 상품 도착 후 [입고 확인 → 품질점검 시작] 클릭 | API: POST /api/partner/v1/claims/{claimId}/pickup-confirm | |
+| 5 | 입점사 | 상품 도착 후 [입고 확인 → 품질점검 시작] 클릭 | API: POST /api/partner/v1/claims/{claimId}/pickup-confirm | |
 | 6 | 시스템 | — | 클레임 상태 → INSPECTING (품질점검), shipment(PICKUP) 상태 → DELIVERED (동시 전환) | |
-| 7 | 판매자 | 품질 확인 후 [합격] 또는 [거부] 클릭 | API: POST /api/partner/v1/claims/{claimId}/inspect-pass 또는 /inspect-reject | 판정 기준: **RETURN 유형**은 상품 상태(훼손 여부), **EXCHANGE 유형**은 택(TAG) 유지 여부 |
+| 7 | 입점사 | 품질 확인 후 [합격] 또는 [거부] 클릭 | API: POST /api/partner/v1/claims/{claimId}/inspect-pass 또는 /inspect-reject | 판정 기준: **RETURN 유형**은 상품 상태(훼손 여부), **EXCHANGE 유형**은 택(TAG) 유지 여부 |
 | 8a | 시스템 (합격) | — | 클레임 상태 → PICKED_UP (수거완료) → 어드민 환불 처리 대기 | |
 | 8b | 시스템 (거부) | — | 클레임 상태 → PICKUP_REJECTED (수거거부) + 사유 기록 → 어드민 판정 대기 | |
 
@@ -1242,7 +1242,7 @@ endif
 |고객|
 :반송 배송비 결제 (§20, paymentType=RETURN);
 
-|판매자|
+|입점사|
 :반송 운송장 등록;
 :POST /api/partner/v1/claims/{claimId}/return-ship;
 
@@ -1269,7 +1269,7 @@ stop
 | 2a | CS 담당자 | [폐기 처리] 클릭 | API: POST /api/admin/v1/claims/{claimId}/dispose | 상품 반송 불가 판단 시 |
 | 2b | CS 담당자 | [반송 배송비 추가결제 요청] 클릭 | API: POST /api/admin/v1/claims/{claimId}/request-return-payment | 고객에게 결제 알림톡 발송 |
 | 3b | 고객 | 알림톡 수신 → 클레임상세에서 반송 배송비 결제 | §20 배송비 결제 Bolt (paymentType=RETURN) | |
-| 4b | 판매자 | 반송 운송장 등록 | API: POST /api/partner/v1/claims/{claimId}/return-ship | shipment(RETURN) 생성, 상태 → IN_TRANSIT (클레임 상태는 RETURN_PAYMENT_PENDING 유지) |
+| 4b | 입점사 | 반송 운송장 등록 | API: POST /api/partner/v1/claims/{claimId}/return-ship | shipment(RETURN) 생성, 상태 → IN_TRANSIT (클레임 상태는 RETURN_PAYMENT_PENDING 유지) |
 | 5b | 시스템 | 반송 배송완료 확인 (택배사 API) | shipment(RETURN) 상태 → DELIVERED | |
 | 6b | 시스템 | 배치 자동전환 | 배치가 클레임 상태를 COMPLETED로 자동 전환 | 고객 알림톡 발송 |
 
@@ -1365,7 +1365,7 @@ stop
 
 ---
 
-## 25. [배송실패 재발송] 판매자·CS 배송 재발송 처리 Bolt (partner/admin — 신규)
+## 25. [배송실패 재발송] 입점사·CS 배송 재발송 처리 Bolt (partner/admin — 신규)
 
 > 신규 (2026-08-21 바텀업 재검증): REQ-ORD-062 대응. shipment_type 공통(OUTBOUND/PICKUP/RETURN/EXCHANGE_OUT).
 
@@ -1373,9 +1373,9 @@ stop
 @startuml
 skinparam backgroundColor transparent
 skinparam defaultFontSize 11
-title §25 [배송실패 재발송] 판매자·CS 배송 재발송 처리
+title §25 [배송실패 재발송] 입점사·CS 배송 재발송 처리
 
-|판매자 또는 CS 담당자|
+|입점사 또는 CS 담당자|
 start
 :배송관리에서 FAILED 상태 건 선택;
 
@@ -1405,9 +1405,9 @@ stop
 
 | Step | 액터 | 행위 | 시스템 응답 | 비고 |
 |---|---|---|---|---|
-| 1 | 판매자 또는 CS 담당자 | 배송관리에서 FAILED 상태 건 선택 | 재발송 처리 모달 표시 | 배송실패 뱃지 노출 건만 (DM-시퀀스 §19 배치가 FAILED로 전환) |
-| 2 | 판매자/CS | 택배사 + 새 운송장번호 입력 | — | |
-| 3 | 판매자/CS | [재발송 처리] 클릭 | API: POST /api/partner/v1/shipping/{shipmentId}/reship | 인증: Partner 또는 Admin Bearer |
+| 1 | 입점사 또는 CS 담당자 | 배송관리에서 FAILED 상태 건 선택 | 재발송 처리 모달 표시 | 배송실패 뱃지 노출 건만 (DM-시퀀스 §19 배치가 FAILED로 전환) |
+| 2 | 입점사/CS | 택배사 + 새 운송장번호 입력 | — | |
+| 3 | 입점사/CS | [재발송 처리] 클릭 | API: POST /api/partner/v1/shipping/{shipmentId}/reship | 인증: Partner 또는 Admin Bearer |
 | 4 | 시스템 | — | shipment 상태 FAILED→PENDING→IN_TRANSIT, 추적 재시작 | 이후 DM-시퀀스 §19 배치가 다시 추적 |
 
 ### 대안 흐름

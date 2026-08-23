@@ -14,6 +14,36 @@
 
 ---
 
+## 공통 규칙 (C3 아키텍처컨벤션 / C5 이벤트설계컨벤션 준수)
+
+### 1. Controller 네이밍 (C3 §4.2)
+
+> 모든 시퀀스의 Controller participant는 **앱별로 분리된 이름**을 사용한다 (Service는 공유).
+> `{App}{Domain}Controller` 형식 — 예: `CustomerOrderController`(고객웹), `AdminOrderController`(어드민), `PartnerOrderController`(입점사).
+> 이하 다이어그램의 `CustomerCartController`, `CustomerOrderController`, `CustomerClaimController`, `CustomerClaimPaymentController`, `PartnerOrderController`, `PartnerShippingController`, `PartnerClaimController`, `AdminOrderController`, `AdminClaimController`가 이 규칙을 따른다.
+
+### 2. EventPublisher = Outbox 패턴 표현 (C5 §5.1)
+
+> 본 문서의 시퀀스에서 `Service -> EventPublisher : publish(EVENT_NAME)` 호출은
+> **"비즈니스 데이터 변경과 동일 트랜잭션 내에서 Outbox 테이블에 이벤트를 저장하는 행위"**를 축약 표현한 것이다.
+> 즉 `EventPublisher.publish(...)`는 `outboxRepository.save(OutboxEvent(...))`와 동일 트랜잭션에서 실행되며,
+> 실제 Broker(또는 프로토타입의 in-process ApplicationEventPublisher) 발행은 별도의 **Outbox Publisher**가
+> Outbox 테이블을 polling(1초 주기)하여 비동기로 수행한다(C5 §5.1~§5.3).
+>
+> ```
+> [Service 트랜잭션]                    [Outbox Publisher (비동기, 별도 프로세스)]
+> 1. 비즈니스 데이터 변경                  Outbox 테이블 polling
+> 2. EventPublisher.publish(...)   ──▶   → Broker 발행 (프로토타입: ApplicationEvent)
+>    = Outbox 테이블 INSERT               → 발행 완료 시 Outbox row 삭제
+> 3. COMMIT (1·2 원자적)
+> ```
+>
+> 프로토타입 단계에서는 C5 §5.3에 따라 Outbox 테이블 대신 in-process `ApplicationEventPublisher`를 사용하므로,
+> 아래 다이어그램의 `EventPublisher` 참여자는 실 프로젝트 전환 시 `OutboxEventPublisher`(Outbox INSERT) + `OutboxPublisher`(polling·발행) 2단계로 분리된다.
+> 컨슈머 측 멱등 처리(`processed_event` 테이블, eventId UNIQUE)는 C5 §6.1을 따른다.
+
+---
+
 ## 1. [API] POST /api/v1/cart/items — 장바구니 담기
 
 ```plantuml
@@ -23,7 +53,7 @@ skinparam defaultFontSize 11
 title POST /api/v1/cart/items — 장바구니 담기
 
 actor 고객 as Client
-participant "CartController" as CC
+participant "CustomerCartController" as CC
 participant "CartService" as CS
 participant "CatalogPublicApi" as CAT
 participant "CartRepository" as CR
@@ -86,7 +116,7 @@ skinparam defaultFontSize 11
 title GET /api/v1/cart — 장바구니 조회
 
 actor 고객 as Client
-participant "CartController" as CC
+participant "CustomerCartController" as CC
 participant "CartService" as CS
 participant "CartRepository" as CR
 participant "CatalogPublicApi" as CAT
@@ -131,7 +161,7 @@ skinparam defaultFontSize 11
 title POST /api/v1/orders/sheet — 주문서 생성
 
 actor 고객 as Client
-participant "OrderController" as OC
+participant "CustomerOrderController" as OC
 participant "OrderSheetService" as OSS
 participant "CartRepository" as CR
 participant "MemberPublicApi" as MEM
@@ -179,7 +209,7 @@ skinparam defaultFontSize 11
 title POST /api/v1/orders/{orderSheetId}/pay — 결제 요청
 
 actor 고객 as Client
-participant "OrderController" as OC
+participant "CustomerOrderController" as OC
 participant "OrderService" as OS
 participant "CatalogPublicApi" as CAT
 participant "PaymentPublicApi" as PAY
@@ -301,7 +331,7 @@ skinparam defaultFontSize 11
 title POST /api/v1/orders/{orderId}/cancel — 고객 주문 취소
 
 actor 고객 as Client
-participant "OrderController" as OC
+participant "CustomerOrderController" as OC
 participant "OrderService" as OS
 participant "OrderRepository" as OR
 participant "PaymentPublicApi" as PAY
@@ -351,7 +381,7 @@ skinparam defaultFontSize 11
 title POST /api/v1/orders/{orderId}/confirm — 구매확정
 
 actor 고객 as Client
-participant "OrderController" as OC
+participant "CustomerOrderController" as OC
 participant "OrderService" as OS
 participant "OrderRepository" as OR
 participant "EventPublisher" as EP
@@ -399,7 +429,7 @@ skinparam defaultFontSize 11
 title POST /api/v1/orders/{orderId}/claims — 반품/교환 신청
 
 actor 고객 as Client
-participant "ClaimController" as CC
+participant "CustomerClaimController" as CC
 participant "ClaimService" as CS
 participant "OrderRepository" as OR
 participant "ClaimRepository" as CR
@@ -530,7 +560,7 @@ skinparam defaultFontSize 11
 title POST /api/v1/claims/{claimId}/cancel — 고객 클레임 자진 취소
 
 actor 고객 as Client
-participant "ClaimController" as CC
+participant "CustomerClaimController" as CC
 participant "ClaimService" as CS
 participant "ClaimRepository" as CR
 participant "NotificationPublicApi" as Noti
@@ -569,7 +599,7 @@ skinparam backgroundColor transparent
 skinparam defaultFontSize 11
 title POST /api/partner/v1/orders/{orderId}/ship — 출고 처리
 
-actor 판매자 as Partner
+actor 입점사 as Partner
 participant "PartnerOrderController" as POC
 participant "ShippingService" as SS
 participant "OrderRepository" as OR
@@ -619,8 +649,8 @@ skinparam backgroundColor transparent
 skinparam defaultFontSize 11
 title POST /api/partner/v1/shipping/{orderId} — 운송장 등록
 
-actor 판매자 as Partner
-participant "ShippingController" as SC
+actor 입점사 as Partner
+participant "PartnerShippingController" as SC
 participant "ShippingService" as SS
 participant "ShipmentRepository" as SR
 participant "EventPublisher" as EP
@@ -761,7 +791,7 @@ skinparam defaultFontSize 11
 title POST /api/v1/claims/{claimId}/shipping-payment — 클레임 배송비 결제
 
 actor 고객 as Client
-participant "ClaimPaymentController" as CPC
+participant "CustomerClaimPaymentController" as CPC
 participant "ClaimService" as CS
 participant "ClaimRepository" as CR
 participant "ClaimPaymentRepository" as CPR
@@ -847,7 +877,7 @@ else 정상
     CS -> SR : save(shipment{refType=CLAIM, refId=claimId, type=RETURN, status=PENDING})
     SR -> DB : INSERT ord_shipment
     DB --> SR : OK
-    note right of SR: 판매자 [반송운송장등록] 시 PENDING→IN_TRANSIT.\n택배사 반송완료 확인 시 §19 배치가 shipmentRepo.updateStatus(DELIVERED)\n호출 → 이어서 같은 배치가 claim을 COMPLETED로 자동전환
+    note right of SR: 입점사 [반송운송장등록] 시 PENDING→IN_TRANSIT.\n택배사 반송완료 확인 시 §19 배치가 shipmentRepo.updateStatus(DELIVERED)\n호출 → 이어서 같은 배치가 claim을 COMPLETED로 자동전환
 
     CS -> EP : publish(CLAIM_RETURN_SHIPPING_PAID)
     note right of EP: Notification* → 고객 알림톡+이메일\n("반송 배송비 결제 완료")
@@ -930,7 +960,7 @@ skinparam backgroundColor transparent
 skinparam defaultFontSize 11
 title POST /api/partner/v1/claims/{claimId}/inspect-pass — 품질점검 합격
 
-actor 판매자 as Partner
+actor 입점사 as Partner
 participant "PartnerClaimController" as PCC
 participant "ClaimService" as CS
 participant "ClaimRepository" as CR
@@ -999,7 +1029,7 @@ skinparam backgroundColor transparent
 skinparam defaultFontSize 11
 title POST /api/partner/v1/claims/{claimId}/inspect-reject — 품질점검 거부
 
-actor 판매자 as Partner
+actor 입점사 as Partner
 participant "PartnerClaimController" as PCC
 participant "ClaimService" as CS
 participant "ClaimRepository" as CR
@@ -1230,7 +1260,7 @@ loop 각 배송건
             Service -> Noti : sendKakaoAlimtalk("배송완료 안내")
         else shipment_type == PICKUP
             Service -> ClaimRepo : updateStatus(INSPECTING)
-            note right of ClaimRepo: claim.status PAYMENT_PENDING 또는 RECEIVED(판매자귀책)\n→ INSPECTING. shipmentRepo.updateStatus(DELIVERED)와\n같은 트랜잭션에서 함께 호출(§12 참조)
+            note right of ClaimRepo: claim.status PAYMENT_PENDING 또는 RECEIVED(입점사귀책)\n→ INSPECTING. shipmentRepo.updateStatus(DELIVERED)와\n같은 트랜잭션에서 함께 호출(§12 참조)
             Service -> Noti : sendKakaoAlimtalk("수거완료, 품질점검 진행 안내")
         else shipment_type == RETURN
             note right of Service: claim.status는 변경하지 않음(RETURN_PAYMENT_PENDING 유지)\nCOMPLETED 자동전환은 아래 "클레임 자동완료" 섹션에서 별도 처리
@@ -1375,7 +1405,7 @@ end
 
 > v6 후속 보완 (2026-08-21): REQ-ORD-062 대응. FAILED 상태의 shipment(어떤 shipment_type이든 공통)를 재발송 처리한다.
 
-- **트리거**: 판매자 또는 CS 담당자 수동 처리 (§19 배치가 FAILED로 전환한 건)
+- **트리거**: 입점사 또는 CS 담당자 수동 처리 (§19 배치가 FAILED로 전환한 건)
 - **상태전이**: `ord_shipment.status` `FAILED` → `PENDING` → (운송장 재등록 시) `IN_TRANSIT`
 
 ```plantuml
@@ -1384,8 +1414,8 @@ skinparam backgroundColor transparent
 skinparam defaultFontSize 11
 title POST /api/partner/v1/shipping/{shipmentId}/reship — 배송 실패 재발송 처리
 
-actor "판매자 / CS 담당자" as Actor
-participant "ShippingController" as SC
+actor "입점사 / CS 담당자" as Actor
+participant "PartnerShippingController" as SC
 participant "ShipmentService" as Service
 participant "ShipmentRepository" as Repo
 database "DB (ord_shipment)" as DB
@@ -1432,6 +1462,8 @@ end
 | 트랜잭션 경계 표시 | Service 레벨에서 @Transactional |
 | 에러 분기 포함 | 인터페이스 명세의 에러 응답과 대응 |
 | 도메인 경계 명시 | 타 도메인 호출은 PublicApi(동기) 또는 EventPublisher(비동기)로 표현 |
+| Controller 네이밍 | 앱별 분리 — `{App}{Domain}Controller` (C3 §4.2, 상단 공통 규칙 §1 참조) |
+| EventPublisher 표현 | Outbox 패턴 축약 표현 — 비즈니스 변경과 동일 트랜잭션 (C5 §5.1, 상단 공통 규칙 §2 참조) |
 
 ---
 
@@ -1446,3 +1478,5 @@ end
 | 도메인 간 호출 | 이벤트 플로우(DI) 동기/비동기 판단 |
 | 참여 객체 | ERD(DF) 엔티티 + 컴포넌트(D9) 모듈 구조 |
 | 상태 전이 | 상태머신(DG) 전이 규칙 |
+| Controller 네이밍 | C3 아키텍처컨벤션 §4.2 (앱별 Controller 분리) |
+| Outbox 패턴 | C5 이벤트설계컨벤션 §5.1 (비즈니스 변경 + Outbox 저장 = 동일 트랜잭션) |
