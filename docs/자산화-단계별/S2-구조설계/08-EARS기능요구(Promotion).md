@@ -49,6 +49,16 @@
 
 ---
 
+## 노출 할인가 관리 (상품 목록·상세 연동)
+
+| ID | 패턴 | 요구사항 | 상위UC 매핑 | 도출 근거 |
+|---|---|---|---|---|
+| REQ-PRM-050 | Event-driven | WHEN 행사가 ACTIVE로 전환되면, THE 프로모션시스템 SHALL 대상 상품의 노출 할인가(display_sale_price)를 계산하여 DISPLAY_PRICE_CHANGED 이벤트를 Catalog에 발행한다 | 행사 시작 시 노출 할인가 갱신 | 상품 목록 할인가 사전 계산 전략 |
+| REQ-PRM-051 | Event-driven | WHEN 행사가 ENDED로 전환되면(기간 만료/수량 소진/수동 종료), THE 프로모션시스템 SHALL 대상 상품의 display_sale_price를 원래 판매가로 복원하는 DISPLAY_PRICE_CHANGED 이벤트를 Catalog에 발행한다 | 행사 종료 시 가격 복원 | 정책서 §3.7 |
+| REQ-PRM-052 | Event-driven | WHEN Catalog/BFF가 상품 상세 조회 시 실시간 할인가 계산을 요청하면(productId, memberId), THE 프로모션시스템 SHALL 행사가(즉시할인/수량구간) + 적용 가능 쿠폰 목록 + 예상 최저가를 계산하여 반환한다 | 할인가 실시간 계산 (상품 상세) | 상품 상세 화면 가격 표시 |
+
+---
+
 ## 쿠폰관리
 
 | ID | 패턴 | 요구사항 | 상위UC 매핑 | 도출 근거 |

@@ -57,6 +57,9 @@ Table cat_product {
   description text [note: '상품 상세 설명 (HTML/Markdown)']
   avg_rating decimal [default: 0, note: '평균 평점 (RatingUpdated 연동)']
   review_count int [default: 0, note: '리뷰 수']
+  display_sale_price int [note: '노출용 할인가 (Promotion 배치 갱신, 상품 목록 표시용)']
+  display_discount_rate int [default: 0, note: '노출용 할인율 (%, Promotion 배치 갱신)']
+  active_event_id varchar [note: '현재 적용 중인 행사 ID (null=행사 없음)']
   created_at timestamp [not null]
   updated_at timestamp [not null]
   is_deleted boolean [default: false]
@@ -303,6 +306,7 @@ Table cat_display_template {
 | `cat_product.status = REJECTED`일 때 `reject_reason IS NOT NULL` | 상태 전이 시 | REQ-CAT-012: 반려 사유 필수 |
 | `cat_display_page.slug` 전역 유니크 | 페이지 생성 시 | URL 충돌 방지 |
 | `cat_category_mapping` (category_id, display_category_id) 유니크 | 매핑 생성 시 | REQ-CAT-021: 중복 매핑 방지 |
+| `cat_product.display_sale_price`는 null이거나 price_sale 이하 | display_sale_price 갱신 시 | 할인가는 판매가 이하만 가능 |
 
 ---
 

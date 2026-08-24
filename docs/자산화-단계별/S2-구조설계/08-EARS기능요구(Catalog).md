@@ -101,6 +101,7 @@
 |---|---|---|---|---|
 | REQ-CAT-030 | Event-driven | WHEN Promotion 도메인으로부터 RatingUpdated 이벤트를 수신하면, THE 시스템은 SHALL 해당 상품의 평균 평점·리뷰 수를 갱신한다. | 연동 수신 | 도메인정의서: Review→Catalog |
 | REQ-CAT-031 | Ubiquitous | THE 시스템은 SHALL 고빈도 재고 조회 대상 SKU(is_redis_target=true)를 Redis 캐시로 관리한다. | PublicApi 성능 | NFR 성능 요구 |
+| REQ-CAT-032 | Event-driven | WHEN Promotion 도메인으로부터 DISPLAY_PRICE_CHANGED 이벤트를 수신하면, THE 시스템은 SHALL 해당 상품의 display_sale_price·display_discount_rate·active_event_id를 갱신하고 Search에 동기화한다. | 연동 수신 | 상품 목록 할인가 사전 계산 전략 |
 
 ---
 

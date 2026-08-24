@@ -30,6 +30,7 @@
 | StockReleaseRequested | 수신 | Order | Catalog | 주문 생성 시 재고 차감 요청 | 동기 PublicApi (재고 선점) |
 | ORDER_CANCELLED | 수신 | Order | Catalog | 주문 취소 확정 | 재고 복원 (비동기) |
 | RatingUpdated | 수신 | Review | Catalog | 리뷰 작성/수정/삭제 | 상품 avg_rating·review_count 갱신 |
+| DISPLAY_PRICE_CHANGED | 수신 | Promotion | Catalog | 행사 시작/종료/수량 소진 | display_sale_price·discount_rate 갱신 + Search 동기화 |
 
 > `*` 표시: 2~4차 파트 착수 시 수신측 구현. 이벤트 스키마는 본 문서에서 확정.
 
@@ -74,6 +75,10 @@ CAT -> PRO : ProductUpdated 이벤트\n(가격 확인)
 == 리뷰 평점 연동 ==
 REV -> CAT : RatingUpdated 이벤트
 note right: avg_rating, review_count 갱신
+
+== 할인가 연동 ==
+PRO -> CAT : DISPLAY_PRICE_CHANGED 이벤트
+note right: display_sale_price 갱신\n+ Search 동기화
 
 @enduml
 ```
@@ -202,6 +207,8 @@ note right: avg_rating, review_count 갱신
 | Catalog → Notification (ProductCreated/Approved) | **비동기** (이벤트) | 알림은 후속 처리 |
 | Catalog → Search (ProductUpdated) | **비동기** (이벤트) | 검색 인덱스 갱신은 후속 처리 |
 | Review → Catalog (RatingUpdated) | **비동기** (이벤트) | 평점 갱신은 후속 처리 (eventual consistency) |
+| Promotion → Catalog (DISPLAY_PRICE_CHANGED) | **비동기** (이벤트) | 노출 할인가 갱신은 후속 처리 (eventual consistency) |
+| Catalog/BFF → Promotion (상품 상세 실시간 할인가) | **동기** (PublicApi) | 상세 화면 진입 시 즉시 할인가 필요 (UX 대기) |
 
 ---
 

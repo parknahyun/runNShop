@@ -24,6 +24,7 @@
 | 이벤트명 | 발행 도메인 | 수신 도메인 | 트리거 | 수신 액션 |
 |---|---|---|---|---|
 | EVENT_ENDED | Promotion | Catalog | 행사 종료 (기간 만료/수량 소진) | 상품 판매가 원래 가격으로 복원 |
+| DISPLAY_PRICE_CHANGED | Promotion | Catalog, Search | 행사 시작/종료/수량 소진 시 | 상품 display_sale_price 갱신 + 검색 인덱스 동기화 |
 | COUPON_ISSUED | Promotion | Notification* | 쿠폰 발급 완료 | 고객에게 쿠폰 발급 알림 |
 | COUPON_USED | Promotion | Settlement* | 쿠폰 사용 (주문 결제) | 정산 시 쿠폰 할인액 반영 |
 | COUPON_RESTORED | Promotion | — | 쿠폰 복원 (주문 취소) | 내부 처리 (발급 건 AVAILABLE 복원) |
@@ -97,6 +98,36 @@ note right: 승급 쿠폰 자동 발급
         "productId": "prod-001",
         "originalPrice": 50000,
         "discountedPrice": 40000
+      }
+    ]
+  }
+}
+```
+
+### DISPLAY_PRICE_CHANGED
+
+```json
+{
+  "eventType": "DISPLAY_PRICE_CHANGED",
+  "eventId": "evt-ulid-106",
+  "timestamp": "2026-08-15T00:00:05Z",
+  "payload": {
+    "products": [
+      {
+        "productId": "prod-001",
+        "displaySalePrice": 40000,
+        "displayDiscountRate": 20,
+        "originalPrice": 50000,
+        "activeEventId": "prm-ulid-001",
+        "changeReason": "EVENT_STARTED"
+      },
+      {
+        "productId": "prod-002",
+        "displaySalePrice": 89000,
+        "displayDiscountRate": 0,
+        "originalPrice": 89000,
+        "activeEventId": null,
+        "changeReason": "EVENT_ENDED"
       }
     ]
   }

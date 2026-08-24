@@ -254,6 +254,81 @@ stop
 
 ---
 
+## 7. 노출 할인가 사전 계산·갱신 프로세스
+
+```plantuml
+@startuml
+skinparam backgroundColor transparent
+skinparam defaultFontSize 11
+title 노출 할인가 사전 계산 프로세스 (상품 목록용)
+
+|시스템(Promotion)|
+start
+:행사 상태 변경 감지\n(ACTIVE 전환 / ENDED 전환 / 수량 소진);
+
+if (ACTIVE 전환?) then (행사 시작)
+  :대상 상품 목록 조회\n(prm_discount_event_product);
+  :상품별 노출 할인가 계산\n(discount_type·discount_value 적용);
+  :DISPLAY_PRICE_CHANGED 이벤트 발행\n(productId, displaySalePrice, discountRate, eventId);
+else (ENDED 전환)
+  :대상 상품 목록 조회;
+  :원래 판매가(price_sale)로 복원;
+  :DISPLAY_PRICE_CHANGED 이벤트 발행\n(productId, displaySalePrice=price_sale, discountRate=0, eventId=null);
+endif
+
+|시스템(Catalog)|
+:이벤트 수신;
+:cat_product.display_sale_price 갱신;
+:cat_product.display_discount_rate 갱신;
+:cat_product.active_event_id 갱신;
+:Search 동기화 이벤트 발행\n(ProductUpdated);
+stop
+
+@enduml
+```
+
+---
+
+## 8. 상품 상세 실시간 할인가 계산 프로세스
+
+```plantuml
+@startuml
+skinparam backgroundColor transparent
+skinparam defaultFontSize 11
+title 상품 상세 실시간 할인가 계산 (PublicApi)
+
+|시스템(Catalog/BFF)|
+start
+:고객 상품 상세 진입\n(productId, memberId);
+:Promotion PublicApi 호출\n(실시간 할인가 계산 요청);
+
+|시스템(Promotion)|
+:해당 상품 ACTIVE 행사 조회;
+
+if (행사가 존재?) then (yes)
+  :행사 할인가 계산\n(즉시할인 또는 수량구간);
+else (no)
+  :할인 없음 (원래 판매가);
+endif
+
+if (memberId 존재? - 로그인) then (yes)
+  :해당 회원 적용 가능 쿠폰 조회\n(상품쿠폰 + 장바구니쿠폰);
+  :쿠폰 적용 시 예상 최저가 계산;
+else (비로그인)
+  :쿠폰 정보 미제공;
+endif
+
+:응답 반환\n· 정가 (price_original)\n· 행사가 (event_price)\n· 할인율 (discount_rate)\n· 적용 가능 쿠폰 목록\n· 예상 최저가 (쿠폰 최대 적용 시);
+
+|시스템(Catalog/BFF)|
+:고객 화면 표시\n정가(취소선) / 행사가 / 쿠폰 추가할인 안내;
+stop
+
+@enduml
+```
+
+---
+
 ## 근거
 
 | 항목 | 출처 |
