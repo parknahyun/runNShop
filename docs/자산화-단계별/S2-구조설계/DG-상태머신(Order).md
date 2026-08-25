@@ -19,7 +19,7 @@
 
 ## 1. ord_order.status 상태머신
 
-> **v6 (2026-08-20 현행화)**: 배송 실행(IN_DELIVERY)을 `ord_shipment`(§3)로 분리 — 11상태→10상태. order.status는 이제 "고객·판매자·CS가 판단·결정하는 지점"만 표현하며, "배송 중" 표시는 `PREPARING + shipment(OUTBOUND).status=IN_TRANSIT` 조인으로 화면에서 계산한다.
+> **v6 (2026-08-20 현행화)**: 배송 실행(IN_DELIVERY)을 `ord_shipment`(§3)로 분리 — 11상태→10상태. order.status는 이제 "고객·입점사·CS가 판단·결정하는 지점"만 표현하며, "배송 중" 표시는 `PREPARING + shipment(OUTBOUND).status=IN_TRANSIT` 조인으로 화면에서 계산한다.
 
 ### 상태 목록
 
@@ -29,7 +29,7 @@
 | ORDER_RECEIVED | 주문접수 (재고차감 요청 중) | 고객 결제 버튼 클릭 |
 | PAYMENT_PENDING | 결제 요청 중 (재고선점 완료) | 재고 선점 성공 |
 | PAYMENT_COMPLETED | 결제 완료 (PG 승인) | PG 승인 성공 |
-| PREPARING | 출고 준비~배송 중 | 판매자 확인 (배송실행 상세는 ord_shipment 참조) |
+| PREPARING | 출고 준비~배송 중 | 입점사 확인 (배송실행 상세는 ord_shipment 참조) |
 | DELIVERED | 배송 완료 | shipment(OUTBOUND) DELIVERED (파생) |
 | CONFIRMED | 구매 확정 | 고객 수동 or D+7 자동 |
 | CANCELLED | 취소 | 고객 취소 or CS 예외 취소 |
@@ -56,7 +56,7 @@ PAYMENT_PENDING --> PAYMENT_COMPLETED : PG 승인 성공\n[금액 일치]
 PAYMENT_PENDING --> PAYMENT_FAILED : PG 실패/타임아웃\n(3회 재시도 후)
 PAYMENT_PENDING --> CANCELLED : 고객 취소\n(결제 전)
 
-PAYMENT_COMPLETED --> PREPARING : 판매자 확인
+PAYMENT_COMPLETED --> PREPARING : 입점사 확인
 PAYMENT_COMPLETED --> CANCELLED : 고객 단순 취소\n[출고 전]
 
 PREPARING --> DELIVERED : shipment(OUTBOUND) DELIVERED\n(배송 실행은 §3 ord_shipment 참조)
@@ -112,7 +112,7 @@ end note
 | PAYMENT_PENDING | PAYMENT_COMPLETED | PAYMENT_APPROVED 이벤트 | 금액 일치 검증 | 주문확인 알림톡+이메일 | 시스템 | 없음 (PG 콜백) |
 | PAYMENT_PENDING | PAYMENT_FAILED | PAYMENT_FAILED 이벤트 | 3회 재시도 소진 | 재고 복원, 고객 알림 | 시스템 | 없음 |
 | PAYMENT_PENDING | CANCELLED | 고객 취소 요청 | — | 재고 복원 | 고객 | 결제창 [취소] |
-| PAYMENT_COMPLETED | PREPARING | 판매자 확인 | — | — | 판매자 | 주문상세 [출고 처리] 버튼 |
+| PAYMENT_COMPLETED | PREPARING | 입점사 확인 | — | — | 입점사 | 주문상세 [출고 처리] 버튼 |
 | PAYMENT_COMPLETED | CANCELLED | 고객 취소 요청 | 출고 전 상태 | PG 환불 요청, 재고 복원 | 고객 | 주문상세 [주문취소] 버튼 |
 | PREPARING | CANCELLED | CS 예외 취소 요청 | CS 담당자 권한 | PG 환불 요청, 재고 복원 (REQ-ORD-017) | CS 담당자 | 주문상세 CS탭 [예외취소] 버튼 |
 | **PREPARING** | **DELIVERED** | **shipment(OUTBOUND) DELIVERED** | shipment 상태 전이 구독 | D+7 자동확정 타이머 시작, 고객 알림톡 | 시스템 | 없음 (§3 이벤트 구독, 파생 전환) |
@@ -134,7 +134,7 @@ end note
 
 > **v3 (2026-08-12 현행화)**: 반송 배송비결제 대기/반송배송완료 상태 추가 (12상태 → 14상태).
 > **v4 (2026-08-20 현행화)**: 교환(EXCHANGE)은 "맞교환" 원칙 — PICKUP 진입 시 교환상품을 선출고(선출고 후 수취)하며, INSPECTING 판정 기준은 택(TAG) 유지 여부로 한다(REQ-ORD-056/057 참고).
-> **v6 (2026-08-20 현행화)**: 배송 실행 3상태(PICKUP/RETURN_SHIPPING/RETURN_DELIVERED)를 `ord_shipment`(§3)로 분리 — 14상태→11상태. claim.status는 "고객·판매자·CS가 판단·결정하는 지점"만 표현한다(INSPECTING은 판매자의 실제 판정 행위라 유지). responsibility는 CUSTOMER/VENDOR 2종으로 단순화(PLATFORM 제거). 반품 접수 시 VENDOR 귀책 사유는 사진 최소 1장 필수(REQ-ORD-058).
+> **v6 (2026-08-20 현행화)**: 배송 실행 3상태(PICKUP/RETURN_SHIPPING/RETURN_DELIVERED)를 `ord_shipment`(§3)로 분리 — 14상태→11상태. claim.status는 "고객·입점사·CS가 판단·결정하는 지점"만 표현한다(INSPECTING은 입점사의 실제 판정 행위라 유지). responsibility는 CUSTOMER/VENDOR 2종으로 단순화(PLATFORM 제거). 반품 접수 시 VENDOR 귀책 사유는 사진 최소 1장 필수(REQ-ORD-058).
 
 ### 상태 목록
 
@@ -143,9 +143,9 @@ end note
 | RECEIVED | 접수됨 | 고객 반품/교환 신청 | 고객 |
 | PAYMENT_PENDING | 수거 배송비 결제 대기~수거 진행 중 | 고객(CUSTOMER) 귀책 확정 시 | 고객 |
 | PAYMENT_EXPIRED | 결제 만료 (자동 취소) | 24시간 초과 | 배치 |
-| INSPECTING | 품질점검 진행 중 | 판매자(VENDOR) 귀책 즉시 또는 수거 shipment 입고 확인 | 판매자 |
-| PICKED_UP | 수거완료 (품질점검 합격) | 합격 판정 | 판매자 |
-| PICKUP_REJECTED | 수거거부 (품질점검 불합격) | 불합격 판정 + 사유 등록 | 판매자 |
+| INSPECTING | 품질점검 진행 중 | 입점사(VENDOR) 귀책 즉시 또는 수거 shipment 입고 확인 | 입점사 |
+| PICKED_UP | 수거완료 (품질점검 합격) | 합격 판정 | 입점사 |
+| PICKUP_REJECTED | 수거거부 (품질점검 불합격) | 불합격 판정 + 사유 등록 | 입점사 |
 | REFUNDED | 환불 완료 | 어드민 환불 처리 | 어드민 |
 | RETURN_PAYMENT_PENDING | 반송 배송비 결제 대기~반송 진행 중 | 어드민 반송결제 요청 | 고객 |
 | DISPOSED | 폐기 처리 | 어드민 폐기 결정 | 어드민 |
@@ -163,7 +163,7 @@ title ord_claim.status 상태머신 (v6 — 11상태, 배송실행 분리)
 [*] --> RECEIVED : 고객 신청\n[배송완료 후 10일 이내, 사진 첨부(VENDOR귀책 시 1장 필수)]
 
 RECEIVED --> PAYMENT_PENDING : 귀책판정: 고객(CUSTOMER)\n(수거 배송비 결제 필요)
-RECEIVED --> INSPECTING : 귀책판정: 판매자(VENDOR)\n[shipment(PICKUP) 자동생성, 배송비 불필요]
+RECEIVED --> INSPECTING : 귀책판정: 입점사(VENDOR)\n[shipment(PICKUP) 자동생성, 배송비 불필요]
 RECEIVED --> REJECTED : CS 즉시 반려
 
 PAYMENT_PENDING --> INSPECTING : 배송비 결제완료\n[shipment(PICKUP) 자동생성·완료 후 진입]
@@ -177,8 +177,8 @@ note right of RECEIVED
   → 원상품 수취는 그 이후
 end note
 
-INSPECTING --> PICKED_UP : 품질점검 합격\n(판매자)
-INSPECTING --> PICKUP_REJECTED : 품질점검 거부\n(판매자, 사유 필수)
+INSPECTING --> PICKED_UP : 품질점검 합격\n(입점사)
+INSPECTING --> PICKUP_REJECTED : 품질점검 거부\n(입점사, 사유 필수)
 
 note right of INSPECTING
   판정 기준:
@@ -217,16 +217,16 @@ end note
 |---|---|---|---|---|---|---|
 | [*] | RECEIVED | 반품/교환 신청 | VENDOR 귀책 사유 선택 시 사진 1장 이상(REQ-ORD-058) | — | 고객 | 신청 폼 제출 |
 | RECEIVED | PAYMENT_PENDING | 귀책 판정(CUSTOMER) | 고객 귀책 사유 확인 | 수거 배송비 결제 알림톡 발송 | CS 담당자 | 클레임상세 [귀책판정: 고객귀책] |
-| RECEIVED | INSPECTING | 귀책 판정(VENDOR) + shipment(PICKUP) 완료 | 판매자 귀책 사유 확인 | 수거 즉시 시작, shipment(PICKUP)/EXCHANGE시 shipment(EXCHANGE_OUT) 생성(REQ-ORD-056) | CS 담당자 + 판매자 | [귀책판정: 판매자귀책] → 판매자 [수거정보입력] → [입고확인] |
+| RECEIVED | INSPECTING | 귀책 판정(VENDOR) + shipment(PICKUP) 완료 | 입점사 귀책 사유 확인 | 수거 즉시 시작, shipment(PICKUP)/EXCHANGE시 shipment(EXCHANGE_OUT) 생성(REQ-ORD-056) | CS 담당자 + 입점사 | [귀책판정: 입점사귀책] → 입점사 [수거정보입력] → [입고확인] |
 | RECEIVED | REJECTED | CS 즉시 반려 | 사유 필수 | 고객 알림톡 | CS 담당자 | [반려] + 사유입력 |
-| PAYMENT_PENDING | INSPECTING | 배송비 결제 + shipment(PICKUP) 완료 | PG 결제 성공 | 수거 시작, EXCHANGE시 shipment(EXCHANGE_OUT) 생성(REQ-ORD-056) | 고객 + 판매자 | [배송비 결제하기] → 판매자 [수거정보입력] → [입고확인] |
+| PAYMENT_PENDING | INSPECTING | 배송비 결제 + shipment(PICKUP) 완료 | PG 결제 성공 | 수거 시작, EXCHANGE시 shipment(EXCHANGE_OUT) 생성(REQ-ORD-056) | 고객 + 입점사 | [배송비 결제하기] → 입점사 [수거정보입력] → [입고확인] |
 | PAYMENT_PENDING | PAYMENT_EXPIRED | 24시간 초과 | 미결제 | 클레임 자동 취소, 알림톡 | 시스템(배치) | 없음 |
-| INSPECTING | PICKED_UP | 품질점검 합격 | 상품 상태 양호(RETURN) / 택(TAG) 유지(EXCHANGE, REQ-ORD-057) | — | 판매자 | 클레임상세 [합격] 버튼 |
-| INSPECTING | PICKUP_REJECTED | 품질점검 거부 | 사유 필수. 상품 훼손(RETURN) / 택 제거·훼손(EXCHANGE, REQ-ORD-057) | 어드민 판정 대기 | 판매자 | 클레임상세 [거부] 버튼 |
+| INSPECTING | PICKED_UP | 품질점검 합격 | 상품 상태 양호(RETURN) / 택(TAG) 유지(EXCHANGE, REQ-ORD-057) | — | 입점사 | 클레임상세 [합격] 버튼 |
+| INSPECTING | PICKUP_REJECTED | 품질점검 거부 | 사유 필수. 상품 훼손(RETURN) / 택 제거·훼손(EXCHANGE, REQ-ORD-057) | 어드민 판정 대기 | 입점사 | 클레임상세 [거부] 버튼 |
 | PICKED_UP | REFUNDED | 환불 처리 | — | PG 환불 또는 계좌이체 | CS 담당자 | [환불 처리] 버튼 |
 | PICKUP_REJECTED | DISPOSED | 폐기 결정 | 반송 불가 판단 | 고객 알림톡 | CS 담당자 | [폐기 처리] 버튼 |
 | PICKUP_REJECTED | RETURN_PAYMENT_PENDING | 반송 배송비 요청 | — | 고객에게 결제 알림톡 | CS 담당자 | [반송 배송비 추가결제 요청] 버튼 |
-| RETURN_PAYMENT_PENDING | COMPLETED | 결제 + shipment(RETURN) DELIVERED | PG 결제 성공 | 반송 배송 완료 후 클레임 완료 알림톡 | 고객 + 판매자 + 시스템(배치) | [반송 배송비 결제] → 판매자 [반송운송장등록] → 배치 자동전환 |
+| RETURN_PAYMENT_PENDING | COMPLETED | 결제 + shipment(RETURN) DELIVERED | PG 결제 성공 | 반송 배송 완료 후 클레임 완료 알림톡 | 고객 + 입점사 + 시스템(배치) | [반송 배송비 결제] → 입점사 [반송운송장등록] → 배치 자동전환 |
 | RETURN_PAYMENT_PENDING | PAYMENT_EXPIRED | 24시간 초과 | 미결제 | 클레임 자동 취소, 알림톡 | 시스템(배치) | 없음 |
 | REFUNDED | COMPLETED | 배치 자동 전환 | — | 클레임 완료 알림톡 | 시스템(배치) | 없음 |
 | DISPOSED | COMPLETED | 배치 자동 전환 | — | — | 시스템(배치) | 없음 |
@@ -294,11 +294,11 @@ end note
 | From | To | 트리거 | 액터 | 화면 기능 |
 |---|---|---|---|---|
 | [*] | PENDING | shipment 생성 | 시스템 | 없음 (주문 PREPARING 진입 / 클레임 귀책판정·반송결제완료 시 자동 생성) |
-| PENDING | IN_TRANSIT | 운송장 등록 | 판매자 | 배송관리 [운송장 등록] / 클레임상세 [수거정보입력]·[반송운송장등록]·[교환선출고 운송장등록] |
+| PENDING | IN_TRANSIT | 운송장 등록 | 입점사 | 배송관리 [운송장 등록] / 클레임상세 [수거정보입력]·[반송운송장등록]·[교환선출고 운송장등록] |
 | PENDING | CANCELLED | 상위 주문/클레임 취소 | 시스템 | 없음 (주문취소·클레임반려 이벤트 구독) |
 | IN_TRANSIT | DELIVERED | 택배사 배송완료 확인 | 시스템(배치) | 없음 (REQ-ORD-060) |
 | IN_TRANSIT | FAILED | 택배사 배송실패/반송 신호 | 시스템(배치) | 없음 (CS 알림 발송, REQ-ORD-061) |
-| FAILED | PENDING | 재발송 처리 | 판매자/CS 담당자 | 배송관리 [재발송 처리] *(신규, REQ-ORD-062)* |
+| FAILED | PENDING | 재발송 처리 | 입점사/CS 담당자 | 배송관리 [재발송 처리] *(신규, REQ-ORD-062)* |
 
 ### 금지 전이
 
@@ -326,8 +326,8 @@ end note
 | 배송 완료 | PREPARING→DELIVERED (shipment 파생) | 반나절 |
 | 구매 확정 | DELIVERED→CONFIRMED | 반나절 |
 | 반품/교환 신청 | [*]→RECEIVED | 반나절 |
-| 클레임 귀책판정·배송비 결제 | RECEIVED→PAYMENT_PENDING / RECEIVED→INSPECTING(판매자귀책) | 반나절 |
-| 품질점검 (판매자) | INSPECTING→PICKED_UP/PICKUP_REJECTED | 1일 |
+| 클레임 귀책판정·배송비 결제 | RECEIVED→PAYMENT_PENDING / RECEIVED→INSPECTING(입점사귀책) | 반나절 |
+| 품질점검 (입점사) | INSPECTING→PICKED_UP/PICKUP_REJECTED | 1일 |
 | 환불 처리 (어드민) | PICKED_UP→REFUNDED→COMPLETED | 반나절 |
 | 폐기·반송 판정 (어드민) | PICKUP_REJECTED→DISPOSED→COMPLETED, PICKUP_REJECTED→RETURN_PAYMENT_PENDING→COMPLETED(+ shipment(RETURN)) | 1일 |
 

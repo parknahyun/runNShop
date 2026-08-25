@@ -13,11 +13,12 @@
 | ID | DESIGN-EVENT-001 |
 | 상태 | **Finalized** |
 | 작성일 | 2026-08-11 |
-| 갱신일 | 2026-08-20 |
+| 갱신일 | 2026-08-24 |
 
 > **범위**: 1차 파트(Order + Payment) 간 이벤트. Catalog·Settlement·Member·Notification 연동은 해당 도메인 착수 시 보완.
 > **v2 (2026-08-20 현행화)**: 교환(EXCHANGE) 맞교환 원칙 반영 — 재배송·교환 SKU 차감을 CLAIM_COMPLETED(완료 시점)에서 PICKUP 진입(선출고) 시점으로 이동, CLAIM_EXCHANGE_SHIPPED 이벤트 신설.
 > **v3 (2026-08-20 현행화)**: 배송 실행(택배사 이동 구간)을 order/claim 공용 `ord_shipment`로 분리(상태머신DG v6). SHIPPING_STARTED/DELIVERY_COMPLETED/CLAIM_EXCHANGE_SHIPPED의 트리거를 shipment 상태 전이 기준으로 재정의. claim.status에서 PICKUP이 제거됨에 따라 "PICKUP 진입 시점" 표현을 "귀책판정 완료 시점"으로 정정.
+> **v4 (2026-08-24 동기화)**: DM-시퀀스(Order-Payment) §19가 실제로 발행하는 이벤트명은 `DELIVERY_COMPLETED`가 아니라 `SHIPMENT_DELIVERED`(60분 배치가 `shipment(OUTBOUND)` DELIVERED 확인 시 발행) — 동일 트리거 지점의 이름 변경이므로 카탈로그를 이 이름으로 정정한다(신규 이벤트 아님). DM §17-1이 발행하는 `CLAIM_PAYMENT_EXPIRED`(배송비 24시간 미결제 자동취소)는 카탈로그에 없던 신규 이벤트라 추가한다.
 
 ---
 
@@ -34,10 +35,11 @@
 | CLAIM_COMPLETED | Order | Payment, Catalog*, Member* | 클레임 완료 | 부분 환불, 재고 복원, 포인트 복원 |
 | CLAIM_RECEIVED | Order | Notification* | 클레임 접수 | 고객 알림톡+이메일 ("클레임 접수 완료") |
 | CLAIM_SHIPPING_PAID | Order | Notification* | 클레임 배송비 결제 완료 (수거) | 고객 알림톡+이메일 ("배송비 결제 완료, 수거 진행") |
+| CLAIM_PAYMENT_EXPIRED | Order | Notification* | 클레임 배송비(수거/반송) 24시간 미결제 (배치 자동취소) | 고객 알림톡 ("배송비 미결제로 클레임 취소") |
 | CLAIM_RETURN_SHIPPING_PAID | Order | Notification* | 클레임 반송 배송비 결제 완료 | 고객 알림톡+이메일 ("반송 배송비 결제 완료") |
 | CLAIM_REFUNDED | Order | Notification* | 클레임 환불 완료 | 고객 알림톡+이메일 ("환불 완료") |
 | SHIPPING_STARTED | Order | Notification* | 운송장 등록 (shipment(OUTBOUND) PENDING→IN_TRANSIT) | 고객 알림톡 ("상품 발송, 송장번호") |
-| DELIVERY_COMPLETED | Order | Notification* | 배송완료 (shipment(OUTBOUND) IN_TRANSIT→DELIVERED, 주문 DELIVERED 파생) | 고객 알림톡 ("배송 완료, 구매확정 유도") |
+| SHIPMENT_DELIVERED | Order | Notification* | 배송완료 (shipment(OUTBOUND) IN_TRANSIT→DELIVERED, 60분 배치 확인) | 고객 알림톡 ("배송 완료, 구매확정 유도"); Order 도메인 내부적으로 order.status→DELIVERED 파생 전환(동일 도메인 내 구독, DI 범위 외) |
 | CLAIM_DISPOSED | Order | Notification* | 클레임 폐기 처리 | 고객 알림톡 ("상품 폐기 처리됨") |
 | CLAIM_RETURN_PAYMENT_REQUESTED | Order | Notification* | 반송 배송비 추가결제 요청 | 고객 알림톡 ("반송 배송비 결제 필요") |
 | CLAIM_EXCHANGE_SHIPPED | Order | Catalog, Notification* | 교환 클레임 귀책판정 완료 (shipment(EXCHANGE_OUT) 생성, 선출고) | 교환 SKU 재고 차감, 고객 알림톡 ("교환상품 발송, 송장번호") |
@@ -80,7 +82,7 @@ ORD -> STL : ORDER_PAID 이벤트\n(정산 대기)
 ORD -> Delivery : 배송 요청 (동기)\n(출고 운송장 등록 → shipment(OUTBOUND) IN_TRANSIT)
 ORD -> NTF : SHIPPING_STARTED 이벤트\n(배송시작 알림톡)
 Delivery --> ORD : 배송완료 확인(배치)\n→ shipment(OUTBOUND) DELIVERED\n→ 주문 상태 DELIVERED 파생
-ORD -> NTF : DELIVERY_COMPLETED 이벤트\n(배송완료 알림톡)
+ORD -> NTF : SHIPMENT_DELIVERED 이벤트\n(배송완료 알림톡)
 ORD -> STL : ORDER_CONFIRMED 이벤트\n(정산 확정)
 ORD -> MEM : ORDER_CONFIRMED 이벤트\n(포인트 적립)
 
@@ -261,9 +263,6 @@ note right of CAT: 선출고: 교환 SKU -N (귀책판정 완료 시점, shipmen
   }
 }
 ```
-  }
-}
-```
 
 ---
 
@@ -335,22 +334,47 @@ note right of CAT: 선출고: 교환 SKU -N (귀책판정 완료 시점, shipmen
 }
 ```
 
-### DELIVERY_COMPLETED
+### SHIPMENT_DELIVERED
+
+> v4 (2026-08-24): `DELIVERY_COMPLETED`에서 이름 변경. `ord_shipment`(v6) 도입 이후 실제 트리거는 shipment 상태 전이이므로 `shipmentId`·`shipmentType`·`refType`/`refId`를 추가했다.
 
 ```json
 {
   "eventId": "evt_01HXYZ013",
-  "eventType": "DELIVERY_COMPLETED",
+  "eventType": "SHIPMENT_DELIVERED",
   "eventVersion": 1,
   "occurredAt": "2026-08-14T14:00:00Z",
   "producer": "order-service",
   "correlationId": "cor_01HXYZ001",
   "payload": {
-    "orderId": "ord_01HXYZ001",
+    "shipmentId": "shp_01HXYZ001",
+    "shipmentType": "OUTBOUND",
+    "refType": "ORDER",
+    "refId": "ord_01HXYZ001",
     "platformOrderId": "pord_01HXYZ001",
     "memberId": "mbr_01HXYZ001",
     "vendorId": "vnd_01HXYZ001",
     "deliveredAt": "2026-08-14T14:00:00Z"
+  }
+}
+```
+
+### CLAIM_PAYMENT_EXPIRED
+
+```json
+{
+  "eventId": "evt_01HXYZ018",
+  "eventType": "CLAIM_PAYMENT_EXPIRED",
+  "eventVersion": 1,
+  "occurredAt": "2026-08-21T09:00:00Z",
+  "producer": "order-service",
+  "correlationId": "cor_01HXYZ002",
+  "payload": {
+    "claimId": "clm_01HXYZ001",
+    "memberId": "mbr_01HXYZ001",
+    "paymentType": "PICKUP",
+    "amount": 5000,
+    "expiredAt": "2026-08-21T09:00:00Z"
   }
 }
 ```
@@ -476,6 +500,7 @@ note right of CAT: 선출고: 교환 SKU -N (귀책판정 완료 시점, shipmen
 | 항목 | 출처 |
 |---|---|
 | 이벤트 목록 | `DH-비즈니스프로세스(Order).md`, `DH-비즈니스프로세스(Payment).md` 이벤트 발행 지점 |
+| SHIPMENT_DELIVERED 개명·CLAIM_PAYMENT_EXPIRED 추가 | `DM-시퀀스(Order-Payment).md` §17-1, §19 (DI가 DM 최신 구현과 어긋나 있던 것을 동기화, C5 §8) |
 | 발행/수신 관계 | `DB-도메인정의서.md` §4 도메인 간 관계 |
 | Outbox 패턴 | `D9-컴포넌트.md` 배포 구조·도메인 간 통신 방식 |
 | 동기/비동기 판단 | 응답 즉시성 요구 여부 (UX 대기 vs 후속 처리) |

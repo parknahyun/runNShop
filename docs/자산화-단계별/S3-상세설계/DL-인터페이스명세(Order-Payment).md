@@ -44,7 +44,7 @@
 | 21 | GET | /api/admin/v1/orders/{orderId} | 주문 상세 | admin |
 | 22 | POST | /api/admin/v1/orders/{orderId}/force-cancel | 예외 취소 | admin |
 | 23 | GET | /api/admin/v1/claims | 클레임 목록 | admin |
-| 24 | POST | /api/admin/v1/claims/{claimId}/start | 클레임 처리 시작 | admin |
+| 24 | POST | /api/admin/v1/claims/{claimId}/start | 클레임 처리 시작 (API-050, 본문 §19) | admin |
 | 24-1 | POST | /api/admin/v1/claims/{claimId}/blame-decision | 귀책 판정 (API-026, 본문 §19-1) | admin |
 | 25 | POST | /api/admin/v1/claims/{claimId}/complete | 클레임 완료 (환불 진행) | admin |
 | 26 | POST | /api/admin/v1/claims/{claimId}/reject | 클레임 반려 | admin |
@@ -97,11 +97,13 @@
 | HTTP | 적용 대상 | 본 문서 내 해당 코드 |
 |---|---|---|
 | 400 | 요청 자체의 유효성 검증 실패 (필수값 누락·형식 오류) | `INVALID_QUANTITY`, `TRACKING_NO_REQUIRED`, `ADDRESS_REQUIRED`, `TERMS_NOT_AGREED`, `REASON_REQUIRED`, `EXCHANGE_SKU_REQUIRED`, `CLAIM_PHOTO_REQUIRED`, `INSPECT_PHOTO_REQUIRED`, `NOT_EXCHANGE_CLAIM`, `INVALID_DATE_RANGE`, `PAYMENT_FAILED`(PG 승인 거절) |
-| 409 | 리소스/상태 충돌 (재고 부족, 이미 처리된 상태, 중복 요청) | `STOCK_NOT_AVAILABLE`, `EXCEED_STOCK`, `OPTION_SOLD_OUT`, `PRODUCT_NOT_AVAILABLE`, `CANCEL_NOT_ALLOWED`, `CONFIRM_NOT_ALLOWED`, `ADDRESS_CHANGE_NOT_ALLOWED`, `SHIP_NOT_ALLOWED`, `CLAIM_NOT_ALLOWED`, `CLAIM_CANCEL_NOT_ALLOWED`, `CLAIM_ALREADY_DECIDED`, `EXCHANGE_STOCK_UNAVAILABLE`, `CARD_RESTRICTED`, `RESHIP_NOT_ALLOWED`, `RETURN_DELIVER_NOT_ALLOWED` |
+| 409 | 리소스/상태 충돌 (재고 부족, 이미 처리된 상태, 중복 요청) | `STOCK_NOT_AVAILABLE`, `EXCEED_STOCK`, `OPTION_SOLD_OUT`, `PRODUCT_NOT_AVAILABLE`, `CANCEL_NOT_ALLOWED`, `CONFIRM_NOT_ALLOWED`, `ADDRESS_CHANGE_NOT_ALLOWED`, `SHIP_NOT_ALLOWED`, `CLAIM_NOT_ALLOWED`, `CLAIM_CANCEL_NOT_ALLOWED`, `CLAIM_ALREADY_DECIDED`, `EXCHANGE_STOCK_UNAVAILABLE`, `CARD_RESTRICTED`, `RESHIP_NOT_ALLOWED`, `RETURN_DELIVER_NOT_ALLOWED`, `INVALID_STATUS` |
 | 422 | 비즈니스 규칙 위반 (기한 초과, 한도 초과, 조합 불일치) | `CLAIM_PERIOD_EXPIRED`, `PAYMENT_EXPIRED`, `CART_FULL`, `EXCHANGE_SKU_MISMATCH`, `COUPON_NOT_APPLICABLE`, `COUPON_EXPIRED`, `POINT_EXCEED` |
 | 404 | 리소스 없음 | `CART_ITEM_NOT_FOUND`, `CLAIM_NOT_FOUND`, `PAYMENT_NOT_FOUND`, `SHIPMENT_NOT_FOUND` |
 
 > 아래 개별 API 에러 테이블의 HTTP 컬럼은 위 기준에 따라 정정되어 있다. (예: 기존 400으로 뭉뚱그려졌던 재고부족/상태충돌류 → 409, 기한초과류 → 422)
+>
+> **2026-08-24 동기화**: 시퀀스(DM)가 이 정정을 반영하지 못하고 20건에서 옛 400을 그대로 쓰고 있던 것을 DL 기준으로 정정. 또한 시퀀스(DM) §12/§13/§14/§15/§20/§21이 실제로 분기하던 `INVALID_STATUS`(상태 충돌, 409)가 이 문서 §18/§33/§34/§35/§37/§38에 누락되어 있어 추가함 — 상태 충돌류이므로 위 409 분류를 따름.
 
 ### 3. Pagination (목록 API 공통, C6 §6.2)
 
@@ -757,6 +759,8 @@ Response는 `totalCount` 단일 필드 대신 `pagination` 객체를 포함한�
 
 ## 19. POST /api/admin/v1/claims/{claimId}/start — 클레임 처리 시작
 
+> API-050 (프로그램목록DQ §2-2, 2026-08-24 신규 부여 — 이전에는 DL에만 존재하고 DQ에 대응 ID가 없었음).
+
 | 항목 | 내용 |
 |---|---|
 | Method | POST |
@@ -1094,6 +1098,7 @@ Response는 `totalCount` 단일 필드 대신 `pagination` 객체를 포함한�
 |---|---|---|---|
 | 422 | PAYMENT_EXPIRED | 결제 기한이 초과되었습니다 | 24시간 초과 → 자동취소 |
 | 400 | PAYMENT_FAILED | 결제에 실패했습니다 | PG 승인 실패 |
+| 409 | INVALID_STATUS | 배송비 결제 대기 상태가 아닙니다 | claim.status가 `PAYMENT_PENDING`/`RETURN_PAYMENT_PENDING`이 아님 |
 | 404 | CLAIM_NOT_FOUND | 클레임을 찾을 수 없습니다 | 존재하지 않는 클레임 |
 
 ---
@@ -1258,6 +1263,13 @@ Response는 `totalCount` 단일 필드 대신 `pagination` 객체를 포함한�
 { "code": "SUCCESS", "data": { "claimId": "clm-001", "status": "REFUNDED", "refundAmount": 169000 } }
 ```
 
+#### Error Responses
+
+| HTTP | code | message | 조건 |
+|---|---|---|---|
+| 409 | INVALID_STATUS | 품질점검 합격 상태에서만 환불할 수 있습니다 | claim.status ≠ `PICKED_UP` |
+| 404 | CLAIM_NOT_FOUND | 클레임을 찾을 수 없습니다 | 존재하지 않는 클레임 |
+
 ---
 
 ## 34. POST /api/admin/v1/claims/{claimId}/dispose — 폐기 처리
@@ -1280,6 +1292,13 @@ Response는 `totalCount` 단일 필드 대신 `pagination` 객체를 포함한�
 ```json
 { "code": "SUCCESS", "data": { "claimId": "clm-001", "status": "DISPOSED" } }
 ```
+
+#### Error Responses
+
+| HTTP | code | message | 조건 |
+|---|---|---|---|
+| 409 | INVALID_STATUS | 품질점검 거부 건만 폐기 처리할 수 있습니다 | claim.status ≠ `PICKUP_REJECTED` |
+| 404 | CLAIM_NOT_FOUND | 클레임을 찾을 수 없습니다 | 존재하지 않는 클레임 |
 
 ---
 
@@ -1305,6 +1324,13 @@ Response는 `totalCount` 단일 필드 대신 `pagination` 객체를 포함한�
 ```
 
 > `status`는 `RETURN_PAYMENT_PENDING`(반송 배송비 결제대기)으로 전환된다. 수거 배송비 결제대기 상태인 `PAYMENT_PENDING`과는 구분되는 별도 상태이므로 혼동하지 않는다.
+
+#### Error Responses
+
+| HTTP | code | message | 조건 |
+|---|---|---|---|
+| 409 | INVALID_STATUS | 품질점검 거부 건만 반송 배송비를 요청할 수 있습니다 | claim.status ≠ `PICKUP_REJECTED` |
+| 404 | CLAIM_NOT_FOUND | 클레임을 찾을 수 없습니다 | 존재하지 않는 클레임 |
 
 ---
 
@@ -1356,6 +1382,13 @@ Response는 `totalCount` 단일 필드 대신 `pagination` 객체를 포함한�
 { "code": "SUCCESS", "data": { "claimId": "clm-001", "status": "PICKED_UP", "tagIntact": true } }
 ```
 
+#### Error Responses
+
+| HTTP | code | message | 조건 |
+|---|---|---|---|
+| 409 | INVALID_STATUS | 품질점검 상태만 합격 처리할 수 있습니다 | claim.status ≠ `INSPECTING` |
+| 404 | CLAIM_NOT_FOUND | 클레임을 찾을 수 없습니다 | 존재하지 않는 클레임 |
+
 ---
 
 ## 38. POST /api/partner/v1/claims/{claimId}/inspect-reject — 품질점검 거부
@@ -1388,6 +1421,7 @@ Response는 `totalCount` 단일 필드 대신 `pagination` 객체를 포함한�
 |---|---|---|---|---|
 | 400 | REASON_REQUIRED | 거부 사유를 입력해주세요 | 사유 누락 | — |
 | 400 | INSPECT_PHOTO_REQUIRED | 상품 상태를 확인할 수 있는 사진을 1장 이상 첨부해주세요 | `claimType=EXCHANGE`인데 `images`가 빈 배열(0장) | REQ-ORD-072 |
+| 409 | INVALID_STATUS | 품질점검 상태만 거부 처리할 수 있습니다 | claim.status ≠ `INSPECTING` | — |
 
 ---
 

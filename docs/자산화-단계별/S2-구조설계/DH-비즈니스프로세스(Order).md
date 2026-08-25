@@ -82,7 +82,7 @@ skinparam backgroundColor transparent
 skinparam defaultFontSize 11
 title 배송·구매확정 비즈니스 프로세스
 
-|판매자|
+|입점사|
 start
 :출고 준비 확인;
 :PREPARING;
@@ -198,7 +198,7 @@ if (접수 승인?) then (yes)
       :자동 취소 (PAYMENT_EXPIRED)\n알림톡 발송;
       stop
     endif
-  else (판매자(VENDOR) 귀책)
+  else (입점사(VENDOR) 귀책)
     :배송비 불필요\n→ shipment(PICKUP) 즉시 생성;
   endif
 else (no)

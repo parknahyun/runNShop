@@ -72,7 +72,7 @@ deactivate CAT
 
 alt 상품 판매중지 or 품절
   CS --> CC : PRODUCT_NOT_AVAILABLE
-  CC --> Client : 400 에러 응답
+  CC --> Client : 409 에러 응답
 else 정상
 
   CS -> CR : findByMemberAndSku(memberId, skuId)
@@ -88,7 +88,7 @@ else 정상
     CS -> CS : 장바구니 개수 검증 (50개 초과?)
     alt 50개 초과
       CS --> CC : CART_FULL
-      CC --> Client : 400 에러 응답
+      CC --> Client : 422 에러 응답
     else
       CS -> CR : save(newCartItem)
     end
@@ -244,8 +244,8 @@ activate CAT
 alt 재고 부족
   CAT --> OS : STOCK_NOT_AVAILABLE
   OS -> OR : updateStatus(STOCK_FAILED)
-  OS --> OC : 400 에러
-  OC --> Client : 400 STOCK_NOT_AVAILABLE
+  OS --> OC : 409 에러
+  OC --> Client : 409 STOCK_NOT_AVAILABLE
 else 재고 선점 성공
   CAT --> OS : 선점 성공
   deactivate CAT
@@ -258,7 +258,7 @@ else 재고 선점 성공
   alt 카드 당일 차단 상태
     PAY --> OS : CARD_RESTRICTED
     OS --> OC : CARD_RESTRICTED
-    OC --> Client : 400 에러\n"카드가 당일 결제 제한 상태입니다"
+    OC --> Client : 409 에러\n"카드가 당일 결제 제한 상태입니다"
   else 정상
     PAY -> PAY : PG 승인 요청 큐 등록\n(재시도 최대 3회, 타임아웃 30초 — Payment 내부 비동기 처리)
     PAY --> OS : 접수됨 (paymentId)
@@ -351,7 +351,7 @@ OR --> OS : order
 
 alt 주문 상태 != PAYMENT_COMPLETED
   OS --> OC : CANCEL_NOT_ALLOWED
-  OC --> Client : 400 에러
+  OC --> Client : 409 에러
 else 취소 가능
 
   OS -> OR : updateStatus(CANCELLED, reason)
@@ -400,7 +400,7 @@ OR --> OS : order
 
 alt 주문 상태 != DELIVERED
   OS --> OC : CONFIRM_NOT_ALLOWED
-  OC --> Client : 400 에러
+  OC --> Client : 409 에러
 else
   OS -> OR : updateStatus(CONFIRMED)
   OR -> DB : UPDATE + INSERT ord_order_history
@@ -450,16 +450,16 @@ OR --> CS : order
 CS -> CS : 유효성 검증
 alt 주문 상태 != DELIVERED
   CS --> CC : CLAIM_NOT_ALLOWED
-  CC --> Client : 400 에러
+  CC --> Client : 409 에러
 else 배송완료 후 10일 초과
   CS --> CC : CLAIM_PERIOD_EXPIRED
-  CC --> Client : 400 에러
+  CC --> Client : 422 에러
 else responsibility=VENDOR 인데 images가 빈 배열
   CS --> CC : CLAIM_PHOTO_REQUIRED (REQ-ORD-058)
   CC --> Client : 400 에러
 else claimType=EXCHANGE 인데 exchangeSkuId의 productId가 원 주문 상품과 다름
   CS --> CC : EXCHANGE_SKU_MISMATCH (REQ-ORD-070)
-  CC --> Client : 400 에러
+  CC --> Client : 422 에러
 else 정상
   CS -> CR : save(newClaim{status=RECEIVED, submitted_responsibility=request.responsibility})
   CR -> DB : INSERT ord_claim
@@ -576,7 +576,7 @@ CR --> CS : claim(status)
 
 alt status NOT IN [RECEIVED, PAYMENT_PENDING]
   CS --> CC : CLAIM_CANCEL_NOT_ALLOWED (REQ-ORD-071)
-  CC --> Client : 400 에러\n"귀책 판정/수거 시작 이후에는 취소할 수 없습니다"
+  CC --> Client : 409 에러\n"귀책 판정/수거 시작 이후에는 취소할 수 없습니다"
 else 정상
   CS -> CR : updateStatus(REJECTED, reason="고객 자진 철회")
   CS -> Noti : sendKakaoAlimtalk("클레임 취소 완료")
@@ -619,7 +619,7 @@ OR --> SS : order
 
 alt 상태 != PAYMENT_COMPLETED
   SS --> POC : SHIP_NOT_ALLOWED
-  POC --> Partner : 400 에러
+  POC --> Partner : 409 에러
 else
   SS -> OR : updateStatus(PREPARING)
   OR -> DB : UPDATE + INSERT ord_order_history
@@ -816,10 +816,10 @@ CR --> CS : claim
 
 alt 상태 not in (PAYMENT_PENDING, RETURN_PAYMENT_PENDING)
   CS --> CPC : INVALID_STATUS
-  CPC --> Client : 400 에러
+  CPC --> Client : 409 에러
 else 결제 기한 24시간 초과
   CS --> CPC : PAYMENT_EXPIRED
-  CPC --> Client : 400 에러
+  CPC --> Client : 422 에러
 else 정상
 
   alt 쿠폰 적용
@@ -923,7 +923,7 @@ CR --> CS : claim
 
 alt 상태 != PICKED_UP
   CS --> ACC : INVALID_STATUS (수거완료 상태만 환불 가능)
-  ACC --> Admin : 400 에러
+  ACC --> Admin : 409 에러
 else 정상
 
   alt refundMethod == ORIGINAL
@@ -981,7 +981,7 @@ CR --> CS : claim
 
 alt 상태 != INSPECTING
   CS --> PCC : INVALID_STATUS (품질점검 상태만 합격 가능)
-  PCC --> Partner : 400 에러
+  PCC --> Partner : 409 에러
 else 정상
   note right of CS
     합격 판정 기준(DG v4)
@@ -1053,7 +1053,7 @@ else
 
   alt 상태 != INSPECTING
     CS --> PCC : INVALID_STATUS
-    PCC --> Partner : 400 에러
+    PCC --> Partner : 409 에러
   else 정상
     CS -> CR : updateStatus(PICKUP_REJECTED, rejectReason)
     CR -> DB : UPDATE ord_claim
@@ -1332,7 +1332,7 @@ CR --> CS : claim
 
 alt 상태 != PICKUP_REJECTED
   CS --> ACC : INVALID_STATUS (품질점검 거부 건만 폐기 가능)
-  ACC --> Admin : 400 에러
+  ACC --> Admin : 409 에러
 else 정상
   CS -> CR : updateStatus(DISPOSED, reason)
   CR -> DB : UPDATE ord_claim
@@ -1382,7 +1382,7 @@ CR --> CS : claim
 
 alt 상태 != PICKUP_REJECTED
   CS --> ACC : INVALID_STATUS (품질점검 거부 건만 반송 요청 가능)
-  ACC --> Admin : 400 에러
+  ACC --> Admin : 409 에러
 else 정상
   CS -> CR : updateStatus(RETURN_PAYMENT_PENDING, amount)
   CR -> DB : UPDATE ord_claim
@@ -1431,7 +1431,7 @@ Repo --> Service : Shipment
 
 alt 상태 != FAILED
   Service --> SC : RESHIP_NOT_ALLOWED (FAILED 상태만 재발송 가능)
-  SC --> Actor : 400 에러
+  SC --> Actor : 409 에러
 else 정상
   Service -> Repo : updateStatus(PENDING)
   Repo -> DB : UPDATE ord_shipment
@@ -1471,10 +1471,11 @@ end
 
 | 항목 | 출처 |
 |---|---|
-| API endpoint | 인터페이스 명세(DL) 27개 API 중 주요 15개 상세화 |
+| API endpoint | 인터페이스 명세(DL) 50개 API 중 19개 API 시퀀스 상세화 (+ 컨슈머 2건, 배치 5건 — 총 26개 섹션. 2026-08-24 정정: 종전 "27개 중 15개"는 실제 건수와 불일치했음) |
 | 컨슈머 시퀀스 | 이벤트 플로우(DI) PAYMENT_APPROVED 수신 액션 |
 | 배치 시퀀스 | EARS(DE) REQ-ORD-006(D+7 자동확정), REQ-ORD-041(24시간 만료) |
 | 에러 분기 | GWT(DJ) 예외 시나리오 |
+| HTTP Status 코드 정합 | 인터페이스 명세(DL) 공통 규칙 §2 C6 §7 기준 — 2026-08-24 재고/상태충돌류(409)·기한초과류(422) 20건 및 INVALID_STATUS(신규, 409) 6건 정정 |
 | 도메인 간 호출 | 이벤트 플로우(DI) 동기/비동기 판단 |
 | 참여 객체 | ERD(DF) 엔티티 + 컴포넌트(D9) 모듈 구조 |
 | 상태 전이 | 상태머신(DG) 전이 규칙 |

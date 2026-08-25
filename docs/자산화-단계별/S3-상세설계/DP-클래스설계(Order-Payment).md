@@ -868,7 +868,7 @@ class ClaimImage(
     @Id val id: String,
     val claimId: String,
     val imageUrl: String,
-    val uploadedBy: Uploader,       // CUSTOMER(접수 시 첨부, §16-7) / VENDOR(품질점검 등 판매자 첨부 근거)
+    val uploadedBy: Uploader,       // CUSTOMER(접수 시 첨부, §16-7) / VENDOR(품질점검 등 입점사 첨부 근거)
     val sortOrder: Int = 0,
     val createdAt: Instant
 )

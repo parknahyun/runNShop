@@ -4,7 +4,7 @@
 |---|---|
 | 상태 | **Finalized** |
 | 작성일 | 2026-08-12 |
-| 갱신일 | 2026-08-21 |
+| 갱신일 | 2026-08-24 |
 | 도메인 | Order + Payment |
 | 도출 소스 | 화면레이아웃(DN), 인터페이스명세(DL), 시퀀스(DM), 이벤트플로우(DI), EARS(DE) |
 
@@ -13,6 +13,7 @@
 > **v4 (2026-08-20 현행화)**: S2 상태머신(Order) v6 반영 — 배송 실행(IN_DELIVERY/PICKUP/RETURN_SHIPPING/RETURN_DELIVERED)을 order.status·claim.status에서 신규 `ord_shipment`(order/claim 공용, shipment_type=OUTBOUND/PICKUP/RETURN/EXCHANGE_OUT, status=PENDING/IN_TRANSIT/DELIVERED/FAILED/CANCELLED)로 분리한 데 따라 "상태전이" 컬럼 10건 정정(API-018/026/027/034/036/037/041/043/047, BAT-003). 반품/교환 신청(API-013)에 "VENDOR귀책 시 사진 1장 이상 필수(REQ-ORD-058)" 비고 추가. 결제이력조회 등 responsibility 필터는 기존부터 CUSTOMER/VENDOR 2종으로 이미 일치(PLATFORM 값 미검출, 변경 불필요).
 > **v5 (2026-08-21 바텀업 검토)**: 시퀀스(DM) §22(REQ-ORD-062) 신규 반영 — 배송 실패 재발송 API 신규 추가(API-048, 입점사 partner API, shipment FAILED→PENDING→IN_TRANSIT). 인터페이스명세(DL) #44와 1:1 대응 확인. 귀책 판정(API-026)에 "고객 자진신고 responsibility를 CS가 최종 확정(덮어쓰기 가능, REQ-ORD-066)" 비고 보강. 집계·정합성 검증 결과 갱신.
 > **v6 (2026-08-21 시퀀스 §7-2 반영)**: 시퀀스(DM) §7-2 신규 반영 — 클레임 자진취소 API 신규 추가(API-049, 고객 mobile API, RECEIVED/PAYMENT_PENDING→REJECTED). API-048(재발송)에 "admin 클레임관리 화면에도 재발송 UI 추가 예정(DN-화면레이아웃 반영 중)" 비고 추가(현재 호출원은 SCR-P-004 단독, admin 화면 확정 시 SCR-A-004 추가 예정). 집계·정합성 검증 결과 갱신.
+> **v7 (2026-08-24 API 개수·에러코드 정합)**: 인터페이스명세(DL) 재확인 결과 API-048/049는 이미 DL에 반영되어 있었음(v5/v6의 "인터페이스명세 미반영" 기재는 오류) — 정정. DL "클레임 처리 시작"(§19, UI전용 no-op)은 유일하게 API-* ID가 없던 endpoint였고 API-050 신규 부여. API 총 49→50, 합계 95→96으로 갱신. HTTP Status 정합은 인터페이스명세(DL)·시퀀스(DM) 양쪽에서 처리(본 문서는 개수 집계만 갱신).
 
 ---
 
@@ -99,7 +100,7 @@
 | API-023 | GET | /api/admin/v1/orders/{orderId} | 주문 상세 | UC-14 | — | SCR-A-002-T1~T6 | — |
 | API-024 | POST | /api/admin/v1/orders/{orderId}/force-cancel | CS 예외 취소 | UC-6 | §11 | SCR-A-002-T4 | CANCELLED |
 | API-025 | GET | /api/admin/v1/claims | 클레임 목록 | UC-11 | — | SCR-A-003, SCR-A-004-T4 | — |
-| API-026 | POST | /api/admin/v1/claims/{claimId}/blame-decision | 귀책 판정 (고객/판매자) | UC-11 | — | SCR-A-004-T1 | RECEIVED→PAYMENT_PENDING(고객귀책) / RECEIVED→INSPECTING(판매자귀책, shipment(PICKUP) 자동생성 + EXCHANGE 유형 시 shipment(EXCHANGE_OUT) 병행생성, REQ-ORD-056); 고객 자진신고 responsibility를 CS가 최종 확정(덮어쓰기 가능, REQ-ORD-066) |
+| API-026 | POST | /api/admin/v1/claims/{claimId}/blame-decision | 귀책 판정 (고객/입점사) | UC-11 | — | SCR-A-004-T1 | RECEIVED→PAYMENT_PENDING(고객귀책) / RECEIVED→INSPECTING(입점사귀책, shipment(PICKUP) 자동생성 + EXCHANGE 유형 시 shipment(EXCHANGE_OUT) 병행생성, REQ-ORD-056); 고객 자진신고 responsibility를 CS가 최종 확정(덮어쓰기 가능, REQ-ORD-066) |
 | API-027 | POST | /api/admin/v1/claims/{claimId}/complete | 클레임 완료 (수동, 배치 선반영) | UC-11 | §10 | SCR-A-004-T1 | REFUNDED/RETURN_PAYMENT_PENDING(shipment(RETURN) DELIVERED 확인 후)/DISPOSED→COMPLETED (배치와 동일 로직을 CS가 즉시 트리거; PICKED_UP→REFUNDED 전이 자체는 API-029에서 수행) |
 | API-028 | POST | /api/admin/v1/claims/{claimId}/reject | 클레임 반려 | UC-11 | — | SCR-A-004-T1 | REJECTED |
 | API-029 | POST | /api/admin/v1/claims/{claimId}/refund | 환불 처리 (수동) | UC-22 | §13 | SCR-A-004-T2 | PICKED_UP→REFUNDED |
@@ -107,6 +108,7 @@
 | API-031 | POST | /api/admin/v1/claims/{claimId}/request-return-payment | 반송 배송비 추가결제 요청 | UC-22 | — | SCR-A-004-T3 | — |
 | API-045 | GET | /api/admin/v1/payments/search | 결제 검색 (CS, REQ-PAY-021: 상태·기간·주문번호·PG거래번호 필터) | UC-29(추가예정) | §26(추가예정) | — (신규 SCR 필요, 추가예정) | — |
 | API-046 | GET | /api/admin/v1/payments/{paymentId}/pg-logs | PG 거래 로그 조회 (REQ-PAY-022: 요청·응답 전체 이력, PII 마스킹) | UC-30(추가예정) | §27(추가예정) | — (신규 SCR 필요, 추가예정) | — |
+| API-050 | POST | /api/admin/v1/claims/{claimId}/start | 클레임 처리 시작 (UI전용 — 인터페이스명세(DL) §19에는 있었으나 API-* ID 누락, 2026-08-24 신규 부여) | UC-11 | — | — (호출원 미정, 추가예정) | — (claim.status는 `RECEIVED` 유지, 11상태 모델에 별도 IN_PROGRESS 없음) |
 
 ### 2-3. 입점사 (partner) API
 
@@ -156,10 +158,10 @@
 | 유형 | 건수 |
 |---|---|
 | 화면 (SCR) | 38 |
-| API | 49 |
+| API | 50 |
 | 컨슈머 (CSM) | 4 |
 | 배치 (BAT) | 4 |
-| **합계** | **95** |
+| **합계** | **96** |
 
 ---
 
@@ -167,13 +169,13 @@
 
 | # | 점검 항목 | 결과 | 상세 |
 |---|---|---|---|
-| 1 | 인터페이스명세 endpoint → API-* 대응 | ⚠️ 48/49 | 신규 6건(API-043,044,045,046,047,048)이 인터페이스명세(DL) #39-1,41,42,43,39-2,44와 1:1 대응 확인(경로 불일치 2건 정정: 41 `/api/customer/v1/payments`→`/api/v1/members/me/payments`, 42 `/payments`→`/payments/search`). API-049(클레임 자진취소)는 시퀀스(DM) §7-2 신규 반영이며 인터페이스명세(DL)에는 아직 미반영 — 후속 반영 필요 |
+| 1 | 인터페이스명세 endpoint → API-* 대응 | ✅ 50/50 | 신규 6건(API-043,044,045,046,047,048)이 인터페이스명세(DL) #39-1,41,42,43,39-2,44와 1:1 대응 확인(경로 불일치 2건 정정: 41 `/api/customer/v1/payments`→`/api/v1/members/me/payments`, 42 `/payments`→`/payments/search`). API-049(클레임 자진취소)는 인터페이스명세(DL) §10-1에 이미 반영되어 있음(2026-08-24 확인 — 이전 "미반영" 기재는 갱신 누락이었음). DL의 "클레임 처리 시작"(요약표 #24, 본문 §19)은 유일하게 API-* ID가 없던 endpoint였고 API-050을 신규 부여 — 이제 DL 50개 endpoint와 API-* 50개가 1:1 대응 |
 | 2 | 화면레이아웃 화면 → SCR-* 대응 | ✅ 38건 | 탭 포함 화면 = 컨테이너 + 각 탭 별도 SCR. 알림(§5,§6,§8-4~§8-6)은 SCR 제외. 결제이력/CS결제검색/PG로그(API-044~046)는 대응 SCR 미정. API-048(재발송)은 기존 SCR-P-004(배송 관리)를 호출원으로 사용, admin 클레임관리 화면(SCR-A-004)에도 재발송 UI 추가 예정(DN-화면레이아웃 반영 중). API-049(클레임 자진취소)는 기존 SCR-M-011(클레임 상세)에 취소 버튼 추가 예정 |
 | 3 | 시퀀스 [컨슈머] → CSM-* 대응 | ⚠️ 1/4 | CSM-002~004 시퀀스 §20~§22 추가 필요 |
 | 4 | 시퀀스 [배치] → BAT-* 대응 | ⚠️ 3/4 | BAT-004 시퀀스 §23 추가 필요 |
 | 5 | 모든 PGM → 세부UC 역추적 | ⚠️ | UC-24~27 (컨슈머/배치), UC-28~30 (결제이력/CS결제검색/PG로그), UC-31 (재발송, API-048), UC-32 (클레임 자진취소, API-049) 세부UC 추가 필요 |
-| 6 | 프로그램 총 건수(95) ≥ API 수(49) | ✅ | 화면(탭 포함)+컨슈머+배치 49건 포함 |
-| 7 | 모든 API → 호출원(SCR/CSM/BAT) 1건 이상 | ⚠️ 46/49 | API-044~046(결제이력/CS결제검색/PG로그)은 대응 SCR 미정으로 호출원 공란 — 후속 화면 정의 필요. API-047(반송배송완료)은 BAT-003 확인. API-048(재발송)은 SCR-P-004로 매핑 완료(admin 추가 예정). API-049(클레임 자진취소)는 SCR-M-011로 매핑 완료 |
+| 6 | 프로그램 총 건수(96) ≥ API 수(50) | ✅ | 화면(탭 포함)+컨슈머+배치 50건 포함 |
+| 7 | 모든 API → 호출원(SCR/CSM/BAT) 1건 이상 | ⚠️ 46/50 | API-044~046(결제이력/CS결제검색/PG로그)과 API-050(클레임 처리 시작)은 대응 SCR/호출원 미정 — 후속 화면 정의 필요. API-047(반송배송완료)은 BAT-003 확인. API-048(재발송)은 SCR-P-004로 매핑 완료(admin 추가 예정). API-049(클레임 자진취소)는 SCR-M-011로 매핑 완료 |
 | 8 | 모든 SCR → 호출 API 매핑 존재 | ✅ | 컨테이너(감싸는 화면)는 자체 API 없음(정상) — 탭에서 호출 |
 | 9 | CSM/BAT → 내부 호출 매핑 존재 | ✅ | 타 도메인 PublicApi / 외부 API 명시 |
 
@@ -186,8 +188,9 @@
 | 3 | 알림 템플릿 (SMS/알림톡/이메일) 프로그램화 여부 | 2차 파트(Notification) 착수 시 결정 | 하 |
 | 4 | API-043(교환 선출고) 시퀀스 §24 추가 | DM-시퀀스에 추가 | 중 |
 | 5 | API-044~046(결제이력/CS결제검색/PG로그) 화면·시퀀스 반영 | DN-화면레이아웃 SCR 신규 정의, DM-시퀀스 §25~§27 추가 (인터페이스명세는 반영 완료) | 중 |
-| 6 | API-048(재발송) 인터페이스명세·세부UC 반영 | DL-인터페이스명세에 endpoint 추가, DK-세부유스케이스에 UC-31 추가 | 중 |
-| 7 | API-049(클레임 자진취소) 인터페이스명세·세부UC 반영, API-048 admin 호출원 확정 | DL-인터페이스명세에 endpoint 추가, DK-세부유스케이스에 UC-32 추가, DN-화면레이아웃 admin 클레임관리 화면 반영 후 API-048 호출원에 SCR-A-004 추가 | 중 |
+| 6 | API-048(재발송) 세부UC 반영, admin 호출원 확정 (인터페이스명세는 §44에 이미 반영 완료, 2026-08-24 확인) | DK-세부유스케이스에 UC-31 추가, DN-화면레이아웃 admin 클레임관리 화면 반영 후 API-048 호출원에 SCR-A-004 추가 | 중 |
+| 7 | API-049(클레임 자진취소) 세부UC 반영 (인터페이스명세는 §10-1에 이미 반영 완료, 2026-08-24 확인) | DK-세부유스케이스에 UC-32 추가 | 중 |
+| 8 | API-050(클레임 처리 시작) 세부UC·호출원 반영 | DK-세부유스케이스에 반영, DN-화면레이아웃에서 실제 호출 시점(SCR-A-004 진입 시 자동 호출 여부) 확정 후 시퀀스(DM) 추가 검토 | 하 |
 
 ---
 
@@ -196,7 +199,7 @@
 | 항목 | 출처 |
 |---|---|
 | 화면 도출 | 화면레이아웃(DN) §1~§15 채널별 화면 |
-| API 도출 | 인터페이스명세(DL) #1~#40, #39-1, #39-2, #41~#43 endpoint 전수(47건) + 시퀀스(DM) §22 신규(API-048, 인터페이스명세 미반영) + 시퀀스(DM) §7-2 신규(API-049, 클레임 자진취소, 인터페이스명세 미반영) |
+| API 도출 | 인터페이스명세(DL) 요약표 #1~#44(+10-1,19-1,32-1,32-2,39-1,39-2) endpoint 전수(50건, 2026-08-24 재확인). API-048/049는 이미 DL에 반영되어 있었음(각각 §44, §10-1) — 이전 "인터페이스명세 미반영" 기재 및 "47건" 집계는 오류였음. API-050(클레임 처리 시작)은 DL §19에 있었으나 API-* ID가 없던 endpoint에 신규 부여 |
 | 컨슈머 도출 | 이벤트플로우(DI) PAYMENT_APPROVED/FAILED, ORDER_CANCELLED, CLAIM_COMPLETED 수신 액션 |
 | 배치 도출 | EARS(DE) REQ-ORD-015, REQ-ORD-027, REQ-ORD-042, REQ-ORD-043 시간조건 |
 | 클레임 상태전이 정정 | S2 `DG-상태머신(Order).md` ord_claim.status 14상태(v4) — API-026/027 상태전이 오류 수정, API-039/040 EXCHANGE 판정기준(REQ-ORD-057) 명시 |

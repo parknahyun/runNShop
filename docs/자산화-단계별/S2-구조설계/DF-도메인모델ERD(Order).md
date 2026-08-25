@@ -214,7 +214,7 @@ ord_platform_order (고객 주문 단위, 1:N)
 ord_cart (장바구니, 독립)
 ```
 
-> **v6 (2026-08-20 신설)**: 배송 실행(택배사·운송장·집화/배송중/배송완료)을 `ord_order.status`·`ord_claim.status`에서 분리해 `ord_shipment`로 통합. 두 상태는 이제 "고객·판매자·CS가 판단·결정하는 지점"만 표현한다.
+> **v6 (2026-08-20 신설)**: 배송 실행(택배사·운송장·집화/배송중/배송완료)을 `ord_order.status`·`ord_claim.status`에서 분리해 `ord_shipment`로 통합. 두 상태는 이제 "고객·입점사·CS가 판단·결정하는 지점"만 표현한다.
 
 ---
 
@@ -345,7 +345,7 @@ Table ord_claim {
   reason varchar [not null]
   detail_reason varchar [note: '상세 사유 (선택)']
   submitted_responsibility varchar [note: '고객이 신청 시 자진신고한 값(CUSTOMER/VENDOR). CS 판정 후에도 변경되지 않음 — REQ-ORD-076']
-  responsibility varchar [note: 'CS 귀책판정 확정값. CUSTOMER(고객귀책) / VENDOR(판매자귀책, 상품불량 등 — 사진 최소 1장 필수). submitted_responsibility와 다를 수 있음(CS가 번복, REQ-ORD-066)']
+  responsibility varchar [note: 'CS 귀책판정 확정값. CUSTOMER(고객귀책) / VENDOR(입점사귀책, 상품불량 등 — 사진 최소 1장 필수). submitted_responsibility와 다를 수 있음(CS가 번복, REQ-ORD-066)']
   channel varchar [not null, default: 'SELF', note: '신청경로: SELF(고객직접) / CS(콜센터)']
   pickup_address_id varchar [note: '회수지 주소 ID (기본: 주문 배송지)']
   exchange_sku_id varchar [note: '교환 대상 SKU (Catalog 도메인, claim_type=EXCHANGE 전용, 선출고 시 사용)']
@@ -431,7 +431,7 @@ Table ord_order_history {
 | `ord_claim.status` 전이는 상태머신(DG) 클레임 11상태 허용 전이만 가능 | 상태 변경 시 | 클레임 금지 전이 위반 방지 |
 | `ord_claim_payment` 동일 claim+payment_type는 unique | 배송비 결제 시 | 수거/반송 배송비 중복 결제 방지 |
 | `ord_claim_image` 동일 claim+uploaded_by는 각각 최대 3건 (접수분/판정분 독립) | 이미지 첨부 시 | REQ-ORD-075: 첨부 제한 3장은 업로더별 독립 적용 |
-| `ord_claim_image` uploaded_by=CUSTOMER, submitted_responsibility=VENDOR 클레임은 최소 1건 이상 | 클레임 접수 확인 시 | REQ-ORD-058: 상품불량 등 판매자귀책 사유는 사진 증빙 필수 |
+| `ord_claim_image` uploaded_by=CUSTOMER, submitted_responsibility=VENDOR 클레임은 최소 1건 이상 | 클레임 접수 확인 시 | REQ-ORD-058: 상품불량 등 입점사귀책 사유는 사진 증빙 필수 |
 | `ord_claim_image` uploaded_by=VENDOR, claim_type=EXCHANGE 품질점검거부는 최소 1건 이상 | 품질점검 거부 판정 시 | REQ-ORD-072: 교환 판정도 사진 증빙 필수 |
 | `ord_claim.submitted_responsibility`는 신청 후 불변, `responsibility`만 CS가 갱신 | 귀책 판정 확정 시 | REQ-ORD-076: 자진신고 이력 보존 |
 | `ord_shipment.status` 전이는 상태머신(DG) 배송 5상태 허용 전이만 가능 | 상태 변경 시 | 배송 금지 전이 위반 방지 |
@@ -465,5 +465,5 @@ Table ord_order_history {
 | 장바구니 50개 제한 | REQ-ORD-004 |
 | 스냅샷 원칙 (product_name, unit_price) | REQ-ORD-009 |
 | 반품 기한 10일 | REQ-ORD-030 |
-| 배송 실행 분리(ord_shipment) | 상태머신(DG) v6 — "고객·판매자·CS 의사결정 지점만 order/claim status로, 택배사 이동 구간은 별도" 원칙 |
-| 판매자귀책 사진 필수 | REQ-ORD-058 |
+| 배송 실행 분리(ord_shipment) | 상태머신(DG) v6 — "고객·입점사·CS 의사결정 지점만 order/claim status로, 택배사 이동 구간은 별도" 원칙 |
+| 입점사귀책 사진 필수 | REQ-ORD-058 |
