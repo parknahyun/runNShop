@@ -211,8 +211,8 @@ end note
 
 | 항목 | 출처 |
 |---|---|
-| 상태 목록 (product) | `09-도메인모델ERD(Catalog).md` cat_product.status |
-| 상태 목록 (display_page) | `09-도메인모델ERD(Catalog).md` cat_display_page.status |
+| 상태 목록 (product) | `DF-도메인모델ERD(Catalog).md` cat_product.status |
+| 상태 목록 (display_page) | `DF-도메인모델ERD(Catalog).md` cat_display_page.status |
 | 전이 규칙 | `08-EARS기능요구(Catalog).md` REQ-CAT-008~018 |
 | 재고 연동 전환 | REQ-CAT-023, REQ-CAT-024 |
 | 심사 프로세스 | 정책서 §3 상품 심사 정책 |

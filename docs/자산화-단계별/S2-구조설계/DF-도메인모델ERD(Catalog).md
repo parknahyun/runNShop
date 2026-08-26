@@ -329,10 +329,10 @@ Table cat_display_template {
 
 | 항목 | 출처 |
 |---|---|
-| 엔티티 도출 | `08-EARS기능요구(Catalog).md` 주어/목적어 명사 추출 |
-| 테이블 접두사 `cat_` | `05-도메인정의서.md` 스키마 그룹핑 |
+| 엔티티 도출 | `DE-EARS기능요구(Catalog).md` 주어/목적어 명사 추출 |
+| 테이블 접두사 `cat_` | `DB-도메인정의서.md` 스키마 그룹핑 |
 | 재고 불변식 | REQ-CAT-003, REQ-CAT-005 |
 | 이미지 제한 | REQ-CAT-016 |
 | 가격 이력 | REQ-CAT-025 |
-| 상태값 목록 | `10-상태머신(Catalog).md` (상호 참조) |
+| 상태값 목록 | `DG-상태머신(Catalog).md` (상호 참조) |
 | Redis 캐시 대상 | REQ-CAT-031 |
