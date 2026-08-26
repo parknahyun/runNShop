@@ -49,11 +49,12 @@ Table prm_discount_event {
   name varchar [not null, note: '행사명']
   discount_type varchar [not null, note: 'RATE / AMOUNT (정률/정액)']
   discount_value int [not null, note: '할인율(%) 또는 할인금액(원)']
-  total_quantity int [note: '행사 수량 (null=무제한)']
-  remaining_quantity int [note: 'Redis 동기화 (수량 소진 판별)']
-  status varchar [not null, note: 'DRAFT / ACTIVE / ENDED']
-  start_at timestamp [not null]
-  end_at timestamp [not null]
+  limit_type varchar [not null, default: 'PERIOD', note: '종료방식: PERIOD(기간형) / QUANTITY(선착순형)']
+  limit_quantity int [note: '선착순 제한 수량 (limit_type=QUANTITY일 때만, 그 외 null)']
+  remaining_quantity int [note: '선착순 잔여 수량, Redis 동기화 (limit_type=QUANTITY일 때만). 상품 재고(Catalog SKU stock)와 별개']
+  status varchar [not null, note: 'DRAFT / SCHEDULED(등록·시작대기) / ACTIVE(start_at 배치 자동 전환) / ENDED — 정책서 §3.7 예약 활성화, 즉시 활성화 금지']
+  start_at timestamp [not null, note: '행사 시작일 (기간형·선착순형 공통 필수). 등록은 start_at 1영업일 전까지 (정책서 §3.7)']
+  end_at timestamp [not null, note: '행사 종료일 (기간형·선착순형 공통 필수)']
   created_by varchar [not null, note: 'MD 사용자 ID']
   created_at timestamp [not null]
   updated_at timestamp [not null]
@@ -63,7 +64,7 @@ Table prm_discount_event {
     (status, end_at) [name: 'idx_devent_status_end']
   }
 
-  note: 'REQ-PRM-010~013: 행사가(즉시할인) 정책'
+  note: 'REQ-PRM-010~013: 행사가 정책 (종료방식 PERIOD/QUANTITY). 기존 "즉시할인" = 행사가'
 }
 
 Table prm_discount_event_product {
@@ -86,8 +87,8 @@ Table prm_quantity_discount {
   id varchar [pk, note: 'ULID']
   name varchar [not null, note: '수량할인명']
   vendor_id varchar [not null, note: '입점사 ID']
-  status varchar [not null, note: 'DRAFT / ACTIVE / ENDED']
-  start_at timestamp [not null]
+  status varchar [not null, note: 'DRAFT / SCHEDULED(등록·시작대기) / ACTIVE(start_at 배치 자동 전환) / ENDED — 정책서 §3.7 예약 활성화. 선착순 종료 없음']
+  start_at timestamp [not null, note: '등록은 start_at 1영업일 전까지 (정책서 §3.7)']
   end_at timestamp [not null]
   created_by varchar [not null]
   created_at timestamp [not null]
@@ -133,8 +134,8 @@ Table prm_cart_discount {
   name varchar [not null, note: '장바구니 할인명']
   condition_amount int [not null, note: '조건 금액 (이상)']
   discount_amount int [not null, note: '할인 금액']
-  status varchar [not null, note: 'DRAFT / ACTIVE / ENDED']
-  start_at timestamp [not null]
+  status varchar [not null, note: 'DRAFT / SCHEDULED(등록·시작대기) / ACTIVE(start_at 배치 자동 전환, 동시 1건 제약) / ENDED — 정책서 §3.7 예약 활성화']
+  start_at timestamp [not null, note: '등록은 start_at 1영업일 전까지 (정책서 §3.7)']
   end_at timestamp [not null]
   created_by varchar [not null, note: '플랫폼 운영자 ID']
   created_at timestamp [not null]
@@ -157,11 +158,11 @@ Table prm_coupon {
   min_order_amount int [default: 0, note: '최소 주문 금액']
   issue_limit int [not null, note: '총 발급 한도']
   issued_count int [default: 0, note: '현재 발급 수']
-  use_limit_per_member int [default: 1, note: '1인당 사용 횟수']
-  vendor_id varchar [note: '벤더 발행 시 입점사 ID (플랫폼 발행이면 null)']
+  issue_limit_per_member int [default: 1, note: '1인당 발급 한도 (다운로드/임의발행 단계 제한, 사용 검증과 무관)']
+  vendor_id varchar [note: '벤더 발행 시 입점사 ID (플랫폼 발행이면 null). ⚠️ 입점사 발행은 partner 채널 협의 대기']
   member_target_type varchar [not null, note: 'ALL / GRADE / MANUAL (전체/등급/임의지정)']
   product_target_type varchar [not null, note: 'ALL / MANUAL / CATEGORY']
-  status varchar [not null, note: 'PENDING_APPROVAL / ACTIVE / REJECTED / EXPIRED']
+  status varchar [not null, note: 'PENDING_APPROVAL / ACTIVE / REJECTED / EXPIRED. ⚠️ PENDING_APPROVAL/REJECTED는 입점형(partner) 흐름 — 협의 대기']
   reject_reason varchar [note: '반려 사유']
   valid_from timestamp [not null]
   valid_to timestamp [not null]
@@ -228,8 +229,8 @@ Table prm_exhibition {
   id varchar [pk, note: 'ULID']
   name varchar [not null, note: '기획전명']
   description text [note: '기획전 설명']
-  status varchar [not null, note: 'DRAFT / ACTIVE / ENDED']
-  start_at timestamp [not null]
+  status varchar [not null, note: 'DRAFT / SCHEDULED(등록·시작대기) / ACTIVE(start_at 배치 자동 전환) / ENDED — 정책서 §3.7 예약 활성화']
+  start_at timestamp [not null, note: '등록은 start_at 1영업일 전까지 (정책서 §3.7)']
   end_at timestamp [not null]
   created_by varchar [not null]
   created_at timestamp [not null]
@@ -277,12 +278,14 @@ Table prm_exhibition_promotion {
 
 | 불변식 | 검증 시점 | 도출 근거 |
 |---|---|---|
-| 동일 product_id에 ACTIVE 행사가와 ACTIVE 수량할인 동시 불가 | 행사/수량할인 활성화 시 | REQ-PRM-007, REQ-PRM-021 |
+| 동일 product_id에 ACTIVE 상품 가격할인(행사가·수량할인)은 최대 1건 (행사가끼리도, 행사가↔수량할인도 택1) | 가격할인 활성화 시 | REQ-PRM-007, REQ-PRM-021 |
+| prm_discount_event.limit_type=QUANTITY일 때만 limit_quantity·remaining_quantity 값 존재 (PERIOD는 null) | 행사 등록 시 | REQ-PRM-010, 종료방식 |
+| prm_discount_event.remaining_quantity ≥ 0 (선착순형만) | 수량 차감 시 | REQ-PRM-012 |
 | prm_cart_discount에 status=ACTIVE인 행은 최대 1건 | 장바구니 할인 활성화 시 | REQ-PRM-032 |
-| prm_coupon_issue의 USED 상태 쿠폰은 사용 횟수 한도 내 | 쿠폰 사용 시 | REQ-PRM-003 |
+| prm_coupon_issue는 AVAILABLE 상태에서만 사용 가능 (USED·EXPIRED는 사용 불가) | 쿠폰 사용 시 | REQ-PRM-003 |
 | prm_coupon.issued_count ≤ issue_limit | 쿠폰 발급 시 | REQ-PRM-046 |
 | 환불 시 쿠폰 상태 USED → AVAILABLE 복원 (사용 건 취소 시) | 환불 이벤트 수신 시 | 정산 정책 |
-| prm_discount_event.remaining_quantity ≥ 0 | 수량 차감 시 | REQ-PRM-012 |
+| vendor.is_platform_direct=TRUE인 쿠폰은 PENDING_APPROVAL 상태 생략 | 쿠폰 생성 시 | REQ-PRM-039, 정책서 §9.0 |
 | vendor.is_platform_direct=TRUE인 쿠폰은 PENDING_APPROVAL 상태 생략 | 쿠폰 생성 시 | REQ-PRM-039, 정책서 §9.0 |
 
 ---
@@ -304,8 +307,8 @@ Table prm_exhibition_promotion {
 
 | 항목 | 출처 |
 |---|---|
-| 엔티티 도출 | `08-EARS기능요구(Promotion).md` 주어/목적어 명사 추출 |
-| 테이블 접두사 `prm_` | `05-도메인정의서.md` 스키마 그룹핑 |
+| 엔티티 도출 | `DE-EARS기능요구(Promotion).md` 주어/목적어 명사 추출 |
+| 테이블 접두사 `prm_` | `DB-도메인정의서.md` 스키마 그룹핑 |
 | 택1 규칙 | REQ-PRM-007, REQ-PRM-021 |
 | 장바구니 1건 제한 | REQ-PRM-032 |
 | 쿠폰 승인 워크플로우 | REQ-PRM-040~042 |

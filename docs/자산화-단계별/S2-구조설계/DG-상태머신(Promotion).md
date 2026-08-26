@@ -17,15 +17,20 @@
 
 ---
 
-## 1. prm_discount_event.status (행사가·수량할인 공통)
+> **상품 가격할인 택1 원칙**: 행사가(prm_discount_event)와 수량구간 할인(prm_quantity_discount)은 상태 전이 구조는 동일하나 **별도 테이블**이며, 동일 상품에 **동시에 1건만 ACTIVE**를 허용한다(REQ-PRM-007). 두 상태머신은 §1(행사가)·§1-2(수량구간 할인)로 분리 정의한다. 차이점: **선착순 종료(limit_type/remaining_quantity)는 행사가 전용**이며, 수량구간 할인은 기간으로만 종료한다.
+
+## 1. prm_discount_event.status (행사가)
+
+> **예약 활성화 원칙 (정책서 §3.7)**: 행사는 시작 1영업일 전까지 등록하며, 등록 즉시 활성화되지 않는다. 관리자가 등록·확정하면 **SCHEDULED(예약)** 상태로 대기하고, **start_at 도래 시 배치가 자동으로 ACTIVE 전환**한다.
 
 ### 상태 목록
 
 | 상태 | 설명 | 진입 조건 |
 |---|---|---|
 | DRAFT | 작성 중, 미활성 | 행사 생성 시 |
-| ACTIVE | 활성 (할인 적용 중) | 관리자 활성화 |
-| ENDED | 종료 (기간 만료 또는 수량 소진) | 배치/시스템 처리 |
+| SCHEDULED | 등록 확정, 시작일 대기 | 관리자 등록·확정 (start_at 1영업일 전까지) |
+| ACTIVE | 활성 (할인 적용 중) | start_at 도래 (배치 자동 전환) |
+| ENDED | 종료 (기간 만료, 또는 선착순형의 제한 수량 소진) | 배치/시스템 처리 |
 
 ### 전이 다이어그램
 
@@ -33,23 +38,33 @@
 @startuml
 skinparam backgroundColor transparent
 skinparam defaultFontSize 11
-title prm_discount_event.status / prm_quantity_discount.status
+title prm_discount_event.status (행사가)
 
 [*] --> DRAFT : 행사 생성
 
-DRAFT --> ACTIVE : 관리자 활성화\n[택1 규칙 충족]
+DRAFT --> SCHEDULED : 관리자 등록·확정\n[택1 규칙 충족, start_at 1영업일 전까지]
 DRAFT --> DRAFT : 수정
 
-ACTIVE --> ENDED : 기간 만료 (배치)\nor 수량 소진
+SCHEDULED --> ACTIVE : start_at 도래 (배치 자동)
+SCHEDULED --> DRAFT : 시작 전 수정 (예약 해제)
+SCHEDULED --> ENDED : 시작 전 취소 (관리자)
+
+ACTIVE --> ENDED : 기간 만료 (배치, 공통)\nor 선착순 수량 소진 (선착순형)
 ACTIVE --> ENDED : 관리자 수동 종료
 
 ENDED --> [*]
 
+note right of SCHEDULED
+  등록 시:
+  - 택1 검증 (상품당 가격할인 1건)
+  - 선착순형이면 remaining_quantity 셋업
+  아직 가격 미반영 (대기)
+end note
+
 note right of ACTIVE
-  ACTIVE 진입 시:
-  - 택1 검증 (행사가↔수량할인)
+  start_at 도래 시:
   - 대상 상품 가격 반영
-  - remaining_quantity 초기화
+  - DISPLAY_PRICE_CHANGED 발행
 end note
 
 note right of ENDED
@@ -65,30 +80,110 @@ end note
 
 | From | To | 트리거 | 가드 (조건) | 액션 (부수효과) |
 |---|---|---|---|---|
-| DRAFT | ACTIVE | 관리자 활성화 | 동일 상품에 ACTIVE 행사 없음 (택1) | 대상 상품 할인가 반영, Redis 수량 셋업 |
-| ACTIVE | ENDED | 기간 만료 | end_at ≤ now | 가격 복원, EVENT_ENDED 이벤트 발행 |
-| ACTIVE | ENDED | 수량 소진 | remaining_quantity = 0 | 가격 복원, EVENT_ENDED 이벤트 발행 |
+| DRAFT | SCHEDULED | 관리자 등록·확정 | 동일 상품에 SCHEDULED/ACTIVE 가격할인(행사가·수량구간) 없음 (통합 택1, REQ-PRM-007) + start_at ≥ now+1영업일 | 선착순형이면 remaining_quantity 셋업 (가격 미반영) |
+| SCHEDULED | ACTIVE | start_at 도래 (배치 자동) | start_at ≤ now | 대상 상품 할인가 반영, DISPLAY_PRICE_CHANGED 발행 |
+| SCHEDULED | DRAFT | 관리자 시작 전 수정 | start_at > now | 예약 해제 |
+| SCHEDULED | ENDED | 관리자 시작 전 취소 | — | — |
+| ACTIVE | ENDED | 기간 만료 (기간형·선착순형 공통) | end_at ≤ now | 가격 복원, EVENT_ENDED 이벤트 발행 |
+| ACTIVE | ENDED | 선착순 수량 소진 (선착순형만) | limit_type=QUANTITY AND remaining_quantity = 0 | 가격 복원, EVENT_ENDED 이벤트 발행 |
 | ACTIVE | ENDED | 관리자 수동 종료 | — | 가격 복원 |
 
 ### 금지 전이
 
 | From | To | 사유 |
 |---|---|---|
-| ENDED | DRAFT / ACTIVE | 종료 상태는 불변 (재활성화는 신규 생성으로) |
-| ACTIVE | DRAFT | 역행 불가 (이미 고객에게 노출) |
+| DRAFT | ACTIVE | 예약(SCHEDULED) 없이 즉시 활성화 불가 — 시작일에 배치가 전환 (정책서 §3.7) |
+| ENDED | DRAFT / SCHEDULED / ACTIVE | 종료 상태는 불변 (재활성화는 신규 생성으로) |
+| ACTIVE | DRAFT / SCHEDULED | 역행 불가 (이미 고객에게 노출) |
 
 ---
 
-## 2. prm_coupon.status (쿠폰 정의)
+## 1-2. prm_quantity_discount.status (수량구간 할인)
+
+> 행사가와 동일한 DRAFT→SCHEDULED→ACTIVE→ENDED 구조이나, **선착순 종료가 없다** (기간으로만 종료). 동일 상품에 행사가와 택1(REQ-PRM-021).
+
+> **예약 활성화 원칙 (정책서 §3.7)**: 수량구간 할인도 행사가와 동일하게 시작 1영업일 전까지 등록하며, 등록 즉시 활성화되지 않는다. 관리자 등록·확정 시 **SCHEDULED(예약)** 대기 후 **start_at 도래 시 배치가 자동 ACTIVE 전환**한다.
 
 ### 상태 목록
 
 | 상태 | 설명 | 진입 조건 |
 |---|---|---|
-| PENDING_APPROVAL | 벤더 등록, MD 승인 대기 | 쿠폰 등록 시 |
-| ACTIVE | 승인 완료, 발급·사용 가능 | MD 승인 |
-| REJECTED | 반려 (사유 기록) | MD 반려 |
-| EXPIRED | 만료 (기간 경과 또는 조기 비활성화) | 배치 또는 벤더 비활성화 |
+| DRAFT | 작성 중, 미활성 | 수량 할인 생성 시 |
+| SCHEDULED | 등록 확정, 시작일 대기 | 관리자 등록·확정 (start_at 1영업일 전까지) |
+| ACTIVE | 활성 (구간별 할인 적용 중) | start_at 도래 (배치 자동 전환) |
+| ENDED | 종료 (기간 만료) | 배치/시스템 처리 |
+
+### 전이 다이어그램
+
+```plantuml
+@startuml
+skinparam backgroundColor transparent
+skinparam defaultFontSize 11
+title prm_quantity_discount.status (수량구간 할인)
+
+[*] --> DRAFT : 수량 할인 생성
+
+DRAFT --> SCHEDULED : 관리자 등록·확정\n[택1 규칙 충족, start_at 1영업일 전까지]
+DRAFT --> DRAFT : 수정
+
+SCHEDULED --> ACTIVE : start_at 도래 (배치 자동)
+SCHEDULED --> DRAFT : 시작 전 수정 (예약 해제)
+SCHEDULED --> ENDED : 시작 전 취소 (관리자)
+
+ACTIVE --> ENDED : 기간 만료 (배치)
+ACTIVE --> ENDED : 관리자 수동 종료
+
+ENDED --> [*]
+
+note right of SCHEDULED
+  등록 시:
+  - 택1 검증 (상품당 가격할인 1건)
+  아직 할인 미반영 (대기)
+end note
+
+note right of ACTIVE
+  start_at 도래 시:
+  - 구간(tier)별 할인율 적용
+  ※ 선착순 수량 개념 없음
+end note
+
+@enduml
+```
+
+### 전이 규칙 상세
+
+| From | To | 트리거 | 가드 (조건) | 액션 (부수효과) |
+|---|---|---|---|---|
+| DRAFT | SCHEDULED | 관리자 등록·확정 | 동일 상품에 SCHEDULED/ACTIVE 가격할인(행사가·수량구간) 없음 (통합 택1, REQ-PRM-021) + start_at ≥ now+1영업일 | 예약 등록 (할인 미반영) |
+| SCHEDULED | ACTIVE | start_at 도래 (배치 자동) | start_at ≤ now | 구간별 할인율 적용 |
+| SCHEDULED | DRAFT | 관리자 시작 전 수정 | start_at > now | 예약 해제 |
+| SCHEDULED | ENDED | 관리자 시작 전 취소 | — | — |
+| ACTIVE | ENDED | 기간 만료 | end_at ≤ now | 할인 해제 |
+| ACTIVE | ENDED | 관리자 수동 종료 | — | 할인 해제 |
+
+### 금지 전이
+
+| From | To | 사유 |
+|---|---|---|
+| DRAFT | ACTIVE | 예약(SCHEDULED) 없이 즉시 활성화 불가 (정책서 §3.7) |
+| ENDED | DRAFT / SCHEDULED / ACTIVE | 종료 상태는 불변 |
+| ACTIVE | DRAFT / SCHEDULED | 역행 불가 |
+| — | — | 선착순 수량 소진 전이 없음 (행사가 전용) |
+
+---
+
+## 2. prm_coupon.status (쿠폰 정의)
+
+> ⚠️ **협의 대기**: PENDING_APPROVAL 상태 및 직매입/입점형 승인 분기(is_platform_direct)는 입점사(partner) 프로모션 등록을 전제로 한다. 도메인정의서(DB)에 partner 채널이 추가된 후 확정한다(협의문서: `20260708_도메인정의서 Promotion 채널 보완 제안`). partner 채널 미확정 시 쿠폰은 admin(MD) 등록·즉시 ACTIVE 흐름만 유효하다.
+
+### 상태 목록
+
+| 상태 | 설명 | 진입 조건 |
+|---|---|---|
+| PENDING_APPROVAL | 벤더 등록, MD 승인 대기 (⚠️ partner 협의 대기) | 입점사 쿠폰 등록 시 |
+| ACTIVE | 승인 완료, 발급·사용 가능 | MD 승인 또는 MD 직접 등록 |
+| REJECTED | 반려 (사유 기록) (⚠️ partner 협의 대기) | MD 반려 |
+| EXPIRED | 만료 (기간 경과 또는 조기 비활성화) | 배치 또는 비활성화 |
 
 ### 전이 다이어그램
 
@@ -145,12 +240,16 @@ end note
 
 ## 3. prm_coupon_issue.status (발급 건별)
 
+> **쿠폰 사용 검증 기준**: 쿠폰 사용 검증(REQ-PRM-003/004)은 발급 건이 **AVAILABLE 상태일 때만 사용 가능**으로 판정한다. USED(이미 사용됨/소진)·EXPIRED는 사용 불가. "사용 횟수" 개념이 아니라 발급 건 상태로 판별한다.
+
+> **⚠️ 소유 도메인 협의 대기**: 발급 건(prm_coupon_issue) 상태를 Promotion이 소유하는 현행 설계는 도메인정의서(S1) "Promotion 책임 = 쿠폰 생성·발급·사용"에 근거한다(A안). "발급된 쿠폰은 회원 자산이므로 Member가 소유해야 한다"는 대안(B안)은 도메인정의서 개정을 수반하므로 협의 상정함 — `참고자료/협의문서/프로모션-회원 쿠폰소유 협의내용_김승태.md` 참조. 협의 확정 전까지 현행(A안) 유지.
+
 ### 상태 목록
 
 | 상태 | 설명 | 진입 조건 |
 |---|---|---|
 | AVAILABLE | 사용 가능 | 발급 시 |
-| USED | 사용 완료 | 주문 결제 시 |
+| USED | 사용 완료 (소진) | 주문 결제 시 |
 | EXPIRED | 만료 | 유효기간 경과 (배치) |
 
 ### 전이 다이어그램
@@ -191,8 +290,37 @@ end note
 
 ## 4. prm_cart_discount.status (장바구니 할인)
 
-> prm_discount_event.status와 동일한 DRAFT → ACTIVE → ENDED 전이.
-> 추가 제약: **ACTIVE 상태 최대 1건** (REQ-PRM-032).
+> prm_discount_event.status와 동일한 DRAFT → SCHEDULED → ACTIVE → ENDED 전이 (선착순 종료 없음, 기간으로만 종료).
+> **예약 활성화 원칙 (정책서 §3.7)**: 관리자 등록·확정 시 SCHEDULED(예약) 대기 후 start_at 도래 시 배치가 자동 ACTIVE 전환.
+> 추가 제약: **ACTIVE 상태 최대 1건** (REQ-PRM-032). SCHEDULED는 복수 예약 가능하나, start_at 도래 시점에 이미 ACTIVE 1건이 있으면 활성화 보류.
+
+### 상태 목록
+
+| 상태 | 설명 | 진입 조건 |
+|---|---|---|
+| DRAFT | 작성 중, 미활성 | 장바구니 할인 생성 시 |
+| SCHEDULED | 등록 확정, 시작일 대기 | 관리자 등록·확정 (start_at 1영업일 전까지) |
+| ACTIVE | 활성 (장바구니 할인 적용 중) | start_at 도래 (배치 자동, ACTIVE 1건 제약 검증) |
+| ENDED | 종료 (기간 만료) | 배치/시스템 처리 |
+
+### 전이 규칙 상세
+
+| From | To | 트리거 | 가드 (조건) | 액션 (부수효과) |
+|---|---|---|---|---|
+| DRAFT | SCHEDULED | 관리자 등록·확정 | start_at ≥ now+1영업일 | 예약 등록 (할인 미반영) |
+| SCHEDULED | ACTIVE | start_at 도래 (배치 자동) | start_at ≤ now AND 현재 ACTIVE 장바구니 할인 없음 (REQ-PRM-032) | 장바구니 할인 적용 |
+| SCHEDULED | DRAFT | 관리자 시작 전 수정 | start_at > now | 예약 해제 |
+| SCHEDULED | ENDED | 관리자 시작 전 취소 | — | — |
+| ACTIVE | ENDED | 기간 만료 | end_at ≤ now | 할인 해제 |
+| ACTIVE | ENDED | 관리자 수동 종료 | — | 할인 해제 |
+
+### 금지 전이
+
+| From | To | 사유 |
+|---|---|---|
+| DRAFT | ACTIVE | 예약(SCHEDULED) 없이 즉시 활성화 불가 (정책서 §3.7) |
+| SCHEDULED | ACTIVE | 이미 ACTIVE 장바구니 할인 1건 존재 시 활성화 보류 (REQ-PRM-032) |
+| ENDED | DRAFT / SCHEDULED / ACTIVE | 종료 상태는 불변 |
 
 ---
 
@@ -202,10 +330,11 @@ end note
 |---|---|---|
 | 쿠폰 등록·승인 워크플로우 | PENDING_APPROVAL→ACTIVE/REJECTED | 1일 |
 | 쿠폰 발급·사용·복원 | AVAILABLE→USED→AVAILABLE | 1일 |
-| 행사가 관리 | DRAFT→ACTIVE→ENDED | 1일 |
-| 수량구간 할인 관리 | DRAFT→ACTIVE→ENDED | 1일 |
-| 장바구니 할인 관리 | DRAFT→ACTIVE→ENDED | 반나절 |
+| 행사가 관리 (기간형/선착순형) | DRAFT→SCHEDULED→ACTIVE→ENDED (§1) | 1일 |
+| 수량구간 할인 관리 | DRAFT→SCHEDULED→ACTIVE→ENDED (§1-2, 선착순 없음) | 1일 |
+| 장바구니 할인 관리 | DRAFT→SCHEDULED→ACTIVE→ENDED (§4) | 반나절 |
 | PublicApi (할인 계산·쿠폰 검증) | — (상태전이 없음, 조회·계산) | 1일 |
+| 노출 할인가 갱신 (Catalog 연동) | — (상태전이 없음, 이벤트 발행) | 반나절 |
 
 ---
 
@@ -213,9 +342,13 @@ end note
 
 | 항목 | 출처 |
 |---|---|
-| 상태 목록 | `09-도메인모델ERD(Promotion).md` 각 테이블 status 컬럼 |
-| 전이 규칙 | `08-EARS기능요구(Promotion).md` REQ-PRM-010~048 |
-| 택1 규칙 | REQ-PRM-007, REQ-PRM-021 |
+| 상태 목록 | `DF-도메인모델ERD(Promotion).md` 각 테이블 status 컬럼 |
+| 전이 규칙 | `DE-EARS기능요구(Promotion).md` REQ-PRM-010~048 |
+| 행사가/수량구간 별도 테이블·택1 | REQ-PRM-007, REQ-PRM-021 (상품당 가격할인 1건 통합 택1) |
+| 행사가 종료방식 (기간형/선착순형) | REQ-PRM-010~012, 정책서 §3.7·§9.1-1 (선착순은 행사가 전용) |
+| SCHEDULED 예약 활성화 (즉시 활성화 금지) | 정책서 §3.7 "행사 등록 마감: 시작 1영업일 전까지" — 등록≠활성화, start_at 배치 자동 전환 |
+| 수량구간 할인 (선착순 없음, 기간 종료) | REQ-PRM-020, 021, 정책서 §3.11 |
+| 쿠폰 사용 검증 (AVAILABLE만) | REQ-PRM-003, 004 (상태 기반, 사용횟수 개념 아님) |
 | 장바구니 1건 제한 | REQ-PRM-032 |
-| 쿠폰 승인 워크플로우 | REQ-PRM-040~042 |
+| 쿠폰 승인 워크플로우 (⚠️ partner 협의 대기) | REQ-PRM-040~042 |
 | 쿠폰 복원 (주문 취소) | 정책서 §9 + 정산 정책 연동 |

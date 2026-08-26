@@ -32,8 +32,8 @@ start
 |시스템(Promotion)|
 :상품별 ACTIVE 행사 조회;
 
-if (행사가(즉시할인) ACTIVE?) then (yes)
-  :할인 유형 = INSTANT_DISCOUNT;
+if (행사가 ACTIVE?) then (yes)
+  :할인 유형 = DISCOUNT_EVENT;
   :할인 금액 계산\n(정률 or 정액);
 else if (수량구간 할인 ACTIVE?) then (yes)
   :구간별 조건 확인;
@@ -56,6 +56,8 @@ stop
 ---
 
 ## 2. 쿠폰 등록·승인 프로세스
+
+> ⚠️ **협의 대기**: 아래 직매입/입점형 분기 프로세스는 입점사(partner) 쿠폰 등록을 전제로 한다. 도메인정의서(DB)에 partner 채널이 추가된 후 확정한다(협의문서: `20260708_도메인정의서 Promotion 채널 보완 제안`). partner 채널 미확정 시 MD 직접 등록(즉시 ACTIVE) 흐름만 유효하다.
 
 ```plantuml
 @startuml
@@ -138,7 +140,7 @@ endif
 
 if (유효?) then (yes)
   :할인 금액 계산·반환;
-  note right: 유효기간 내\n사용횟수 미초과\n최소주문금액 충족\n적용상품 일치
+  note right: 유효기간 내\n미사용(AVAILABLE) 상태\n최소주문금액 충족\n적용상품 일치
 else (무효)
   :사용 불가 사유 반환;
   stop
@@ -154,7 +156,7 @@ stop
 
 ---
 
-## 4. 행사가(즉시할인) 등록·종료 프로세스
+## 4. 행사가 등록·종료 프로세스
 
 ```plantuml
 @startuml
@@ -164,30 +166,42 @@ title 행사가 등록·종료 프로세스
 
 |관리자(MD)|
 start
-:행사가 정보 입력\n(대상상품, 할인율/금액, 기간, 수량);
-:활성화 요청;
+:행사가 정보 입력\n(대상상품, 할인율/금액, 기간[필수],\n종료방식: 기간형/선착순형[+제한수량]);
+:등록·확정 요청\n(start_at 1영업일 전까지 — 정책서 §3.7);
 
 |시스템(Promotion)|
-:택1 규칙 검증;
+:택1 규칙 검증\n(상품당 가격할인 1건);
 
-if (동일 상품에 ACTIVE 수량할인 존재?) then (yes)
-  :등록 거부\n(택1 규칙 위반);
+if (동일 상품에 SCHEDULED/ACTIVE 가격할인 존재?) then (yes)
+  :등록 거부\n(택1 규칙 위반 — 행사가·수량할인 통합);
+  stop
+else if (start_at < now+1영업일?) then (yes)
+  :등록 거부\n(등록 마감 위반 — 정책서 §3.7);
   stop
 else (통과)
-  :DRAFT → ACTIVE 전환;
-  :대상 상품 할인가 반영;
-  :Redis remaining_quantity 초기화;
+  :DRAFT → SCHEDULED 전환\n(예약 등록, 가격 미반영);
+  if (선착순형?) then (yes)
+    :Redis remaining_quantity 셋업;
+  else (기간형)
+  endif
 endif
 
-... 시간 경과 ...
+... start_at 대기 ...
 
 |시스템(배치/Consumer)|
-if (end_at 도래?) then (기간 만료)
+:start_at 도래 감지;
+:SCHEDULED → ACTIVE 전환 (자동);
+:대상 상품 할인가 반영;
+:DISPLAY_PRICE_CHANGED 이벤트 발행;
+
+... 행사 기간 경과 ...
+
+if (end_at 도래?) then (기간 만료, 공통)
   :ACTIVE → ENDED;
   :가격 자동 복원;
   :EVENT_ENDED 이벤트 발행;
   stop
-else if (remaining_quantity = 0?) then (수량 소진)
+else if (선착순형 AND remaining_quantity = 0?) then (선착순 수량 소진)
   :ACTIVE → ENDED;
   :가격 자동 복원;
   :EVENT_ENDED 이벤트 발행;
@@ -333,8 +347,8 @@ stop
 
 | 항목 | 출처 |
 |---|---|
-| 상태 전이 | `10-상태머신(Promotion).md` |
-| PublicApi 흐름 | `06-상위유스케이스(Promotion).md` 행사가·할인관리 업무그룹 |
+| 상태 전이 | `DG-상태머신(Promotion).md` |
+| PublicApi 흐름 | `DC-상위유스케이스(Promotion).md` 행사가·할인관리 업무그룹 |
 | 택1 규칙 | REQ-PRM-007, REQ-PRM-021 |
 | 쿠폰 검증 로직 | REQ-PRM-003, REQ-PRM-004 |
 | 장바구니 할인 | REQ-PRM-002, REQ-PRM-030~032 |
