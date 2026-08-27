@@ -17,6 +17,46 @@
 
 ---
 
+## 개념 구분: 할인 vs 쿠폰 (종류 판별 방식)
+
+> Promotion에는 이름이 유사해 혼동하기 쉬운 "장바구니 할인"과 "장바구니 쿠폰"이 별개로 존재한다. **할인과 쿠폰은 종류를 구분하는 방식 자체가 다르다.**
+
+### 1) 할인 — **테이블 자체로 종류를 구분** (type 컬럼 없음)
+
+할인은 종류마다 고유 속성이 크게 달라(선착순 수량/구간 tier/총액 조건) 별도 테이블로 분리한다. 상품할인/장바구니할인의 실질 판별점은 **대상 상품 자식 테이블(`_product`)의 유무**다.
+
+| 할인 종류 | 테이블 | 대상 지정 | 적용 레벨 |
+|---|---|---|---|
+| 행사가 (구 "즉시할인") | `prm_discount_event` | `prm_discount_event_product` (대상 상품) | 상품 단위 |
+| 수량구간 할인 | `prm_quantity_discount` | `prm_quantity_discount_product` (대상 상품) | 상품 단위 |
+| 장바구니 할인 | `prm_cart_discount` | **대상 상품 테이블 없음** (`condition_amount` 총액 조건) | 주문 단위 (자동 적용) |
+
+→ **상품할인** = `_product` 자식 테이블 보유 / **장바구니할인** = 자식 테이블 없이 주문 총액 조건으로 자동 적용
+
+### 2) 쿠폰 — **단일 테이블 + `coupon_type` 컬럼으로 구분**
+
+쿠폰은 발급·사용·유효기간 등 공통 속성이 대부분이라 하나의 `prm_coupon` 테이블에 두고 컬럼으로 종류·대상을 구분한다.
+
+| 축 | 컬럼 | 값 | 의미 |
+|---|---|---|---|
+| 쿠폰 성격 | `coupon_type` | PRODUCT / CART | 상품쿠폰 / 장바구니쿠폰 (적용 레벨) |
+| 대상 범위 | `product_target_type` | ALL / MANUAL / CATEGORY | 상품쿠폰의 대상 (전체/특정상품/카테고리) |
+| 대상 명세 | `prm_coupon_target_product` | product_id / category_code | MANUAL→product_id, CATEGORY→category_code |
+
+→ 상품 단위 쿠폰 = `coupon_type=PRODUCT` + `product_target_type=MANUAL` / 카테고리 단위 = `+CATEGORY` / 주문 단위 = `coupon_type=CART`
+
+### 3) 요약 — "장바구니 할인" ≠ "장바구니 쿠폰"
+
+| | 장바구니 **할인** (`prm_cart_discount`) | 장바구니 **쿠폰** (`prm_coupon.coupon_type=CART`) |
+|---|---|---|
+| 성격 | 할인 정책 | 쿠폰의 한 종류 |
+| 적용 | 총액 조건 충족 시 **자동** (누구나) | 회원이 **발급받아 보유·선택** |
+| 발급/보유 | 없음 | 있음 (`prm_coupon_issue`) |
+| 근거 | 정책서 §9.2 | 정책서 §9.1 |
+| 중복 규칙 | 동시 1건 ACTIVE (REQ-PRM-032) | 동시 1건 적용 (REQ-PRM-048) |
+
+---
+
 ## 테이블 구조
 
 ```

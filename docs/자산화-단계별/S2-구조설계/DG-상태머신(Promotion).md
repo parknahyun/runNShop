@@ -293,6 +293,8 @@ end note
 > prm_discount_event.status와 동일한 DRAFT → SCHEDULED → ACTIVE → ENDED 전이 (선착순 종료 없음, 기간으로만 종료).
 > **예약 활성화 원칙 (정책서 §3.7)**: 관리자 등록·확정 시 SCHEDULED(예약) 대기 후 start_at 도래 시 배치가 자동 ACTIVE 전환.
 > 추가 제약: **ACTIVE 상태 최대 1건** (REQ-PRM-032). SCHEDULED는 복수 예약 가능하나, start_at 도래 시점에 이미 ACTIVE 1건이 있으면 활성화 보류.
+>
+> **⚠️ 장바구니 할인 ≠ 장바구니 쿠폰**: 여기의 장바구니 할인(`prm_cart_discount`)은 주문 총액 조건 충족 시 **자동 적용되는 할인 정책**(정책서 §9.2)이다. 회원이 발급받아 선택 사용하는 **장바구니 쿠폰**(`prm_coupon.coupon_type=CART`, §2·정책서 §9.1)과는 별개 개념이다. 종류 판별 방식 상세는 `DF-도메인모델ERD(Promotion).md` "개념 구분: 할인 vs 쿠폰" 참조.
 
 ### 상태 목록
 
