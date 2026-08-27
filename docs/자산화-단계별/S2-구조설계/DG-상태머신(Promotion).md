@@ -183,7 +183,7 @@ end note
 | PENDING_APPROVAL | 벤더 등록, MD 승인 대기 (⚠️ partner 협의 대기) | 입점사 쿠폰 등록 시 |
 | ACTIVE | 승인 완료, 발급·사용 가능 | MD 승인 또는 MD 직접 등록 |
 | REJECTED | 반려 (사유 기록) (⚠️ partner 협의 대기) | MD 반려 |
-| EXPIRED | 만료 (기간 경과 또는 조기 비활성화) | 배치 또는 비활성화 |
+| EXPIRED | 만료 (기간 경과 또는 조기 비활성화) | 배치 또는 비활성화 (⚠️ 발급·사용 가능 판정은 `status=ACTIVE AND now ≤ valid_to` 조합 — §3 판정식 원칙 동일 적용) |
 
 ### 전이 다이어그램
 
@@ -240,7 +240,16 @@ end note
 
 ## 3. prm_coupon_issue.status (발급 건별)
 
-> **쿠폰 사용 검증 기준**: 쿠폰 사용 검증(REQ-PRM-003/004)은 발급 건이 **AVAILABLE 상태일 때만 사용 가능**으로 판정한다. USED(이미 사용됨/소진)·EXPIRED는 사용 불가. "사용 횟수" 개념이 아니라 발급 건 상태로 판별한다.
+> **쿠폰 사용 검증 기준 (⚠️ 상태 단독 판정 금지 — status + 기간 조합 필수)**:
+> 쿠폰 사용 가능 여부는 **상태와 유효기간을 반드시 함께(AND) 검증**한다. 상태만으로 판정하면 안 된다.
+>
+> **사용 가능 판정식**: `status = AVAILABLE AND (valid_from ≤ now ≤ valid_to) AND 최소주문금액 충족 AND 적용상품 일치`
+> (여기서 `valid_from`/`valid_to`는 발급 건 자체 컬럼이 아니라 **부모 쿠폰 `prm_coupon`의 유효기간**을 참조 — 발급 건은 별도 기간 미보유)
+>
+> - **유효기간(기간)이 판정의 진실의 원천(Source of Truth)**이다. EXPIRED 상태는 배치가 사후에 붙이는 **캐시(파생 값)**일 뿐, 판정의 전제가 아니다.
+> - **이유**: 만료 배치는 주기적(예: 매일 02:00)으로 실행되므로, 자정~배치 실행 사이에 만료된 쿠폰은 아직 `status = AVAILABLE`로 남아 있다. 이 구간에 **상태만 보면 만료 쿠폰을 사용 가능으로 오판**한다. 따라서 결제 등 사용 검증 경로는 반드시 `now ≤ valid_to` 날짜 조건을 함께 본다.
+> - USED(이미 사용됨/소진)는 상태로 차단. "사용 횟수" 개념이 아니라 발급 건 상태 + 기간으로 판별한다.
+> - 배치 EXPIRED 전환(§DH-6)은 **판정용이 아니라** 조회 성능(status 인덱스)·통계(미사용 소멸 집계)·만료 알림 목적의 캐시 갱신이다. 배치가 지연·미실행되어도 위 판정식 때문에 정합성은 깨지지 않는다.
 
 > **⚠️ 소유 도메인 협의 대기**: 발급 건(prm_coupon_issue) 상태를 Promotion이 소유하는 현행 설계는 도메인정의서(S1) "Promotion 책임 = 쿠폰 생성·발급·사용"에 근거한다(A안). "발급된 쿠폰은 회원 자산이므로 Member가 소유해야 한다"는 대안(B안)은 도메인정의서 개정을 수반하므로 협의 상정함 — `참고자료/협의문서/프로모션-회원 쿠폰소유 협의내용_김승태.md` 참조. 협의 확정 전까지 현행(A안) 유지.
 
@@ -282,9 +291,11 @@ end note
 
 | From | To | 트리거 | 가드 (조건) | 액션 (부수효과) |
 |---|---|---|---|---|
-| AVAILABLE | USED | 주문 결제 완료 | 유효기간 내 + 사용 조건 충족 | used_order_id, used_at 기록 |
-| AVAILABLE | EXPIRED | 유효기간 만료 | expired_at ≤ now | — |
-| USED | AVAILABLE | 주문 취소/환불 | 원래 쿠폰이 아직 유효기간 내 | used_order_id 초기화, used_at 초기화 |
+| AVAILABLE | USED | 주문 결제 완료 | `now ≤ prm_coupon.valid_to` (유효기간 내) + 사용 조건 충족 | used_order_id, used_at 기록 |
+| AVAILABLE | EXPIRED | 유효기간 만료 (배치) | `now > prm_coupon.valid_to` (판정 기준은 부모 쿠폰의 valid_to) | expired_at = now 기록 (만료 처리 시각) |
+| USED | AVAILABLE | 주문 취소/환불 | `now ≤ prm_coupon.valid_to` (원래 쿠폰이 아직 유효기간 내) | used_order_id 초기화, used_at 초기화 |
+
+> **유효기간 출처 명확화**: 발급 건(`prm_coupon_issue`)에는 자체 유효기한 컬럼이 없다. 판정식 `now ≤ valid_to`의 `valid_to`는 **부모 쿠폰 `prm_coupon.valid_to`**를 참조한다. `prm_coupon_issue.expired_at`은 유효기한이 아니라 **배치가 EXPIRED로 전환한 시각을 기록하는 값**이므로 만료 판정 가드로 사용하지 않는다.
 
 ---
 

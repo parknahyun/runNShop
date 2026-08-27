@@ -172,7 +172,7 @@ Table prm_quantity_discount_product {
 Table prm_cart_discount {
   id varchar [pk, note: 'ULID']
   name varchar [not null, note: '장바구니 할인명']
-  condition_amount int [not null, note: '조건 금액 (이상)']
+  condition_amount int [not null, note: '조건 금액 (이상). 비교 기준은 정가 총액이 아니라 상품 단위 할인(행사가/수량구간+상품쿠폰) 적용 후 주문 총액 — "상품 먼저, 플랫폼 나중" (REQ-PRM-002, 프로모션-할인유형-적용순서 §4)']
   discount_amount int [not null, note: '할인 금액']
   status varchar [not null, note: 'DRAFT / SCHEDULED(등록·시작대기) / ACTIVE(start_at 배치 자동 전환, 동시 1건 제약) / ENDED — 정책서 §3.7 예약 활성화']
   start_at timestamp [not null, note: '등록은 start_at 1영업일 전까지 (정책서 §3.7)']
@@ -251,18 +251,18 @@ Table prm_coupon_issue {
   id varchar [pk, note: 'ULID']
   coupon_id varchar [not null, ref: > prm_coupon.id]
   member_id varchar [not null]
-  status varchar [not null, note: 'AVAILABLE / USED / EXPIRED']
+  status varchar [not null, note: 'AVAILABLE / USED / EXPIRED. 사용 가능 판정은 status 단독이 아니라 status=AVAILABLE AND now<=prm_coupon.valid_to 조합 (상태머신 §3)']
   used_order_id varchar [note: '사용된 주문 ID']
   issued_at timestamp [not null]
   used_at timestamp
-  expired_at timestamp
+  expired_at timestamp [note: '만료 "처리된" 시각 기록용 (배치 EXPIRED 전환 시각). 유효기한 아님 — 유효기한은 부모 prm_coupon.valid_to 참조. 만료 판정 가드로 사용 금지']
 
   indexes {
     (coupon_id, member_id) [name: 'idx_ci_coupon_member']
     (member_id, status) [name: 'idx_ci_member_status']
   }
 
-  note: '쿠폰 발급 이력 (REQ-PRM-044~047)'
+  note: '쿠폰 발급 이력 (REQ-PRM-044~047). 유효기간(valid_from/valid_to)은 부모 prm_coupon에서 상속 (발급 건별 별도 기간 미보유). 사용 검증 시 coupon join하여 valid_to 확인'
 }
 
 Table prm_exhibition {
@@ -322,9 +322,9 @@ Table prm_exhibition_promotion {
 | prm_discount_event.limit_type=QUANTITY일 때만 limit_quantity·remaining_quantity 값 존재 (PERIOD는 null) | 행사 등록 시 | REQ-PRM-010, 종료방식 |
 | prm_discount_event.remaining_quantity ≥ 0 (선착순형만) | 수량 차감 시 | REQ-PRM-012 |
 | prm_cart_discount에 status=ACTIVE인 행은 최대 1건 | 장바구니 할인 활성화 시 | REQ-PRM-032 |
-| prm_coupon_issue는 AVAILABLE 상태에서만 사용 가능 (USED·EXPIRED는 사용 불가) | 쿠폰 사용 시 | REQ-PRM-003 |
+| prm_coupon_issue 사용 가능 = `status=AVAILABLE AND now≤valid_to` (상태 단독 판정 금지 — 유효기간 조합 필수, 만료 배치 지연 구간 오판 방지) | 쿠폰 사용 시 | REQ-PRM-003·004, 상태머신 §3 판정식 |
 | prm_coupon.issued_count ≤ issue_limit | 쿠폰 발급 시 | REQ-PRM-046 |
-| 환불 시 쿠폰 상태 USED → AVAILABLE 복원 (사용 건 취소 시) | 환불 이벤트 수신 시 | 정산 정책 |
+| 환불 시 쿠폰 USED → AVAILABLE 복원은 `now ≤ prm_coupon.valid_to`인 경우만 (유효기간 지난 쿠폰은 EXPIRED 유지, 복원 안 함) | 환불 이벤트 수신 시 | 정산 정책 + 상태머신 §3 |
 | vendor.is_platform_direct=TRUE인 쿠폰은 PENDING_APPROVAL 상태 생략 | 쿠폰 생성 시 | REQ-PRM-039, 정책서 §9.0 |
 | vendor.is_platform_direct=TRUE인 쿠폰은 PENDING_APPROVAL 상태 생략 | 쿠폰 생성 시 | REQ-PRM-039, 정책서 §9.0 |
 

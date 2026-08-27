@@ -140,7 +140,15 @@ endif
 
 if (유효?) then (yes)
   :할인 금액 계산·반환;
-  note right: 유효기간 내\n미사용(AVAILABLE) 상태\n최소주문금액 충족\n적용상품 일치
+  note right
+    사용 가능 판정 (모두 AND):
+    ① status = AVAILABLE (미사용)
+    ② now <= valid_to (유효기간 내)  ← 상태 아닌 날짜로 판정
+    ③ 최소주문금액 충족
+    ④ 적용상품 일치
+    ※ 상태 단독 판정 금지 — 만료는 날짜로 차단
+    (만료 배치 지연 구간 오판 방지, §6 참조)
+  end note
 else (무효)
   :사용 불가 사유 반환;
   stop
@@ -215,6 +223,8 @@ endif
 
 ## 5. 장바구니 할인 평가 프로세스
 
+> **⚠️ 비교 기준 금액**: 장바구니 할인 조건(`condition_amount`)은 **정가 총액이 아니라 상품 단위 할인(① 행사가/수량구간 + ② 상품쿠폰) 적용 후의 주문 총액**을 기준으로 판단한다. "상품 먼저, 플랫폼 나중" 원칙에 따라 Order가 상품 할인을 먼저 확정한 뒤 그 금액을 Promotion에 전달한다. (근거: `참고자료/프로모션-할인유형-적용순서.md` §4 — 확정)
+
 ```plantuml
 @startuml
 skinparam backgroundColor transparent
@@ -223,24 +233,23 @@ title 장바구니 할인 평가 프로세스
 
 |시스템(Order)|
 start
-:장바구니 할인 평가 요청\n(주문 총액, 상품 목록);
+:상품 단위 할인(①행사가/수량구간 + ②상품쿠폰) 확정;
+:장바구니 할인 평가 요청\n(상품할인 적용 후 주문 총액, 상품 목록);
 
 |시스템(Promotion)|
 :ACTIVE 장바구니 할인 정책 조회;
 
 if (ACTIVE 정책 존재?) then (yes)
-  :주문 총액 ≥ condition_amount?;
-  if (조건 충족?) then (yes)
+  if (상품할인 적용 후 총액 >= condition_amount?) then (충족)
     :할인금액·조건명 반환;
-    stop
   else (미충족)
     :할인 0원, 미충족 반환;
-    stop
   endif
 else (정책 없음)
   :할인 0원, 정책 없음 반환;
-  stop
 endif
+
+stop
 
 @enduml
 ```
@@ -249,18 +258,26 @@ endif
 
 ## 6. 쿠폰 만료 배치 프로세스
 
+> **⚠️ 이 배치는 "사용 가능 판정"의 전제가 아니다.** 쿠폰 사용 가능 여부는 항상 `status + 유효기간` 조합으로 판정하며(§3 참조), **유효기간이 진실의 원천(SoT)**이다. 본 배치의 EXPIRED 전환은 판정용이 아니라 **조회 성능(status 인덱스)·통계(미사용 소멸 집계)·만료 알림** 목적의 캐시 갱신이다.
+> 따라서 배치 실행 전(예: 자정~02:00) 만료된 쿠폰이 아직 `status=ACTIVE/AVAILABLE`로 남아 있어도, 사용 검증(§3)은 `now ≤ valid_to` 조건으로 이를 차단하므로 정합성이 깨지지 않는다.
+
 ```plantuml
 @startuml
 skinparam backgroundColor transparent
 skinparam defaultFontSize 11
-title 쿠폰 만료 배치 프로세스
+title 쿠폰 만료 배치 프로세스 (캐시 갱신 — 판정 전제 아님)
 
 |시스템(배치)|
 start
 :매일 02:00 배치 실행;
 :유효기간 만료 쿠폰 조회\n(prm_coupon.valid_to < now AND status = ACTIVE);
-:대상 쿠폰 → EXPIRED 일괄 전환;
+:대상 쿠폰 → EXPIRED 일괄 전환\n(조회/통계/알림용 캐시 갱신);
 :해당 쿠폰의 미사용 발급 건\n(prm_coupon_issue.status = AVAILABLE)\n→ EXPIRED 일괄 전환;
+note right
+  ※ 사용 가능 판정은 이 배치와 무관하게
+  status + (now <= valid_to) 조합으로 수행 (§3)
+  배치 지연 구간에도 만료 쿠폰은 날짜 조건으로 차단됨
+end note
 stop
 
 @enduml
@@ -353,4 +370,6 @@ stop
 | 쿠폰 검증 로직 | REQ-PRM-003, REQ-PRM-004 |
 | 장바구니 할인 | REQ-PRM-002, REQ-PRM-030~032 |
 | 배치 스케줄 | REQ-PRM-011, REQ-PRM-047 |
-| 할인 적용 순서 | `프로모션-할인유형-적용순서.md` §3 |
+| 할인 적용 순서 | `프로모션-할인유형-적용순서.md` §3(순서)·§4(중복·방향 규칙) |
+| 장바구니 할인 비교 기준 금액 (상품할인 후 총액) | `프로모션-할인유형-적용순서.md` §4, REQ-PRM-002 |
+| 쿠폰 만료 판정 (status+기간 조합, 상태 단독 금지) | 상태머신 §3 판정식, REQ-PRM-004 |

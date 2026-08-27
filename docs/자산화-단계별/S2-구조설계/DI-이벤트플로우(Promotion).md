@@ -84,7 +84,11 @@ PRO -> STL : COUPON_USED 이벤트\n(정산 반영)
 
 == 주문 취소 시 쿠폰 복원 ==
 ORD -> PRO : ORDER_CANCELLED 이벤트
-note right: 쿠폰 USED→AVAILABLE 복원
+note right
+  쿠폰 USED→AVAILABLE 복원
+  단, now <= prm_coupon.valid_to 인 경우만
+  (유효기간 지난 쿠폰은 EXPIRED 유지, 복원 안 함)
+end note
 
 == 회원 등급 변경 시 쿠폰 자동 발급 ==
 MEM -> PRO : MEMBER_GRADE_CHANGED 이벤트
