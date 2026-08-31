@@ -575,9 +575,11 @@ admin/partner에서 API 계약이 확정되면 mobile 기획자가 그 계약을
 **위치**: 방법론 6.4 상세설계 표, `DQ 프로그램 목록` (Design, Domain 범위, 선행 산출물:
 화면레이아웃·인터페이스명세·시퀀스·이벤트플로우·EARS)
 
-**완성본**: `docs/deliverables/S3-상세설계/DQ-프로그램목록(Order-Payment).md` — 화면(SCR)·
-API·컨슈머(CSM)·배치(BAT) PGM-ID 채번 후 전수 도출. v7 현행화 이력에서 "누락된 endpoint 1건을
-찾아 API-050을 신규 부여"한 실제 정합성 검증 사례가 있다.
+**완성본**: `docs/deliverables/S3-상세설계/DQ-프로그램목록/` — `order.md`/`payment.md`에 도메인별로
+화면(SCR)·API·컨슈머(CSM)·배치(BAT) PGM-ID를 채번해 전수 도출하고, `readme.md`에 도메인을
+가로지르는 개요·집계·정합성 검증을 둔다(v8 현행화, DD-메뉴구조도·DN-화면레이아웃과 동일한
+도메인별 파일 분리 — DQ의 방법론 표준 범위가 Domain이기 때문). v7 현행화 이력에서 "누락된
+endpoint 1건을 찾아 API-050을 신규 부여"한 실제 정합성 검증 사례가 있다.
 
 **AI 초안 생성 프롬프트**:
 
