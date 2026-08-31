@@ -253,7 +253,7 @@ Table pay_card_fail_counter {
 
 | 항목 | 출처 |
 |---|---|
-| 엔티티 도출 | `DE-EARS기능요구(Payment).md` 주어/목적어 명사 추출 |
+| 엔티티 도출 | `../DE-EARS기능요구/payment.md` 주어/목적어 명사 추출 |
 | 테이블 접두사 `pay_` | `DB-도메인정의서.md` 스키마 그룹핑 (rns_trade) |
 | PCI DSS (카드 미저장) | `D8-NFR.md` NFR-SE-08, REQ-PAY-017 |
 | 카드 3회 제한 | REQ-PAY-018 |

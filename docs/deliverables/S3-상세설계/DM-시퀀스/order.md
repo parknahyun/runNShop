@@ -1,46 +1,8 @@
-# 시퀀스 — 주문·결제 도메인
+# 시퀀스 — Order 도메인
 
-> **단계**: 상세설계 (S3)  
-> **문서범위**: Bolt (Order + Payment)  
-> **문서종류**: Design  
->
-> **작성 목적**: 인터페이스 명세(DL)의 API를 호출 순서·참여 객체·트랜잭션 경계로 구체화한다.  
-> "이 API가 호출되면 내부에서 어떤 순서로 어떤 객체가 상호작용하는가"를 확정한다.
->
-> **흐름 내 위치**:
-> ```
-> DL 인터페이스 명세 → DM 시퀀스 → DN 화면 레이아웃 / DP 클래스 설계
-> ```
-
----
-
-## 공통 규칙 (C3 아키텍처컨벤션 / C5 이벤트설계컨벤션 준수)
-
-### 1. Controller 네이밍 (C3 §4.2)
-
-> 모든 시퀀스의 Controller participant는 **앱별로 분리된 이름**을 사용한다 (Service는 공유).
-> `{App}{Domain}Controller` 형식 — 예: `CustomerOrderController`(고객웹), `AdminOrderController`(어드민), `PartnerOrderController`(입점사).
-> 이하 다이어그램의 `CustomerCartController`, `CustomerOrderController`, `CustomerClaimController`, `CustomerClaimPaymentController`, `PartnerOrderController`, `PartnerShippingController`, `PartnerClaimController`, `AdminOrderController`, `AdminClaimController`가 이 규칙을 따른다.
-
-### 2. EventPublisher = Outbox 패턴 표현 (C5 §5.1)
-
-> 본 문서의 시퀀스에서 `Service -> EventPublisher : publish(EVENT_NAME)` 호출은
-> **"비즈니스 데이터 변경과 동일 트랜잭션 내에서 Outbox 테이블에 이벤트를 저장하는 행위"**를 축약 표현한 것이다.
-> 즉 `EventPublisher.publish(...)`는 `outboxRepository.save(OutboxEvent(...))`와 동일 트랜잭션에서 실행되며,
-> 실제 Broker(또는 프로토타입의 in-process ApplicationEventPublisher) 발행은 별도의 **Outbox Publisher**가
-> Outbox 테이블을 polling(1초 주기)하여 비동기로 수행한다(C5 §5.1~§5.3).
->
-> ```
-> [Service 트랜잭션]                    [Outbox Publisher (비동기, 별도 프로세스)]
-> 1. 비즈니스 데이터 변경                  Outbox 테이블 polling
-> 2. EventPublisher.publish(...)   ──▶   → Broker 발행 (프로토타입: ApplicationEvent)
->    = Outbox 테이블 INSERT               → 발행 완료 시 Outbox row 삭제
-> 3. COMMIT (1·2 원자적)
-> ```
->
-> 프로토타입 단계에서는 C5 §5.3에 따라 Outbox 테이블 대신 in-process `ApplicationEventPublisher`를 사용하므로,
-> 아래 다이어그램의 `EventPublisher` 참여자는 실 프로젝트 전환 시 `OutboxEventPublisher`(Outbox INSERT) + `OutboxPublisher`(polling·발행) 2단계로 분리된다.
-> 컨슈머 측 멱등 처리(`processed_event` 테이블, eventId UNIQUE)는 C5 §6.1을 따른다.
+> 상위 문서: [readme.md](readme.md)
+> **단계**: 상세설계 (S3) | **문서범위**: Bolt (Order) | **문서종류**: Design
+> Payment 관련 시퀀스는 [DM-시퀀스/payment.md](payment.md) 참조
 
 ---
 
@@ -105,6 +67,7 @@ end
 @enduml
 ```
 
+
 ---
 
 ## 2. [API] GET /api/v1/cart — 장바구니 조회
@@ -149,6 +112,7 @@ deactivate CC
 
 @enduml
 ```
+
 
 ---
 
@@ -197,6 +161,7 @@ deactivate OC
 
 @enduml
 ```
+
 
 ---
 
@@ -280,45 +245,6 @@ end note
 @enduml
 ```
 
----
-
-## 4-1. [컨슈머] Payment 내부 — PG 콜백 처리 (비동기, 카드 실패 카운터 포함)
-
-> 신규 (2026-08-21 바텀업 재검증): §4에서 "Payment 내부 비동기 처리"로 블랙박스 처리했던 부분을 구체화. REQ-PAY-023(카드 연속실패 카운터)이 여기서 실제로 호출된다.
-
-- **트리거**: PG사 콜백(승인/실패 웹훅) 또는 Payment 자체 재시도 루프 종료
-- **상태전이**: Payment `PENDING` → `PAID`(승인) / 재시도 소진 시 그대로 유지하며 `PAYMENT_FAILED` 이벤트만 발행(REQ-PAY-004). `pay_card_fail_counter` 증가(실패) 또는 0 리셋(성공)
-
-```plantuml
-@startuml
-title [컨슈머] Payment 내부 — PG 콜백 처리 (카드 실패 카운터 포함)
-
-participant "PgWebhookListener" as Webhook
-participant "PaymentService" as PaySvc
-participant "PaymentRepository" as PayRepo
-participant "CardFailCounterRepository" as CFC
-participant "EventPublisher" as Event
-
-Webhook -> PaySvc : handlePgCallback(paymentId, result)
-activate PaySvc
-
-alt PG 승인 성공
-    PaySvc -> PayRepo : updateStatus(PAID)
-    PaySvc -> CFC : resetFailCount(cardHash)\n(REQ-PAY-023 — 성공 시 카운터 0으로 초기화)
-    PaySvc -> Event : publish(PAYMENT_APPROVED)
-else PG 승인 실패 (재시도 3회 소진, REQ-PAY-004)
-    PaySvc -> CFC : incrementFailCount(cardHash)
-    CFC --> PaySvc : consecutiveFailCount
-    alt consecutiveFailCount >= 3
-        PaySvc -> PayRepo : createCardRestriction(cardHash, today)\n(REQ-PAY-018, pay_card_restriction 생성)
-        PaySvc -> CFC : resetFailCount(cardHash)\n(제한 레코드 생성 후 카운터 초기화)
-    end
-    PaySvc -> Event : publish(PAYMENT_FAILED)
-end
-
-deactivate PaySvc
-@enduml
-```
 
 ---
 
@@ -370,6 +296,7 @@ end
 @enduml
 ```
 
+
 ---
 
 ## 6. [API] POST /api/v1/orders/{orderId}/confirm — 구매확정
@@ -417,6 +344,7 @@ end
 
 @enduml
 ```
+
 
 ---
 
@@ -479,6 +407,7 @@ end
 
 @enduml
 ```
+
 
 ---
 
@@ -544,6 +473,7 @@ deactivate ACC
 @enduml
 ```
 
+
 ---
 
 ## 7-2. [API] POST /api/v1/claims/{claimId}/cancel — 고객 클레임 자진 취소
@@ -588,6 +518,7 @@ end
 
 @enduml
 ```
+
 
 ---
 
@@ -639,6 +570,7 @@ end
 @enduml
 ```
 
+
 ---
 
 ## 9. [API] POST /api/partner/v1/shipping/{orderId} — 운송장 등록
@@ -682,6 +614,7 @@ end
 
 @enduml
 ```
+
 
 ---
 
@@ -734,6 +667,7 @@ deactivate CS
 @enduml
 ```
 
+
 ---
 
 ## 11. [API] POST /api/admin/v1/orders/{orderId}/force-cancel — CS 예외 취소
@@ -779,6 +713,7 @@ deactivate AOC
 
 @enduml
 ```
+
 
 ---
 
@@ -892,6 +827,7 @@ end
 @enduml
 ```
 
+
 ---
 
 ## 13. [API] POST /api/admin/v1/claims/{claimId}/refund — 환불 처리
@@ -949,6 +885,7 @@ end
 
 @enduml
 ```
+
 
 ---
 
@@ -1019,6 +956,7 @@ end
 @enduml
 ```
 
+
 ---
 
 ## 15. [API] POST /api/partner/v1/claims/{claimId}/inspect-reject — 품질점검 거부
@@ -1069,6 +1007,7 @@ end
 @enduml
 ```
 
+
 ---
 
 ## 16. [컨슈머] PAYMENT_APPROVED/PAYMENT_FAILED 이벤트 수신 — 결제 완료·실패 후처리
@@ -1113,6 +1052,7 @@ end
 @enduml
 ```
 
+
 ---
 
 ## 17. [배치] D+7 자동구매확정 — 배송완료 후 7일 경과
@@ -1147,6 +1087,7 @@ end
 deactivate Service
 @enduml
 ```
+
 
 ---
 
@@ -1184,6 +1125,7 @@ deactivate Service
 @enduml
 ```
 
+
 ---
 
 ## 18-1. [배치] RECEIVED 24시간 CS 미처리 리마인드
@@ -1218,6 +1160,7 @@ end
 deactivate Service
 @enduml
 ```
+
 
 ---
 
@@ -1299,6 +1242,7 @@ deactivate Service
 @enduml
 ```
 
+
 ---
 
 ## 20. [API] POST /api/admin/v1/claims/{claimId}/dispose — 폐기 처리
@@ -1349,6 +1293,7 @@ end
 @enduml
 ```
 
+
 ---
 
 ## 21. [API] POST /api/admin/v1/claims/{claimId}/request-return-payment — 반송 배송비 추가결제 요청
@@ -1398,6 +1343,7 @@ end
 
 @enduml
 ```
+
 
 ---
 
@@ -1450,34 +1396,3 @@ end
 @enduml
 ```
 
----
-
-## 작성 규칙
-
-| 규칙 | 설명 |
-|---|---|
-| 1 시퀀스 = 1 트리거 | API endpoint, 이벤트 수신, 스케줄 배치 각각 1개 시퀀스 |
-| 태그로 유형 구분 | `[API]` 사용자 요청, `[컨슈머]` 이벤트 수신, `[배치]` 스케줄러 |
-| 참여자 = 클래스 후보 | Controller/Listener/Scheduler, Service, Repository, PublicApi, EventPublisher |
-| 트랜잭션 경계 표시 | Service 레벨에서 @Transactional |
-| 에러 분기 포함 | 인터페이스 명세의 에러 응답과 대응 |
-| 도메인 경계 명시 | 타 도메인 호출은 PublicApi(동기) 또는 EventPublisher(비동기)로 표현 |
-| Controller 네이밍 | 앱별 분리 — `{App}{Domain}Controller` (C3 §4.2, 상단 공통 규칙 §1 참조) |
-| EventPublisher 표현 | Outbox 패턴 축약 표현 — 비즈니스 변경과 동일 트랜잭션 (C5 §5.1, 상단 공통 규칙 §2 참조) |
-
----
-
-## 근거
-
-| 항목 | 출처 |
-|---|---|
-| API endpoint | 인터페이스 명세(DL) 50개 API 중 19개 API 시퀀스 상세화 (+ 컨슈머 2건, 배치 5건 — 총 26개 섹션. 2026-08-24 정정: 종전 "27개 중 15개"는 실제 건수와 불일치했음) |
-| 컨슈머 시퀀스 | 이벤트 플로우(DI) PAYMENT_APPROVED 수신 액션 |
-| 배치 시퀀스 | EARS(DE) REQ-ORD-006(D+7 자동확정), REQ-ORD-041(24시간 만료) |
-| 에러 분기 | GWT(DJ) 예외 시나리오 |
-| HTTP Status 코드 정합 | 인터페이스 명세(DL) 공통 규칙 §2 C6 §7 기준 — 2026-08-24 재고/상태충돌류(409)·기한초과류(422) 20건 및 INVALID_STATUS(신규, 409) 6건 정정 |
-| 도메인 간 호출 | 이벤트 플로우(DI) 동기/비동기 판단 |
-| 참여 객체 | ERD(DF) 엔티티 + 컴포넌트(D9) 모듈 구조 |
-| 상태 전이 | 상태머신(DG) 전이 규칙 |
-| Controller 네이밍 | C3 아키텍처컨벤션 §4.2 (앱별 Controller 분리) |
-| Outbox 패턴 | C5 이벤트설계컨벤션 §5.1 (비즈니스 변경 + Outbox 저장 = 동일 트랜잭션) |

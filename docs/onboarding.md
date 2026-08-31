@@ -218,7 +218,7 @@ Catalog의 Domain 단위 산출물이 아직 없으므로 상위 유스케이스
      (하는 것/하지 않는 것, 소유 데이터)
    - 도메인기능표: docs/reference/working/도메인기능표/02-Catalog.md (49개 기능 후보, 참고자료일
      뿐 정식 확정 아님)
-   - 기존 패턴 참고: docs/deliverables/S2-구조설계/DC-상위유스케이스(Order).md
+   - 기존 패턴 참고: docs/deliverables/S2-구조설계/DC-상위유스케이스/order.md
      (액터-UC 관계도 형식)
 
    [작업]
@@ -254,7 +254,7 @@ Domain 설계를 확정하기 전에, 3.3~3.4에서 만든 결과와 아직 해�
 |---|---|---|
 | 4 | 상품문의 소유권 (Catalog vs Community) | 도메인정의서 "경계 규칙 #9"(상품문의=Community 소유)와 3.4에서 작성한 상위 유스케이스가 어긋나지 않는지 |
 | 7 | Catalog 상품 등록 이중 플로우 정본 결정 | `runNshop-partner` 마법사형 등록과 admin 단순 모달 중 어느 것을 정본으로 삼을지, 3.4 상위 유스케이스에 두 플로우를 모두 남겼는지 |
-| 13 | "장바구니 담기" 도메인 소유권 (Order vs Catalog) | 이미 Order 도메인으로 구현·설계됨(`DC-상위유스케이스(Order).md`) — 3.4에서 Catalog가 이를 중복 정의하지 않았는지 |
+| 13 | "장바구니 담기" 도메인 소유권 (Order vs Catalog) | 이미 Order 도메인으로 구현·설계됨(`DC-상위유스케이스/order.md`) — 3.4에서 Catalog가 이를 중복 정의하지 않았는지 |
 | 17 | 기획전참여신청·이벤트신청 소관 (Catalog vs Promotion) | 3.4 상위 유스케이스에 포함할지, Promotion 착수 시로 미룰지 |
 
 이 표와 별개로, 3.3에서 수정한 이벤트플로우도 함께 검토한다 — 재고 복원 시퀀스가 3.4의 상위
@@ -295,7 +295,7 @@ class CustomerCartController(private val mockLoader: MockLoader) {
 }
 ```
 
-반면 클래스 설계(`docs/deliverables/S3-상세설계/DP-클래스설계(Order-Payment).md`)에는
+반면 클래스 설계(`docs/deliverables/S3-상세설계/DP-클래스설계/order.md`)에는
 `CartController.addToCart`(`POST /api/v1/cart/items`, 장바구니 담기)가 정의돼 있지만 아직
 코드로 구현되지 않았다 — `order/service/`, `order/dto/` 패키지가 비어 있는 상태다. 이 gap이
 아래 실습의 대상이다.
@@ -308,11 +308,11 @@ Kiro 채팅에 아래처럼 요청한다(프롬프트 라이브러리 "30. Code 
 [역할] Kotlin/Spring Boot 커머스 백엔드 개발자로서
 
 [컨텍스트]
-- 클래스 설계: docs/deliverables/S3-상세설계/DP-클래스설계(Order-Payment).md의
+- 클래스 설계: docs/deliverables/S3-상세설계/DP-클래스설계/order.md의
   CartController.addToCart, CartService.addToCart
-- 인터페이스 명세: docs/deliverables/S3-상세설계/DL-인터페이스명세(Order-Payment).md
+- 인터페이스 명세: docs/deliverables/S3-상세설계/DL-인터페이스명세/order.md
   "1. POST /api/v1/cart/items"
-- GWT: docs/deliverables/S3-상세설계/DJ-GWT수용기준(Order-Payment).md §1
+- GWT: docs/deliverables/S3-상세설계/DJ-GWT수용기준/order.md §1
   (AC-ORD-008: 품절 상품 담기 시도 → PRODUCT_NOT_AVAILABLE)
 - 기존 구현: CustomerCartController.kt (GET /api/v1/cart, 참고용 패턴)
 

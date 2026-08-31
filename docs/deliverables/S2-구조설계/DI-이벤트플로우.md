@@ -18,7 +18,7 @@
 > **범위**: 1차 파트(Order + Payment) 간 이벤트. Catalog·Settlement·Member·Notification 연동은 해당 도메인 착수 시 보완.
 > **v2 (2026-08-20 현행화)**: 교환(EXCHANGE) 맞교환 원칙 반영 — 재배송·교환 SKU 차감을 CLAIM_COMPLETED(완료 시점)에서 PICKUP 진입(선출고) 시점으로 이동, CLAIM_EXCHANGE_SHIPPED 이벤트 신설.
 > **v3 (2026-08-20 현행화)**: 배송 실행(택배사 이동 구간)을 order/claim 공용 `ord_shipment`로 분리(상태머신DG v6). SHIPPING_STARTED/DELIVERY_COMPLETED/CLAIM_EXCHANGE_SHIPPED의 트리거를 shipment 상태 전이 기준으로 재정의. claim.status에서 PICKUP이 제거됨에 따라 "PICKUP 진입 시점" 표현을 "귀책판정 완료 시점"으로 정정.
-> **v4 (2026-08-24 동기화)**: DM-시퀀스(Order-Payment) §19가 실제로 발행하는 이벤트명은 `DELIVERY_COMPLETED`가 아니라 `SHIPMENT_DELIVERED`(60분 배치가 `shipment(OUTBOUND)` DELIVERED 확인 시 발행) — 동일 트리거 지점의 이름 변경이므로 카탈로그를 이 이름으로 정정한다(신규 이벤트 아님). DM §17-1이 발행하는 `CLAIM_PAYMENT_EXPIRED`(배송비 24시간 미결제 자동취소)는 카탈로그에 없던 신규 이벤트라 추가한다.
+> **v4 (2026-08-24 동기화)**: DM-시퀀스/order §19가 실제로 발행하는 이벤트명은 `DELIVERY_COMPLETED`가 아니라 `SHIPMENT_DELIVERED`(60분 배치가 `shipment(OUTBOUND)` DELIVERED 확인 시 발행) — 동일 트리거 지점의 이름 변경이므로 카탈로그를 이 이름으로 정정한다(신규 이벤트 아님). DM §17-1이 발행하는 `CLAIM_PAYMENT_EXPIRED`(배송비 24시간 미결제 자동취소)는 카탈로그에 없던 신규 이벤트라 추가한다.
 
 ---
 
@@ -499,8 +499,8 @@ note right of CAT: 선출고: 교환 SKU -N (귀책판정 완료 시점, shipmen
 
 | 항목 | 출처 |
 |---|---|
-| 이벤트 목록 | `DH-비즈니스프로세스(Order).md`, `DH-비즈니스프로세스(Payment).md` 이벤트 발행 지점 |
-| SHIPMENT_DELIVERED 개명·CLAIM_PAYMENT_EXPIRED 추가 | `DM-시퀀스(Order-Payment).md` §17-1, §19 (DI가 DM 최신 구현과 어긋나 있던 것을 동기화, C5 §8) |
+| 이벤트 목록 | `DH-비즈니스프로세스/order.md`, `DH-비즈니스프로세스/payment.md` 이벤트 발행 지점 |
+| SHIPMENT_DELIVERED 개명·CLAIM_PAYMENT_EXPIRED 추가 | `DM-시퀀스/order.md` §17-1, §19 (DI가 DM 최신 구현과 어긋나 있던 것을 동기화, C5 §8) |
 | 발행/수신 관계 | `DB-도메인정의서.md` §4 도메인 간 관계 |
 | Outbox 패턴 | `D9-컴포넌트.md` 배포 구조·도메인 간 통신 방식 |
 | 동기/비동기 판단 | 응답 즉시성 요구 여부 (UX 대기 vs 후속 처리) |

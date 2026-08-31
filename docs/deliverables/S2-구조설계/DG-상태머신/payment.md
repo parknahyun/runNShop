@@ -107,8 +107,8 @@ end note
 
 | 항목 | 출처 |
 |---|---|
-| 상태 목록 | `DF-도메인모델ERD(Payment).md` pay_payment.status |
-| 전이 규칙 | `DE-EARS기능요구(Payment).md` REQ-PAY-001~013 |
+| 상태 목록 | `../DF-도메인모델ERD/payment.md` pay_payment.status |
+| 전이 규칙 | `../DE-EARS기능요구/payment.md` REQ-PAY-001~013 |
 | 금액 일치 검증 | REQ-PAY-007 |
 | 재시도 3회 | REQ-PAY-003 |
 | 타임아웃 30초 | REQ-PAY-005 |
