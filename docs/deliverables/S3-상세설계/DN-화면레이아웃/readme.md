@@ -10,8 +10,13 @@
 >
 > **흐름 내 위치**:
 > ```
-> DM 시퀀스 → DN 화면 레이아웃
+> DD 메뉴구조도(화면 목록·앱 셸) ─┐
+>                              ├─→ DN 화면 레이아웃
+> DM 시퀀스(API 호출 시점) ──────┘
 > ```
+> DD는 "어떤 화면이 존재하는가"(화면 목차)를, DM은 "그 화면이 API를 언제·어떻게 호출하는가"를
+> 각각 공급한다 — 화면 목차를 새로 만들지 않고 DD의 해당 앱 파일(admin/mobile/partner)에서
+> 이 Bolt에 해당하는 화면만 발췌한다.
 >
 > **근거 소스**: `apps/runNshop-admin/src/order/`, `apps/runNshop-partner/src/order/`, `apps/runNshop-partner/src/claim/`, `apps/runNshop-mobile/app/cart/`, `apps/runNshop-mobile/app/orders/`, `api/runNshop-api/src/main/resources/mock/`
 
@@ -187,7 +192,7 @@
 | 항목 | 출처 |
 |---|---|
 | API 매핑 | 시퀀스(DM) + 인터페이스 명세(DL) + mock JSON |
-| 화면 목록 | 메뉴구조도(DD) + 실제 구현 소스 |
+| 화면 목차 | 메뉴구조도(DD, 해당 앱 파일에서 이 Bolt 화면만 발췌) + 실제 구현 소스 |
 | 채널별 경로 | 코딩 표준 (앱별 스타일링 방식) |
 | 데이터 필드 | `api/runNshop-api/src/main/resources/mock/v1/order__*.json` |
 | 컴포넌트 구현 | `apps/runNshop-*/src/order/`, `apps/runNshop-mobile/components/order/`, `apps/runNshop-mobile/components/cart/` |

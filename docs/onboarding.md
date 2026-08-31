@@ -149,7 +149,7 @@ Catalog 도메인에 합류하면 가장 먼저 "이미 있는 것"과 "아직 �
 | Domain 단위 설계 (상위UC·EARS·ERD·상태머신) | `docs/deliverables/S2-구조설계/` | 미착수 — Order·Payment 파일만 있음 |
 | Bolt 단위 설계 (세부UC·인터페이스명세·시퀀스 등) | `docs/deliverables/S3-상세설계/` | 미착수 |
 | 업무 참고자료 (정식 산출물 아님) | `docs/reference/working/도메인기능표/02-Catalog.md` | 있음 — 49개 기능, 난이도·공수 포함 |
-| 다른 도메인이 Catalog를 미리 참조한 부분 | `docs/deliverables/S2-구조설계/DI-이벤트플로우.md` | Catalog 관련 이벤트 3건이 `*`(지연 구현)로 표시됨 |
+| 다른 도메인이 Catalog를 미리 참조한 부분 | `docs/deliverables/S2-구조설계/DI-이벤트플로우/order.md` | Catalog 관련 이벤트 3건이 `*`(지연 구현)로 표시됨 |
 
 → 결론: Project 범위(도메인정의서·컴포넌트)는 끝나 있으니 건드리지 않는다. 지금 할 일은
 ① Catalog가 관여하는 기존 산출물의 **수정**(이벤트플로우의 `*` 해제)과 ② Catalog 자체의
@@ -157,13 +157,13 @@ Domain 단위 산출물 **신규 작성**이다.
 
 ### 3.3 산출물 수정 작업
 
-`DI-이벤트플로우.md`는 이미 존재하는 산출물이지만, Catalog가 착수되기 전이라 Catalog가
+`DI-이벤트플로우/order.md`는 이미 존재하는 산출물이지만, Catalog가 착수되기 전이라 Catalog가
 수신하는 이벤트(`ORDER_CANCELLED`·`CLAIM_COMPLETED`·`CLAIM_EXCHANGE_SHIPPED`)가 `*`(수신측
 지연 구현) 표시로 남아 있다. Catalog 착수 시점이 되었으니 이 표시를 해제하고 실제 수신 처리를
 보완한다.
 
 1. **위치 확인** — 지침서 6.3 구조설계 표에서 `DI 이벤트 플로우`(Domain 간 범위)
-2. **수정 대상 확인** — `docs/deliverables/S2-구조설계/DI-이벤트플로우.md`에서 `Catalog*`로
+2. **수정 대상 확인** — `docs/deliverables/S2-구조설계/DI-이벤트플로우/order.md`에서 `Catalog*`로
    표시된 행 전체(`ORDER_CANCELLED`·`CLAIM_COMPLETED`·`CLAIM_EXCHANGE_SHIPPED`)
 3. **AI 초안 생성**:
 
@@ -172,7 +172,7 @@ Domain 단위 산출물 **신규 작성**이다.
    당신은 이벤트 기반 아키텍처에 능한 시니어 설계자입니다.
 
    [컨텍스트]
-   - 기존 이벤트플로우: docs/deliverables/S2-구조설계/DI-이벤트플로우.md
+   - 기존 이벤트플로우: docs/deliverables/S2-구조설계/DI-이벤트플로우/order.md
      (ORDER_CANCELLED·CLAIM_COMPLETED·CLAIM_EXCHANGE_SHIPPED 행, Catalog가 `*`로 표시됨)
    - Catalog 도메인 경계: docs/deliverables/S1-범위정의/DB-도메인정의서.md "3. Catalog" 절
    - Catalog 소유 데이터: 재고 선점/복원 PublicApi (도메인정의서 "하는 것" 목록)

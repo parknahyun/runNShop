@@ -356,7 +356,7 @@ Unwanted-behavior/Optional) 중 적합한 패턴으로 작성하세요.
 **위치**: 방법론 6.3 구조설계 표, `DI 이벤트 플로우` (Design, Domain 간 범위, 선행 산출물:
 비즈니스 프로세스·컴포넌트)
 
-**완성본**: `docs/deliverables/S2-구조설계/DI-이벤트플로우.md` — Order↔Payment 간 이벤트
+**완성본**: `docs/deliverables/S2-구조설계/DI-이벤트플로우/readme.md` — Order↔Payment 간 이벤트
 카탈로그(`PAYMENT_APPROVED`, `ORDER_CANCELLED` 등). v4 현행화 이력에서 "시퀀스가 실제 발행하는
 이벤트명과 카탈로그 이름이 달랐던" 실제 불일치 사례와 정정 과정이 남아 있다.
 
