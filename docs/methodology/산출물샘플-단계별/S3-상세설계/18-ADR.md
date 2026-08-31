@@ -93,4 +93,4 @@
 | 항목 | 출처 |
 |---|---|
 | ADR 형식 | Michael Nygard, "Documenting Architecture Decisions" |
-| 샘플 내용 | 참고자료/도메인간-우선업무-의존관계.md §재고 선점 |
+| 샘플 내용 | docs/reference/working/도메인간-우선업무-의존관계.md §재고 선점 |

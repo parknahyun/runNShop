@@ -146,7 +146,7 @@ VENDOR 귀책 사유 선택 시 사진 1장 이상 필수 ([[DE-EARS기능요구
 > **유효성 검증**: [[DJ-GWT수용기준(Order-Payment)|GWT §1 장바구니 Bolt]] · 에러코드는 DL 참조
 ```
 
-- 적용 위치: `docs/assets/tobe/S3-상세설계/DN-화면레이아웃(Order-Payment).md` 전체 18개 화면 섹션
+- 적용 위치: `docs/deliverables/S3-상세설계/DN-화면레이아웃(Order-Payment).md` 전체 18개 화면 섹션
 - 방법론 반영: `AI활용_개발방법론_산출물_표준양식_v1.0.md` DN 행(v1.2), `산출물샘플-단계별/S3-상세설계/17-화면레이아웃.md`
 - 검증규칙은 DN에 복제하지 않고 DJ(GWT)·DL(에러코드)로 링크만 건다 — "현행화는 자연 발생" 원칙 유지
 

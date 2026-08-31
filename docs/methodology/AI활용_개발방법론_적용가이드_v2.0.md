@@ -5,11 +5,11 @@
 따른다, 여기서 재정의하지 않음),
 `별첨/AI활용_개발방법론_산출물_표준양식_v1.0.md`(산출물별 **무엇을** 담을지 — 필수 항목·파일 형식),
 `별첨/AI활용_개발방법론_프롬프트_라이브러리_v2.0.md`(**어떤 프롬프트**로 AI 초안을 뽑을지),
-`참고자료/화면정의서_샘플/화면정의서_작성_표준안.md`(S3-4 화면 레이아웃 전용 — 영역(R)/속성(P)/
+`docs/reference/working/화면정의서_샘플/화면정의서_작성_표준안.md`(S3-4 화면 레이아웃 전용 — 영역(R)/속성(P)/
 기능(F)/UI상태(S) 코드 체계로 와이어프레임과 상세디스크립션을 분리하는 표준)
 **목적**: 7단계(S0~S6) 각각에서 대표 산출물 1건을 골라, 실제 runNshop 데이터(주로 Order·Payment
 도메인)를 근거로 "AI 초안 생성 → 검토 → 확정"을 실습한다. 40종 전체를 다루지 않으며, 나머지
-산출물은 표준양식·프롬프트 라이브러리·`docs/assets/tobe/`의 완성본을 참고한다.
+산출물은 표준양식·프롬프트 라이브러리·`docs/deliverables/`의 완성본을 참고한다.
 
 **작성 역할 체계**:
 - **작성**: 시니어 개발자 + AI 협업 (정형화된 구문 생성·구조화)
@@ -74,11 +74,11 @@ stop
 
 | 단계 | 대표 산출물 | 완성본 경로 |
 |---|---|---|
-| S0 착수 | 문제정의서 | `docs/assets/tobe/S0-착수/D1-문제정의서.md` |
-| S1 범위정의 | 도메인정의서 | `docs/assets/tobe/S1-범위정의/DB-도메인정의서.md` |
-| S2 구조설계 | 상위 유스케이스, EARS, 상태머신, 이벤트플로우 | `docs/assets/tobe/S2-구조설계/DC-상위유스케이스(Order).md` 외 |
-| S3 상세설계 | 세부 유스케이스, 인터페이스 명세, 시퀀스, 프로그램 목록 | `docs/assets/tobe/S3-상세설계/DK~DM, DQ` |
-| S3 상세설계 | 화면 레이아웃 | `docs/reference/화면정의서_샘플/MOB-ORDER-01_모바일-장바구니.md`(화면정의서 작성 표준안 적용 — 기존 `S3-상세설계/DN-화면레이아웃(Order-Payment).md`는 와이어프레임을 md에 함께 담던 이전 방식) |
+| S0 착수 | 문제정의서 | `docs/deliverables/S0-착수/D1-문제정의서.md` |
+| S1 범위정의 | 도메인정의서 | `docs/deliverables/S1-범위정의/DB-도메인정의서.md` |
+| S2 구조설계 | 상위 유스케이스, EARS, 상태머신, 이벤트플로우 | `docs/deliverables/S2-구조설계/DC-상위유스케이스(Order).md` 외 |
+| S3 상세설계 | 세부 유스케이스, 인터페이스 명세, 시퀀스, 프로그램 목록 | `docs/deliverables/S3-상세설계/DK~DM, DQ` |
+| S3 상세설계 | 화면 레이아웃 | `docs/reference/working/화면정의서_샘플/MOB-ORDER-01_모바일-장바구니.md`(화면정의서 작성 표준안 적용 — 기존 `S3-상세설계/DN-화면레이아웃(Order-Payment).md`는 와이어프레임을 md에 함께 담던 이전 방식) |
 | S4 구현 | 코드 구현 | `docs/archive/산출물샘플-공정별/04-Code/01-코드구현.md`(방법론 샘플) |
 | S5 테스트 | Go/No-Go 판단근거 | `docs/archive/산출물샘플-공정별/05-통합테스트/10-GoNoGo판단근거.md`(방법론 샘플) |
 | S6 안정화 | 안정화 결과보고서 | `docs/archive/산출물샘플-공정별/06-안정화/09-안정화결과보고서.md`(방법론 샘플) |
@@ -89,7 +89,7 @@ stop
 
 **위치**: 방법론 6.1 착수 표, `D1 문제 정의서` (Proposal, Project 범위, 선행 산출물 없음 — 착수 최초 산출물)
 
-**완성본**: `docs/assets/tobe/S0-착수/D1-문제정의서.md` — Background/Problem/Impact/Opportunity
+**완성본**: `docs/deliverables/S0-착수/D1-문제정의서.md` — Background/Problem/Impact/Opportunity
 (BPIO) 구조로, "AI 협업 산정 근거 부재"를 핵심 문제로 정의하고 있다.
 
 **AI 초안 생성 프롬프트** (프롬프트 라이브러리 "1. Proposal — 문제정의서" 형식):
@@ -140,7 +140,7 @@ stop
 
 **위치**: 방법론 6.2 범위정의 표, `DB 도메인 정의서` (Design, Project 범위, 선행 산출물: 제약사항·NFR·컴포넌트·시스템구성도)
 
-**완성본**: `docs/assets/tobe/S1-범위정의/DB-도메인정의서.md` — 12개 도메인의 책임·소유
+**완성본**: `docs/deliverables/S1-범위정의/DB-도메인정의서.md` — 12개 도메인의 책임·소유
 데이터·경계 규칙을 정의. 이후 모든 Domain 단위 산출물(상위UC·EARS·ERD 등)의 Scope 기준이 된다.
 
 **AI 초안 생성 프롬프트**:
@@ -215,7 +215,7 @@ stop
 
 **위치**: 방법론 6.3 구조설계 표, `DC 상위 유스케이스` (Design, Domain 범위, 선행 산출물: 도메인정의서, 정책서)
 
-**완성본**: `docs/assets/tobe/S2-구조설계/DC-상위유스케이스(Order).md` — 액터(고객/입점사/CS
+**완성본**: `docs/deliverables/S2-구조설계/DC-상위유스케이스(Order).md` — 액터(고객/입점사/CS
 담당자/시스템) 정의 후 업무그룹별(장바구니·주문서 등) 유스케이스로 분류.
 
 **AI 초안 생성 프롬프트** (프롬프트 라이브러리 "14. Design — 상위 유스케이스" 형식):
@@ -262,7 +262,7 @@ stop
 
 **위치**: 방법론 6.3 구조설계 표, `DE EARS` (Spec, Domain 범위, 선행 산출물: 상위UC·메뉴구조도·정책서)
 
-**완성본**: `docs/assets/tobe/S2-구조설계/DE-EARS기능요구(Order).md` → `REQ-ORD-001`(장바구니
+**완성본**: `docs/deliverables/S2-구조설계/DE-EARS기능요구(Order).md` → `REQ-ORD-001`(장바구니
 담기 요구, Event-driven 패턴).
 
 **AI 초안 생성 프롬프트**:
@@ -314,7 +314,7 @@ Unwanted-behavior/Optional) 중 적합한 패턴으로 작성하세요.
 
 **위치**: 방법론 6.3 구조설계 표, `DG 상태머신` (Design, Domain 범위, 선행 산출물: ERD·EARS)
 
-**완성본**: `docs/assets/tobe/S2-구조설계/DG-상태머신(Order).md` — `ord_order.status` 10개
+**완성본**: `docs/deliverables/S2-구조설계/DG-상태머신(Order).md` — `ord_order.status` 10개
 상태(TEMP~STOCK_FAILED)와 전이 규칙. v6 현행화 이력에서 "배송 실행을 별도 흐름(`ord_shipment`)
 으로 분리"한 실제 변경 사례가 남아 있다.
 
@@ -356,7 +356,7 @@ Unwanted-behavior/Optional) 중 적합한 패턴으로 작성하세요.
 **위치**: 방법론 6.3 구조설계 표, `DI 이벤트 플로우` (Design, Domain 간 범위, 선행 산출물:
 비즈니스 프로세스·컴포넌트)
 
-**완성본**: `docs/assets/tobe/S2-구조설계/DI-이벤트플로우.md` — Order↔Payment 간 이벤트
+**완성본**: `docs/deliverables/S2-구조설계/DI-이벤트플로우.md` — Order↔Payment 간 이벤트
 카탈로그(`PAYMENT_APPROVED`, `ORDER_CANCELLED` 등). v4 현행화 이력에서 "시퀀스가 실제 발행하는
 이벤트명과 카탈로그 이름이 달랐던" 실제 불일치 사례와 정정 과정이 남아 있다.
 
@@ -402,7 +402,7 @@ Bolt 단위로 반복되는 5종을 순서대로 실습한다. 예시는 모두 
 
 **위치**: 방법론 6.4 상세설계 표, `DK 세부 유스케이스` (Design, Bolt 범위, 선행 산출물: 상위UC)
 
-**완성본**: `docs/assets/tobe/S3-상세설계/DK-세부유스케이스(Order-Payment).md` §1 "장바구니
+**완성본**: `docs/deliverables/S3-상세설계/DK-세부유스케이스(Order-Payment).md` §1 "장바구니
 담기 Bolt" — 상품상세 옵션 선택부터 API 호출까지 버튼 단위로 분해.
 
 **AI 초안 생성 프롬프트**:
@@ -438,7 +438,7 @@ Bolt 단위로 반복되는 5종을 순서대로 실습한다. 예시는 모두 
 
 **위치**: 방법론 6.4 상세설계 표, `DL 인터페이스 명세` (Spec, Bolt 범위, 선행 산출물: GWT, 세부UC)
 
-**완성본**: `docs/assets/tobe/S3-상세설계/DL-인터페이스명세(Order-Payment).md` "1. POST
+**완성본**: `docs/deliverables/S3-상세설계/DL-인터페이스명세(Order-Payment).md` "1. POST
 /api/v1/cart/items" — 온보딩 가이드(`docs/onboarding/신규참여자_온보딩가이드.md` 4.2절)에서 이미
 다룬 예시를 재사용한다. GWT `AC-ORD-008`(품절 상품 담기 시도)이 `409 PRODUCT_NOT_AVAILABLE`
 코드와 1:1 대응하는 실제 사례가 있다.
@@ -477,7 +477,7 @@ Bolt 단위로 반복되는 5종을 순서대로 실습한다. 예시는 모두 
 
 **위치**: 방법론 6.4 상세설계 표, `DM 시퀀스` (Design, Bolt 범위, 선행 산출물: 세부UC·이벤트플로우)
 
-**완성본**: `docs/assets/tobe/S3-상세설계/DM-시퀀스(Order-Payment).md` "1. [API] POST
+**완성본**: `docs/deliverables/S3-상세설계/DM-시퀀스(Order-Payment).md` "1. [API] POST
 /api/v1/cart/items" — Controller 네이밍(`CustomerCartController` 등 앱별 분리)과 Outbox 패턴
 표현 규칙을 공통 규칙으로 먼저 선언한 뒤 개별 시퀀스를 작성하는 실제 구조.
 
@@ -519,7 +519,7 @@ Bolt 단위로 반복되는 5종을 순서대로 실습한다. 예시는 모두 
 
 **위치**: 방법론 6.4 상세설계 표, `DN 화면 레이아웃` (Design, Bolt 범위, 선행 산출물: 시퀀스)
 
-**완성본**: `docs/reference/화면정의서_샘플/MOB-ORDER-01_모바일-장바구니.md` — 화면정의서 작성
+**완성본**: `docs/reference/working/화면정의서_샘플/MOB-ORDER-01_모바일-장바구니.md` — 화면정의서 작성
 표준안(`화면정의서_작성_표준안.md`)에 따라 **와이어프레임(Figma/PPT→PDF, 별도 파일)과
 상세디스크립션(md, 메타정보+영역·속성·기능·UI상태 4요소)을 분리**한 실제 사례. 기존
 `DN-화면레이아웃(Order-Payment).md`는 와이어프레임을 md 안에 ASCII로 함께 담던 이전 방식이고,
@@ -575,7 +575,7 @@ admin/partner에서 API 계약이 확정되면 mobile 기획자가 그 계약을
 **위치**: 방법론 6.4 상세설계 표, `DQ 프로그램 목록` (Design, Domain 범위, 선행 산출물:
 화면레이아웃·인터페이스명세·시퀀스·이벤트플로우·EARS)
 
-**완성본**: `docs/assets/tobe/S3-상세설계/DQ-프로그램목록(Order-Payment).md` — 화면(SCR)·
+**완성본**: `docs/deliverables/S3-상세설계/DQ-프로그램목록(Order-Payment).md` — 화면(SCR)·
 API·컨슈머(CSM)·배치(BAT) PGM-ID 채번 후 전수 도출. v7 현행화 이력에서 "누락된 endpoint 1건을
 찾아 API-050을 신규 부여"한 실제 정합성 검증 사례가 있다.
 
@@ -619,7 +619,7 @@ REQ-ID로 추적한다.
 **위치**: 방법론 6.5 구현 표, "코드 구현" (Bolt 범위, 선행 산출물: WBS·클래스설계·인터페이스명세)
 
 **완성본**: `docs/archive/산출물샘플-공정별/04-Code/01-코드구현.md` — `PaymentController` →
-`PaymentService` → `MockLoader` 구조의 실제 Kotlin 코드. `docs/assets/tobe/`에는 아직 이 Bolt의
+`PaymentService` → `MockLoader` 구조의 실제 Kotlin 코드. `docs/deliverables/`에는 아직 이 Bolt의
 코드 구현 산출물이 없어 방법론 샘플로 대체한다.
 
 **AI 초안 생성 프롬프트** (프롬프트 라이브러리 "30. Code — 코드 구현" 형식):
@@ -660,7 +660,7 @@ REQ-ID로 추적한다.
 
 **완성본**: `docs/archive/산출물샘플-공정별/05-통합테스트/10-GoNoGo판단근거.md` — 동시성 재고
 오버셀을 **Critical**, 중복 결제 미차단을 **Major**로 분류해 최종 **No-Go** 판정을 내린 실제
-사례. `docs/assets/tobe/` S5는 아직 비어 있어 방법론 샘플로 대체한다.
+사례. `docs/deliverables/` S5는 아직 비어 있어 방법론 샘플로 대체한다.
 
 **AI 초안 생성 프롬프트**:
 
@@ -741,7 +741,7 @@ NFR에 동시성 요건을 명시했어야 함)까지 남긴 실제 사례.
   ↓
 이 문서 (적용가이드)  "단계별 대표 산출물을 실제로 어떻게 완성하는가" (실습)
   ↓
-docs/assets/tobe/    실제로 완성된 결과물 (대조·참고)
+docs/deliverables/    실제로 완성된 결과물 (대조·참고)
 ```
 
 ---
@@ -759,7 +759,7 @@ v2.0 (2026-08-25): **전면 재작성 — "산출물 작성 가이드"에서 "�
 넘기고, 이 문서는 **7단계(S0~S6) 각 단계의 대표 산출물 1건**(문제정의서·도메인정의서·상위
 유스케이스·EARS·상태머신·이벤트플로우·세부유스케이스·인터페이스명세·시퀀스·화면레이아웃·
 프로그램목록·코드구현·Go/No-Go판단근거·안정화결과보고서, 총 14건)을 실제 runNshop 데이터
-(주로 Order·Payment 도메인 완성본)를 근거로 실습하는 데 집중한다. S4~S6은 `docs/assets/tobe/`에
+(주로 Order·Payment 도메인 완성본)를 근거로 실습하는 데 집중한다. S4~S6은 `docs/deliverables/`에
 아직 실 데이터가 없어 방법론 샘플(`docs/archive/산출물샘플-공정별/`)로 대체했다.
 
 v2.0 보완 (2026-08-25): S0 문제정의서 프롬프트의 [컨텍스트]에 **제안요청서(RFP)·제안서를
@@ -816,7 +816,7 @@ v2.0 보완 8 (2026-08-25): S2-1 상위 유스케이스 [컨텍스트]의 **"도
 실제 도출 근거 어디에도 도메인기능표 참조가 없었다.
 
 v2.0 보완 9 (2026-08-25): 위 보완에서 일단 도메인기능표를 S3-1 세부 유스케이스로 옮겼으나,
-`docs/reference/도메인기능표/README.md`를 다시 확인한 결과 이 자료가 스스로 "범위·**요구사항
+`docs/reference/working/도메인기능표/README.md`를 다시 확인한 결과 이 자료가 스스로 "범위·**요구사항
 (EARS)**·인터페이스명세 작성 시 입력 자료로 활용한다"고 정의하고 있어 **세부 유스케이스가
 아니라 EARS(S2-2)부터 참조하는 것이 맞다** — 재정정. S3-1에서 도메인기능표 참조를 제거하고
 S2-2 [컨텍스트]에 추가, [제약조건]에 "도메인기능표는 상위UC 범위 내에서 세부 조건·경계값을
@@ -854,7 +854,7 @@ v2.0 보완 12 (2026-08-25): **"EARS의 위치와 역할" 문단을 S2 섹션 �
 지점이라고 정리했다. 이 관점이 v2.0 보완 11의 REQ-ID 추적 규칙 전체의 근거가 된다.
 
 v2.0 보완 13 (2026-08-25): **S3-4(화면 레이아웃)의 완성본·프롬프트를 "와이어프레임/상세디스크립션
-분리" 표준으로 교체** — `docs/reference/화면정의서_샘플/화면정의서_작성_표준안.md`가 이미
+분리" 표준으로 교체** — `docs/reference/working/화면정의서_샘플/화면정의서_작성_표준안.md`가 이미
 와이어프레임(Figma/PPT→PDF, 별도 파일)과 상세디스크립션(md, 메타정보+영역·속성·기능·UI상태
 4요소)을 분리하는 표준으로 확정돼 있었는데, 적용가이드는 여전히 옛 `DN-화면레이아웃
 (Order-Payment).md`(와이어프레임을 md 안에 ASCII로 함께 담는 방식)를 완성본으로 참조하고
@@ -868,7 +868,7 @@ v2.0 보완 14 (2026-08-27): **내용 검토 후 잔재 3건 정정**. ① S3-2(
 표의 S3 상세설계 행이 화면 레이아웃(DN)까지 `S3-상세설계/DK~DQ`에 뭉뚱그려져 있어, 보완 13에서
 이미 본문·프롬프트를 새 표준(`화면정의서_샘플/MOB-ORDER-01_모바일-장바구니.md`)으로 교체했음에도
 표만 옛 `DN-화면레이아웃(Order-Payment).md` 경로를 가리키는 것처럼 남아 있던 것을 화면 레이아웃
-행을 분리해 정정. 같은 표의 S2·S3 행에서 `docs/assets/tobe/` 접두사가 빠져 있던 경로 표기
+행을 분리해 정정. 같은 표의 S2·S3 행에서 `docs/deliverables/` 접두사가 빠져 있던 경로 표기
 형식도 다른 행과 통일했다. ③ 상단 "관련 문서" 목록에 `화면정의서_작성_표준안.md`가 빠져 있어
 추가 — S3-4에서 표준양식·프롬프트 라이브러리와 동급으로 참조되는 문서다.
 

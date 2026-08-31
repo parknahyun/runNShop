@@ -8,7 +8,7 @@
 >
 > **검증 기준**: 컨벤션 산출물의 완성도는 "설계 산출물(화면레이아웃·인터페이스명세 등) + 컨벤션 산출물(디자인시스템·코딩컨벤션 등)을 AI에게 입력으로 주었을 때, 동일한 코드가 생성되는지"로 검증한다. 생성 결과가 다르면 컨벤션에 누락이 있다는 뜻이며, 차이점을 컨벤션에 역축적한다.
 >
-> **AI 도구별 적용**: `.kiro/steering/` 파일은 컨벤션 산출물(`docs/assets/tobe/conventions/`)을 기준으로 작성된 **Kiro IDE 전용 축약본**이다. Kiro IDE가 아닌 환경(VS Code + Claude/Cursor 등)에서는 컨벤션 산출물 원본을 직접 AI 컨텍스트로 제공하여 동일한 역할을 수행한다.
+> **AI 도구별 적용**: `.kiro/steering/` 파일은 컨벤션 산출물(`docs/deliverables/conventions/`)을 기준으로 작성된 **Kiro IDE 전용 축약본**이다. Kiro IDE가 아닌 환경(VS Code + Claude/Cursor 등)에서는 컨벤션 산출물 원본을 직접 AI 컨텍스트로 제공하여 동일한 역할을 수행한다.
 
 ## **1\. 산업 현황 (Problem)**
 

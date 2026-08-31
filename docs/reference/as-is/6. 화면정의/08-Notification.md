@@ -115,7 +115,7 @@
 | (삭제) | 삭제 | [삭제] 클릭(수정 모드만) | `allItems`에서 즉시 제거 | **확인 팝업 없음**(mock 동작, spec.md 명시) — 실 서비스에서는 확인 절차 추가가 필요할 것으로 보임(Human Review) |
 | (등록/저장) | 등록/저장 | 클릭 | 등록: `templateId`는 `nextTemplateId(allItems)`로 자동 채번 / 저장: `updatedAt` 현재 시각 갱신 | 유효성 통과 시에만 |
 
-> **이 화면의 특이점**: 다른 대부분의 화면과 달리 `NotificationTemplatePage.spec.md`가 이미 Layout·Components·States·Interactions·API·UX Rules를 완비한 상태로 존재한다 — 이 화면은 `docs/reference/화면정의서_샘플/화면정의서_작성_표준안.md`가 지향하는 "상세디스크립션" 개념과 가장 유사한 문서화 수준을 이미 갖추고 있다. 향후 다른 화면의 spec.md 작성 시 참고 템플릿으로 쓸 수 있다.
+> **이 화면의 특이점**: 다른 대부분의 화면과 달리 `NotificationTemplatePage.spec.md`가 이미 Layout·Components·States·Interactions·API·UX Rules를 완비한 상태로 존재한다 — 이 화면은 `docs/reference/working/화면정의서_샘플/화면정의서_작성_표준안.md`가 지향하는 "상세디스크립션" 개념과 가장 유사한 문서화 수준을 이미 갖추고 있다. 향후 다른 화면의 spec.md 작성 시 참고 템플릿으로 쓸 수 있다.
 
 ---
 
