@@ -2,7 +2,7 @@
 # 산출물 (Deliverables)
 
 > 산출물 흐름 문서의 7단계 체계에 따라, 실제 프로젝트 산출물을 **작성순서** 기준으로 배치한다.
-> 방법론 샘플(`docs/methodology/산출물샘플-단계별/`)과 동일한 구조이며, 여기에는 **실제 프로젝트 산출물**이 들어간다.
+> 방법론 샘플(`docs/methodology/artifacts-sample/`)과 동일한 구조이며, 여기에는 **실제 프로젝트 산출물**이 들어간다.
 
 ---
 
@@ -37,7 +37,7 @@ deliverables/
 
 ## 관련 문서
 
-- [산출물 흐름](../methodology/별첨/AI활용_개발방법론_산출물_흐름.md) — 7단계·작성순서·선행관계 정의
-- [산출물샘플-단계별](../methodology/산출물샘플-단계별/) — 단계별 표준 샘플 (방법론)
+- [산출물 흐름](../methodology/appendix/AI활용_개발방법론_산출물_흐름.md) — 7단계·작성순서·선행관계 정의
+- [artifacts-sample](../methodology/artifacts-sample/) — 단계별 표준 샘플 (방법론)
 - [reference/as-is](../reference/as-is/) — 이관 전 원본 참조 자산
 - [reference/working](../reference/working/) — 프로젝트 진행 중 작성된 보조 참고자료
