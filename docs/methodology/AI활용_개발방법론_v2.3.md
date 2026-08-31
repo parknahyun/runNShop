@@ -176,7 +176,7 @@ Artifact -down-> AI : 프로젝트 수행을 통해\n자산 축적
                                                       ←C4
 ```
 
-> 상세 내용은 `docs/methodology/검토자료/공정자산-가이드.md` 참조.
+> 상세 내용은 `docs/review-alignment/methodology/공정자산-가이드.md` 참조.
 
 #### **3.2.5 컨벤션 산출물 ↔ 설계 산출물 중복 해소 규칙**
 
