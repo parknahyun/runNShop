@@ -439,7 +439,7 @@ Bolt 단위로 반복되는 5종을 순서대로 실습한다. 예시는 모두 
 **위치**: 방법론 6.4 상세설계 표, `DL 인터페이스 명세` (Spec, Bolt 범위, 선행 산출물: GWT, 세부UC)
 
 **완성본**: `docs/deliverables/S3-상세설계/DL-인터페이스명세(Order-Payment).md` "1. POST
-/api/v1/cart/items" — 온보딩 가이드(`docs/onboarding/신규참여자_온보딩가이드.md` 4.2절)에서 이미
+/api/v1/cart/items" — 온보딩 가이드(`docs/onboarding.md` 4.2절)에서 이미
 다룬 예시를 재사용한다. GWT `AC-ORD-008`(품절 상품 담기 시도)이 `409 PRODUCT_NOT_AVAILABLE`
 코드와 1:1 대응하는 실제 사례가 있다.
 
