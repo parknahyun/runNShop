@@ -581,7 +581,7 @@
 { "code": "SUCCESS", "data": { "claimId": "clm-001", "status": "RECEIVED" } }
 ```
 
-> 클레임 11상태 모델(DG)에는 별도의 `IN_PROGRESS` 상태가 없다. "처리 시작"은 CS가 클레임 상세를 열어 확인 중임을 표시하는 UI 동작일 뿐, 클레임 상태는 `RECEIVED`로 유지되며 이후 귀책 판정(§19-1 `blame-decision`)에서 `PAYMENT_PENDING`/`INSPECTING`으로 분기한다.
+> 클레임 11상태 모델(DH)에는 별도의 `IN_PROGRESS` 상태가 없다. "처리 시작"은 CS가 클레임 상세를 열어 확인 중임을 표시하는 UI 동작일 뿐, 클레임 상태는 `RECEIVED`로 유지되며 이후 귀책 판정(§19-1 `blame-decision`)에서 `PAYMENT_PENDING`/`INSPECTING`으로 분기한다.
 
 ---
 

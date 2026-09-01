@@ -67,11 +67,11 @@
 | ID | 산출물 | 문서종류 | Scope | 필수 항목(표준양식) | 파일 형식(권장) |
 |---|---|---|---|---|---|
 | DC | 상위 유스케이스 | Design | Domain | 액터 정의 + 업무그룹별 UC 목록(도출 근거 포함) + 관계도 + 권한 범위 | `.md` (plantuml usecase) |
-| DD | 메뉴구조도(IA) | Design | Project(앱별) | 셸 구조 + 1depth/2depth/화면 계층 + 도메인 매핑 | `.md` (표) |
-| DE | 기능요구(EARS) | Spec | Domain | 요구사항ID(`REQ-{DOM}-{SEQ}`) + EARS 5패턴 + 도출 근거(정책서/상위UC) | `.md` (표) |
+| DD | 기능요구(EARS) | Spec | Domain | 요구사항ID(`REQ-{DOM}-{SEQ}`) + EARS 5패턴 + 도출 근거(정책서/상위UC) | `.md` (표) |
+| DE | 메뉴구조도(IA) | Design | Project(앱별) | 셸 구조 + 1depth/2depth/화면 계층 + 도메인 매핑 | `.md` (표) |
 | DF | 도메인 모델(ERD) | Design | Domain | DBML: 테이블·컬럼·PK/FK·인덱스 + 불변식 + soft delete 정책 + 감사컬럼 | `.md` (dbml 블록) |
-| DG | 상태머신 | Design | Domain | 상태 목록 + 허용 전이표 + forbidden_transitions + 트리거 조건 | `.md` (plantuml state) |
-| DH | 비즈니스 프로세스 | Design | Domain | 액티비티 다이어그램(스윔레인) + 시작/종료조건 + 예외흐름 | `.md` (plantuml activity) |
+| DG | 비즈니스 프로세스 | Design | Domain | 액티비티 다이어그램(스윔레인) + 시작/종료조건 + 예외흐름 | `.md` (plantuml activity) |
+| DH | 상태머신 | Design | Domain | 상태 목록 + 허용 전이표 + forbidden_transitions + 트리거 조건 | `.md` (plantuml state) |
 | DI | 이벤트 플로우 | Design | Domain 간 | 이벤트 카탈로그[이벤트명·발행도메인·구독도메인·스키마·동기/비동기] | `.md` (표) |
 
 **Tasks 산출물 (구조설계 마지막, 아직 ID 미부여 — 실제 산출물 생성 시 D자리 배정)**
@@ -157,7 +157,7 @@
 | C8 | 보안 컨벤션 | 보안 | S0 착수 중 (→ D8 NFR) | 인증/인가 체계, 데이터 암호화, PII 마스킹, 세션 정책 | `.md` |
 | C9 | 용어 컨벤션 | 업무 | S1 시작 전 (→ DB 도메인정의서) | 한/영 매핑표, 약어 목록, 동의어 금지 목록 | `.md` (표) |
 | C1 | 아키텍처 컨벤션 | 기술 | S2 시작 전 (→ D9 컴포넌트, DF ERD) | 기술스택, 레이어 구조, 도메인 경계, 외부 연동 방식, 금지 패턴 | `.md` |
-| C5 | 데이터 모델링 컨벤션 | 기술 | S2 ERD 전 (→ DF ERD, DG 상태머신) | 네이밍(접두사), PK 전략(ULID), 인덱스 규칙, Soft Delete 정책 | `.md` |
+| C5 | 데이터 모델링 컨벤션 | 기술 | S2 ERD 전 (→ DF ERD, DH 상태머신) | 네이밍(접두사), PK 전략(ULID), 인덱스 규칙, Soft Delete 정책 | `.md` |
 | C6 | 이벤트 설계 컨벤션 | 기술 | S2 이벤트플로우 전 (→ DI 이벤트플로우) | 이벤트명 컨벤션, payload 스키마, 멱등성, 재시도 정책 | `.md` |
 | C4 | API 설계 컨벤션 | 기술 | S3 인터페이스명세 전 (→ DL 인터페이스명세) | URL Path 체계, 응답 포맷, 에러 코드 체계, 버저닝 | `.md` |
 | C3 | 디자인 시스템 | UX | S3 화면레이아웃 전 (→ DN 화면레이아웃) | Foundation, Component, Pattern, Layout, Template | `.md` |

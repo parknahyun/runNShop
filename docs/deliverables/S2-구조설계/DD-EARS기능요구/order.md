@@ -4,8 +4,8 @@
 > **문서범위**: Domain
 > **문서종류**: Spec
 >
-> **작성 목적**: 상위 유스케이스(DC)와 메뉴구조도(DD)를 기반으로, Order 도메인의 기능요구를 EARS 패턴으로 정형화한다.
-> **흐름 내 위치**: DC 상위 UC → DD 메뉴구조도 → **DE EARS** → DF ERD → DG 상태머신
+> **작성 목적**: 상위 유스케이스(DC)를 기반으로, Order 도메인의 기능요구를 EARS 패턴으로 정형화한다.
+> **흐름 내 위치**: DC 상위 UC → **DD EARS** → DE 메뉴구조도 → DF ERD → DG 비즈니스 프로세스 → DH 상태머신
 > **작성 주체**: 시니어 개발자 + AI 협업 (기획자·현업 검토·확인)
 
 | 항목 | 내용 |
@@ -176,11 +176,11 @@
 | REQ-ORD-064 | Unwanted | IF 장바구니 수량이 1~99 범위를 벗어나면, THEN THE 시스템은 SHALL 변경을 거부하고 유효 범위를 안내한다. | 인터페이스명세 INVALID_QUANTITY 역반영 |
 | REQ-ORD-065 | Unwanted | IF 클레임 첨부 이미지가 3장을 초과하면, THEN THE 시스템은 SHALL 추가 첨부를 거부한다. | ERD `ord_claim_image` "최대 3장" 역반영 |
 | REQ-ORD-066 | Event-driven | WHEN CS 담당자가 귀책 판정을 확정하면, THE 시스템은 SHALL 고객이 신청 시 제출한 responsibility 값을 CS 판정 결과로 덮어쓴다(불일치 시 CS 판정이 최종). | CS 운영: 접수 심사 — 고객 자진신고는 참고값, CS 확정이 최종 |
-| REQ-ORD-067 | Ubiquitous | THE 시스템은 SHALL 반려(REJECTED)·만료(PAYMENT_EXPIRED)된 클레임의 수량을 "재신청 가능 수량" 계산에서 제외한다. | 상태머신(DG) "종료 상태(재신청 필요)" 주석 — 재신청 차단 방지 |
+| REQ-ORD-067 | Ubiquitous | THE 시스템은 SHALL 반려(REJECTED)·만료(PAYMENT_EXPIRED)된 클레임의 수량을 "재신청 가능 수량" 계산에서 제외한다. | 상태머신(DH) "종료 상태(재신청 필요)" 주석 — 재신청 차단 방지 |
 | REQ-ORD-068 | Unwanted | IF 클레임이 RECEIVED 상태로 24시간 이상 CS 미처리 상태이면, THEN THE 시스템은 SHALL CS 담당자에게 리마인드 알림을 발송한다. | 정책: PAYMENT_PENDING 12h 리마인드(REQ-ORD-043)와 동급 SLA |
 | REQ-ORD-069 | Unwanted | IF 클레임 유형이 EXCHANGE이고 귀책판정 시점에 교환 SKU(exchangeSkuId) 재고가 없으면, THEN THE 시스템은 SHALL 귀책판정을 거부하고 "교환 가능한 재고가 없습니다" 메시지를 반환한다(선출고 전 단계에서 차단). | REQ-ORD-056 선행조건 — 재고선점 실패 시나리오 보완 |
 | REQ-ORD-070 | Unwanted | IF 교환 신청 시 exchangeSkuId가 원 주문 상품(productId)과 다른 상품이면, THEN THE 시스템은 SHALL 신청을 거부한다. | 정책: 교환은 동일 상품 내 옵션(색상/사이즈) 변경만 허용 |
-| REQ-ORD-071 | Unwanted | IF 클레임이 INSPECTING 상태 이후이면, THEN THE 시스템은 SHALL 고객의 자진 취소 요청을 거부한다(귀책판정·수거 시작 이후 취소 불가 — 주문 취소와 동일 원칙). | 상태머신(DG) PREPARING 이후 취소 불가 원칙과 대칭 |
+| REQ-ORD-071 | Unwanted | IF 클레임이 INSPECTING 상태 이후이면, THEN THE 시스템은 SHALL 고객의 자진 취소 요청을 거부한다(귀책판정·수거 시작 이후 취소 불가 — 주문 취소와 동일 원칙). | 상태머신(DH) PREPARING 이후 취소 불가 원칙과 대칭 |
 | REQ-ORD-072 | Unwanted | IF 클레임 유형이 EXCHANGE이고 입점사가 품질점검 거부(택 미유지)를 판정하는데 사진이 0장이면, THEN THE 시스템은 SHALL 거부 처리를 차단하고 사진 첨부를 요구한다. | REQ-ORD-058(VENDOR귀책 사진 필수)과 대칭 — 입점사 판정도 증빙 필요 |
 
 ---
@@ -205,8 +205,8 @@
 | 유스케이스 도출 | `../DC-상위유스케이스/order.md` |
 | 정책 수치·규칙 | 자산 정책서 (장바구니 50개, D+7 자동확정, 반품 10일) |
 | 도메인 간 연동 | `DB-도메인정의서.md` Order "의존·이벤트 발행" |
-| 메뉴·화면 대응 | `DD-메뉴구조도/readme.md` Order 관련 화면 |
-| 배송 실행 분리(ord_shipment) | 상태머신(DG) v6 — "판단·결정 지점만 order/claim status, 택배사 이동 구간은 shipment" 원칙 |
+| 메뉴·화면 대응 | `DE-메뉴구조도/readme.md` Order 관련 화면 |
+| 배송 실행 분리(ord_shipment) | 상태머신(DH) v6 — "판단·결정 지점만 order/claim status, 택배사 이동 구간은 shipment" 원칙 |
 | 입점사귀책 사진 필수 | CS 운영 인터뷰 (귀책판정 증빙 필요) |
 | 바텀업 검토 보완(REQ-ORD-063~072) | S3 상세설계(DL-인터페이스명세, DN-화면레이아웃, DF-ERD) 역검토 — 2026-08-21 |
 | 바텀업 재검증 보완(REQ-ORD-073~076) | 2차 바텀업 재검증 — 기능/이력 실체 없이 요구사항만 있던 항목 보완, 2026-08-21 |

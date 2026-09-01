@@ -98,7 +98,7 @@ Promotion 상위 유스케이스(⑥) 작성 중, **판매자(입점사)가 프�
 | 1 | `DB-도메인정의서.md` (S1) | Promotion 채널·의존 수정 (본 제안) |
 | 2 | `D9-컴포넌트.md` (S1) | `promotion | mobile, admin` → `promotion | mobile, admin, partner` 채널 매핑 수정 |
 | 3 | `DC-상위유스케이스(Promotion).md` (S2) | partner 유스케이스(입점사 상품쿠폰·행사가·수량할인 등록·비활성화, 기획전 참여)를 부록 A → 본문 업무그룹으로 이동 + 액터에 "판매자(벤더)/P(Partner)" 추가 |
-| 4 | `DE-EARS기능요구(Promotion).md` (S2) | 입점사 상품쿠폰 등록·직매입/입점형 분기 REQ를 partner 채널 근거로 정식 도출 |
+| 4 | `DD-EARS기능요구(Promotion).md` (S2) | 입점사 상품쿠폰 등록·직매입/입점형 분기 REQ를 partner 채널 근거로 정식 도출 |
 
 ---
 

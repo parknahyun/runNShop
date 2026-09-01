@@ -5,7 +5,7 @@
 > **문서범위**: Domain (Order + Payment)
 > **문서종류**: Design
 >
-> **작성 목적**: 화면(DN)·인터페이스명세(DL)·시퀀스(DM)·이벤트플로우(DI)·EARS(DE)에서
+> **작성 목적**: 화면(DN)·인터페이스명세(DL)·시퀀스(DM)·이벤트플로우(DI)·EARS(DD)에서
 > 프로그램 단위(화면·API·컨슈머·배치)를 전수 도출하고, 도메인 경계 기준으로 소유를 확정한다.
 > "이 도메인이 실제로 만들어야 하는 프로그램이 빠짐없이 나열되었는가"를 검증한다.
 
@@ -16,7 +16,7 @@
 | 작성일 | 2026-08-12 |
 | 갱신일 | 2026-08-24 |
 | 도메인 | Order + Payment |
-| 도출 소스 | 화면레이아웃(DN), 인터페이스명세(DL), 시퀀스(DM), 이벤트플로우(DI), EARS(DE) |
+| 도출 소스 | 화면레이아웃(DN), 인터페이스명세(DL), 시퀀스(DM), 이벤트플로우(DI), EARS(DD) |
 
 > **v2 (2026-08-20 현행화)**: S2 상태머신(Order) v4 반영 — 클레임 상태전이 오류 수정(API-026/027), EXCHANGE 판정기준 명시(API-039/040), 교환 선출고 API 신규(API-043), 반송배송완료 확인 API 신규(API-047, 인터페이스명세 39-2 대응). EARS(Payment) REQ-PAY-020~022 반영 — 결제이력조회/CS결제검색/PG거래로그조회 API 신규(API-044~046, 인터페이스명세 경로 2건 정정 포함).
 > **v3 (2026-08-20 현행화)**: 전체 "상태전이" 컬럼 재점검 — 14/11/5상태 모델에 없는 값(CLAIM_RECEIVED, PICKUP_SHIPPING, SHIPPING, PURCHASE_CONFIRMED, ORDER_RECEIVED 오귀속) 6건 정정(API-013/034/037, BAT-001/003, CSM-001).
@@ -24,7 +24,7 @@
 > **v5 (2026-08-21 바텀업 검토)**: 시퀀스(DM) §22(REQ-ORD-062) 신규 반영 — 배송 실패 재발송 API 신규 추가(API-048, 입점사 partner API, shipment FAILED→PENDING→IN_TRANSIT). 인터페이스명세(DL) #44와 1:1 대응 확인. 귀책 판정(API-026)에 "고객 자진신고 responsibility를 CS가 최종 확정(덮어쓰기 가능, REQ-ORD-066)" 비고 보강. 집계·정합성 검증 결과 갱신.
 > **v6 (2026-08-21 시퀀스 §7-2 반영)**: 시퀀스(DM) §7-2 신규 반영 — 클레임 자진취소 API 신규 추가(API-049, 고객 mobile API, RECEIVED/PAYMENT_PENDING→REJECTED). API-048(재발송)에 "admin 클레임관리 화면에도 재발송 UI 추가 예정(DN-화면레이아웃 반영 중)" 비고 추가(현재 호출원은 SCR-P-004 단독, admin 화면 확정 시 SCR-A-004 추가 예정). 집계·정합성 검증 결과 갱신.
 > **v7 (2026-08-24 API 개수·에러코드 정합)**: 인터페이스명세(DL) 재확인 결과 API-048/049는 이미 DL에 반영되어 있었음(v5/v6의 "인터페이스명세 미반영" 기재는 오류) — 정정. DL "클레임 처리 시작"(§19, UI전용 no-op)은 유일하게 API-* ID가 없던 endpoint였고 API-050 신규 부여. API 총 49→50, 합계 95→96으로 갱신. HTTP Status 정합은 인터페이스명세(DL)·시퀀스(DM) 양쪽에서 처리(본 문서는 개수 집계만 갱신).
-> **v8 (2026-08-28 도메인별 파일 분리)**: DD-메뉴구조도·DN-화면레이아웃과 동일하게 도메인별 파일로 분리 — WBS(Task, Project→Bolt 범위)가 여러 도메인의 작업량을 취합하는 산출물인 반면, DQ 자신의 범위는 방법론 표준 Domain이므로, 도메인 하나가 실제로 소유·구현하는 프로그램을 그 도메인 파일에서 전수 확인할 수 있어야 한다는 원칙에 맞춰 재구성. 소유 기준은 API는 URL 소유 도메인, 컨슈머는 수신(구현) 도메인. 집계·정합성 검증·미진항목처럼 도메인을 가로지르는 내용은 이 readme에 유지.
+> **v8 (2026-08-28 도메인별 파일 분리)**: DE-메뉴구조도·DN-화면레이아웃과 동일하게 도메인별 파일로 분리 — WBS(Task, Project→Bolt 범위)가 여러 도메인의 작업량을 취합하는 산출물인 반면, DQ 자신의 범위는 방법론 표준 Domain이므로, 도메인 하나가 실제로 소유·구현하는 프로그램을 그 도메인 파일에서 전수 확인할 수 있어야 한다는 원칙에 맞춰 재구성. 소유 기준은 API는 URL 소유 도메인, 컨슈머는 수신(구현) 도메인. 집계·정합성 검증·미진항목처럼 도메인을 가로지르는 내용은 이 readme에 유지.
 
 ---
 
@@ -93,11 +93,11 @@
 | 화면 도출 | 화면레이아웃(DN) §1~§15 채널별 화면 |
 | API 도출 | 인터페이스명세(DL) 요약표 #1~#44(+10-1,19-1,32-1,32-2,39-1,39-2) endpoint 전수(50건, 2026-08-24 재확인). API-048/049는 이미 DL에 반영되어 있었음(각각 §44, §10-1) — 이전 "인터페이스명세 미반영" 기재 및 "47건" 집계는 오류였음. API-050(클레임 처리 시작)은 DL §19에 있었으나 API-* ID가 없던 endpoint에 신규 부여 |
 | 컨슈머 도출 | 이벤트플로우(DI) PAYMENT_APPROVED/FAILED, ORDER_CANCELLED, CLAIM_COMPLETED 수신 액션 |
-| 배치 도출 | EARS(DE) REQ-ORD-015, REQ-ORD-027, REQ-ORD-042, REQ-ORD-043 시간조건 |
-| 클레임 상태전이 정정 | S2 `DG-상태머신(Order).md` ord_claim.status 14상태(v4) — API-026/027 상태전이 오류 수정, API-039/040 EXCHANGE 판정기준(REQ-ORD-057) 명시 |
-| 결제 API 신규 | S2 `DE-EARS기능요구(Payment).md` REQ-PAY-020(결제이력조회)/021(CS결제검색)/022(PG거래로그조회) |
-| 재발송 API 신규 | S2 `DE-EARS기능요구(Order).md` REQ-ORD-062(배송실패 재처리), S3 `DM-시퀀스(Order-Payment).md` §22 — API-048(입점사) |
+| 배치 도출 | EARS(DD) REQ-ORD-015, REQ-ORD-027, REQ-ORD-042, REQ-ORD-043 시간조건 |
+| 클레임 상태전이 정정 | S2 `DH-상태머신(Order).md` ord_claim.status 14상태(v4) — API-026/027 상태전이 오류 수정, API-039/040 EXCHANGE 판정기준(REQ-ORD-057) 명시 |
+| 결제 API 신규 | S2 `DD-EARS기능요구(Payment).md` REQ-PAY-020(결제이력조회)/021(CS결제검색)/022(PG거래로그조회) |
+| 재발송 API 신규 | S2 `DD-EARS기능요구(Order).md` REQ-ORD-062(배송실패 재처리), S3 `DM-시퀀스(Order-Payment).md` §22 — API-048(입점사) |
 | 클레임 자진취소 API 신규 | S3 `DM-시퀀스(Order-Payment).md` §7-2 — API-049(고객 mobile, RECEIVED/PAYMENT_PENDING→REJECTED) |
-| 귀책판정 비고 보강 | S2 `DE-EARS기능요구(Order).md` REQ-ORD-066(고객 자진신고 responsibility, CS 판정으로 덮어쓰기) — API-026 |
+| 귀책판정 비고 보강 | S2 `DD-EARS기능요구(Order).md` REQ-ORD-066(고객 자진신고 responsibility, CS 판정으로 덮어쓰기) — API-026 |
 | 정합성 규칙 | 작성가이드 '프로그램 목록 정합성 체크리스트' 6항목 |
 | 도메인 분리 기준 | Domain Bolt 원칙(방법론 3.4 Scope 단위, DQ 범위=Domain) — WBS(Task, Project→Bolt)가 도메인을 가로지르는 작업량 취합을 맡는 반면, DQ는 도메인 하나가 소유하는 프로그램의 전수 도출·완전성 검증을 맡는다는 역할 분담에 따라 order.md/payment.md로 분리 |

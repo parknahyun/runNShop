@@ -4,8 +4,8 @@
 > **문서범위**: Domain
 > **문서종류**: Design
 >
-> **작성 목적**: 상태머신(DG)의 전이를 액티비티 흐름으로 확장하여, "누가 어떤 순서로 업무를 수행하는가"를 시각화한다.
-> **흐름 내 위치**: DG 상태머신 → **DH 비즈니스 프로세스** → DI 이벤트 플로우
+> **작성 목적**: 상태머신(DH)의 전이를 액티비티 흐름으로 확장하여, "누가 어떤 순서로 업무를 수행하는가"를 시각화한다.
+> **흐름 내 위치**: DF ERD → **DG 비즈니스 프로세스** → DH 상태머신 → DI 이벤트 플로우
 > **작성 주체**: 시니어 개발자 + AI 협업 (기획자·현업 검토·확인)
 
 | 항목 | 내용 |
@@ -19,7 +19,7 @@
 
 ## 1. 주문결제 프로세스
 
-> v2 (2026-08-20 현행화): 구모델 잔재 `PROCESSING` 제거 — 상태머신(DG) TEMP→ORDER_RECEIVED→PAYMENT_PENDING 3단계로 정정
+> v2 (2026-08-20 현행화): 구모델 잔재 `PROCESSING` 제거 — 상태머신(DH) TEMP→ORDER_RECEIVED→PAYMENT_PENDING 3단계로 정정
 
 ```plantuml
 @startuml
@@ -74,7 +74,7 @@ stop
 
 ## 2. 배송·구매확정 프로세스
 
-> v2 (2026-08-20 현행화): 배송 실행(IN_DELIVERY)을 `ord_shipment`(OUTBOUND)로 분리 — 상태머신(DG) v6
+> v2 (2026-08-20 현행화): 배송 실행(IN_DELIVERY)을 `ord_shipment`(OUTBOUND)로 분리 — 상태머신(DH) v6
 
 ```plantuml
 @startuml
@@ -271,7 +271,7 @@ stop
 
 | 항목 | 출처 |
 |---|---|
-| 상태 전이 | `../DG-상태머신/order.md` |
+| 상태 전이 | `../DH-상태머신/order.md` |
 | 액터·업무 흐름 | `../DC-상위유스케이스/order.md` |
 | 도메인 간 호출 | `DB-도메인정의서.md` §4 관계도 |
 | 업무 규칙 | REQ-ORD-015 (D+7), REQ-ORD-019 (취소 제한), REQ-ORD-030 (반품 10일), REQ-ORD-058 (VENDOR귀책 사진 필수) |
