@@ -232,7 +232,7 @@ endif
 
 | 항목 | 출처 |
 |---|---|
-| 상태 전이 | `DG-상태머신(Catalog).md` |
+| 상태 전이 | `DH-상태머신(Catalog).md` |
 | 심사 흐름 | `DC-상위유스케이스(Catalog).md` 상품등록·심사 업무그룹 |
 | 재고 선점 규칙 | REQ-CAT-002, REQ-CAT-003 |
 | 재고 복원 규칙 | REQ-CAT-004, REQ-CAT-005 |

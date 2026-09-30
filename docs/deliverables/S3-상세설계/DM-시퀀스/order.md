@@ -622,7 +622,7 @@ end
 
 - **트리거**: 스케줄러 (매 시간 정각)
 - **상태전이**: Claim `REFUNDED` → `COMPLETED`, Claim `DISPOSED` → `COMPLETED` (배치 자동 전환)
-- **비고**: 14상태 모델(DG)에는 어드민이 직접 호출하는 "클레임 완료" API가 없다. `PICKED_UP → REFUNDED`는 §13(환불 처리), `PICKUP_REJECTED → DISPOSED`는 §20(폐기 처리)에서 각각 어드민이 수행하고, `REFUNDED`/`DISPOSED`에 도달한 클레임은 본 배치가 주기적으로 스캔해 `COMPLETED`로 자동 전환한다. `RETURN_PAYMENT_PENDING → COMPLETED`(shipment(RETURN) DELIVERED 기준) 자동전환은 택배사 반송완료 확인과 같은 배치에서 처리하므로 §19를 참조.
+- **비고**: 14상태 모델(DH)에는 어드민이 직접 호출하는 "클레임 완료" API가 없다. `PICKED_UP → REFUNDED`는 §13(환불 처리), `PICKUP_REJECTED → DISPOSED`는 §20(폐기 처리)에서 각각 어드민이 수행하고, `REFUNDED`/`DISPOSED`에 도달한 클레임은 본 배치가 주기적으로 스캔해 `COMPLETED`로 자동 전환한다. `RETURN_PAYMENT_PENDING → COMPLETED`(shipment(RETURN) DELIVERED 기준) 자동전환은 택배사 반송완료 확인과 같은 배치에서 처리하므로 §19를 참조.
 
 ```plantuml
 @startuml
@@ -921,7 +921,7 @@ alt 상태 != INSPECTING
   PCC --> Partner : 409 에러
 else 정상
   note right of CS
-    합격 판정 기준(DG v4)
+    합격 판정 기준(DH v4)
     RETURN: 상품 상태 양호(훼손 없음)
     EXCHANGE: 택(TAG) 유지 여부
   end note

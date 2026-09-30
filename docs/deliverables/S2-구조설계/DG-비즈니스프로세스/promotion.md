@@ -364,7 +364,7 @@ stop
 
 | 항목 | 출처 |
 |---|---|
-| 상태 전이 | `DG-상태머신(Promotion).md` |
+| 상태 전이 | `DH-상태머신(Promotion).md` |
 | PublicApi 흐름 | `DC-상위유스케이스(Promotion).md` 행사가·할인관리 업무그룹 |
 | 택1 규칙 | REQ-PRM-007, REQ-PRM-021 |
 | 쿠폰 검증 로직 | REQ-PRM-003, REQ-PRM-004 |

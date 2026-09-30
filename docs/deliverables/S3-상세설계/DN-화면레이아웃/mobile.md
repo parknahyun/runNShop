@@ -1027,7 +1027,7 @@
 
 ### 클레임 상태별 정리
 
-> claim.status 11상태 (v6 — PICKUP/RETURN_SHIPPING/RETURN_DELIVERED는 `ord_shipment`로 이관되어 제외). 근거: `S2-구조설계/DG-상태머신/order.md` §2.
+> claim.status 11상태 (v6 — PICKUP/RETURN_SHIPPING/RETURN_DELIVERED는 `ord_shipment`로 이관되어 제외). 근거: `S2-구조설계/DH-상태머신/order.md` §2.
 
 | 상태 | 설명 | 수행 주체 |
 |---|---|---|

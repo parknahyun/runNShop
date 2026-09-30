@@ -5,7 +5,7 @@
 > **문서종류**: Design
 >
 > **작성 목적**: ERD(DF)의 status 컬럼에서 허용 상태와 전이 규칙을 정의한다.
-> **흐름 내 위치**: DF ERD → **DG 상태머신** → DH 비즈니스 프로세스 → DI 이벤트 플로우
+> **흐름 내 위치**: DF ERD → DG 비즈니스 프로세스 → **DH 상태머신** → DI 이벤트 플로우
 > **작성 주체**: 시니어 개발자 + AI 협업 (기획자·현업 검토·확인)
 
 | 항목 | 내용 |
@@ -338,7 +338,7 @@ end note
 | 항목 | 출처 |
 |---|---|
 | 상태 목록 | `../DF-도메인모델ERD/order.md` ord_order.status, ord_claim.status, ord_shipment.status |
-| 전이 규칙 | `../DE-EARS기능요구/order.md` Event-driven/Unwanted 패턴 |
+| 전이 규칙 | `../DD-EARS기능요구/order.md` Event-driven/Unwanted 패턴 |
 | 금지 전이 | REQ-ORD-017, REQ-ORD-019 |
 | D+7 자동확정 | REQ-ORD-015 |
 | 반품 10일 기한 | REQ-ORD-030 |

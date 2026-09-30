@@ -206,7 +206,7 @@ AC-{DOMAIN}-{SEQ}
 
 | 항목 | 출처 |
 |---|---|
-| 시나리오 도출 | EARS(DE) REQ-ORD-001~076, REQ-PAY-001~024 → GWT 변환 (바텀업 재검증분 REQ-ORD-063~076, REQ-PAY-023~024 포함) |
+| 시나리오 도출 | EARS(DD) REQ-ORD-001~076, REQ-PAY-001~024 → GWT 변환 (바텀업 재검증분 REQ-ORD-063~076, REQ-PAY-023~024 포함) |
 | 경계값 수치 | 정책서 (50개 장바구니, D+7 자동확정, 반품 10일, 재시도 3회, 30초 타임아웃, 배송비결제 24시간) |
 | 예외 시나리오 | EARS Unwanted/Optional 패턴 + 화면레이아웃(DN) 정책 미결 사항 |
-| 상태 전이 | 상태머신(DG) v6 — Order 10상태(배송 실행은 ord_shipment로 분리; PREPARING에서 shipment(OUTBOUND) DELIVERED 이벤트 구독으로 DELIVERED 파생전환, IN_DELIVERY 상태 없음). Claim 11상태(RECEIVED→PAYMENT_PENDING(고객귀책) 또는 RECEIVED→INSPECTING(입점사귀책, shipment(PICKUP) 생성·DELIVERED 후 전환)→PICKED_UP/PICKUP_REJECTED→REFUNDED→COMPLETED/DISPOSED/RETURN_PAYMENT_PENDING→COMPLETED(shipment(RETURN) DELIVERED 후 배치가 직접 전환, RETURN_SHIPPING/RETURN_DELIVERED 경유 없음)). Claim은 CS "처리시작(IN_PROGRESS)" 단계 없이 RECEIVED에서 귀책판정으로 곧바로 분기한다. 신규 shipment.status(PENDING/IN_TRANSIT/DELIVERED/FAILED/CANCELLED, order/claim 공용, shipment_type=OUTBOUND/PICKUP/RETURN/EXCHANGE_OUT). responsibility는 CUSTOMER/VENDOR 2종 |
+| 상태 전이 | 상태머신(DH) v6 — Order 10상태(배송 실행은 ord_shipment로 분리; PREPARING에서 shipment(OUTBOUND) DELIVERED 이벤트 구독으로 DELIVERED 파생전환, IN_DELIVERY 상태 없음). Claim 11상태(RECEIVED→PAYMENT_PENDING(고객귀책) 또는 RECEIVED→INSPECTING(입점사귀책, shipment(PICKUP) 생성·DELIVERED 후 전환)→PICKED_UP/PICKUP_REJECTED→REFUNDED→COMPLETED/DISPOSED/RETURN_PAYMENT_PENDING→COMPLETED(shipment(RETURN) DELIVERED 후 배치가 직접 전환, RETURN_SHIPPING/RETURN_DELIVERED 경유 없음)). Claim은 CS "처리시작(IN_PROGRESS)" 단계 없이 RECEIVED에서 귀책판정으로 곧바로 분기한다. 신규 shipment.status(PENDING/IN_TRANSIT/DELIVERED/FAILED/CANCELLED, order/claim 공용, shipment_type=OUTBOUND/PICKUP/RETURN/EXCHANGE_OUT). responsibility는 CUSTOMER/VENDOR 2종 |

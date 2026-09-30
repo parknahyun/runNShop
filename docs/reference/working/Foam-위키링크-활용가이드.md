@@ -11,17 +11,17 @@
 
 ## 1. 문제 정의
 
-현재 설계 산출물(DE EARS, DF ERD, DG 상태머신, DK 세부UC, DL 인터페이스명세, DM 시퀀스, DP 클래스설계 등)은
+현재 설계 산출물(DD EARS, DF ERD, DH 상태머신, DK 세부UC, DL 인터페이스명세, DM 시퀀스, DP 클래스설계 등)은
 `REQ-ORD-058`, `AC-ORD-005`, `§11` 같은 **텍스트 ID**로 서로를 참조한다. 예:
 
 ```
-DE-EARS기능요구/order.md
+DD-EARS기능요구/order.md
   REQ-ORD-058 | Unwanted | IF 반품/교환 신청 시 사유가 입점사(VENDOR) 귀책...
 
 DF-도메인모델ERD/order.md
   ord_claim_image uploaded_by=CUSTOMER... 최소 1건 이상 | REQ-ORD-058: 상품불량 등 입점사귀책 사유는 사진 증빙 필수
 
-DG-상태머신/order.md
+DH-상태머신/order.md
   [*] → RECEIVED | VENDOR 귀책 사유 선택 시 사진 1장 이상(REQ-ORD-058)
 
 DK-세부유스케이스/order.md
@@ -58,19 +58,19 @@ Foam은 이 문제를 **빌드 과정 없이** 해결한다. VS Code(Kiro)용 �
 ### 3.1 파일 단위 링크 (가장 기본)
 
 ```markdown
-반품/교환 시 VENDOR 귀책 사유는 사진 1장 이상 필수하다 (근거: [[DE-EARS기능요구/order]] REQ-ORD-058)
+반품/교환 시 VENDOR 귀책 사유는 사진 1장 이상 필수하다 (근거: [[DD-EARS기능요구/order]] REQ-ORD-058)
 ```
 
 - `[[파일명]]` — 확장자·경로 없이 파일명만 쓰면 Foam이 워크스페이스 전체에서 매칭되는 파일을 찾아 연결한다.
-- **S2~S3 산출물은 "산출물 폴더 + 도메인/앱 파일"(`DE-EARS기능요구/order.md`, `DD-메뉴구조도/admin.md` 등) 구조라 `order.md`·`payment.md`·`admin.md` 같은 파일명이 여러 산출물 폴더에 항상 동시에 존재한다.**
+- **S2~S3 산출물은 "산출물 폴더 + 도메인/앱 파일"(`DD-EARS기능요구/order.md`, `DE-메뉴구조도/admin.md` 등) 구조라 `order.md`·`payment.md`·`admin.md` 같은 파일명이 여러 산출물 폴더에 항상 동시에 존재한다.**
   즉 파일명 중복은 예외가 아니라 기본값이므로, 이 문서 전체에서 위키링크는 항상 폴더를 포함한
-  `[[DE-EARS기능요구/order]]` 형태로 쓴다 — 바로 `[[order]]`만 쓰면 Foam이 어느 산출물의 order.md인지
+  `[[DD-EARS기능요구/order]]` 형태로 쓴다 — 바로 `[[order]]`만 쓰면 Foam이 어느 산출물의 order.md인지
   특정하지 못하고 모호함을 표시한다.
 
 ### 3.2 별칭(alias) 링크 — ID를 그대로 보여주고 싶을 때
 
 ```markdown
-VENDOR 귀책 사유 선택 시 사진 1장 이상 필수 ([[DE-EARS기능요구/order|REQ-ORD-058]])
+VENDOR 귀책 사유 선택 시 사진 1장 이상 필수 ([[DD-EARS기능요구/order|REQ-ORD-058]])
 ```
 
 - `[[파일명|표시텍스트]]` 형태. 화면에는 `REQ-ORD-058`만 보이지만 클릭하면 EARS 파일로 이동한다.
@@ -92,16 +92,16 @@ VENDOR 귀책 사유 선택 시 사진 1장 이상 필수 ([[DE-EARS기능요구
 ```markdown
 ## REQ-ORD-058 참조 사슬
 
-1. [[DE-EARS기능요구/order|EARS 원본]] — "VENDOR 귀책 사유인데 사진 0장이면 신청 거부"
+1. [[DD-EARS기능요구/order|EARS 원본]] — "VENDOR 귀책 사유인데 사진 0장이면 신청 거부"
 2. [[DF-도메인모델ERD/order|ERD 제약조건]] — ord_claim_image uploaded_by=CUSTOMER 최소 1건
-3. [[DG-상태머신/order|상태머신 가드]] — [*] → RECEIVED 전이 조건
+3. [[DH-상태머신/order|상태머신 가드]] — [*] → RECEIVED 전이 조건
 4. [[DK-세부유스케이스/order|세부UC 대안흐름]] — §11 사진 미첨부 시 안내 문구
 5. [[DL-인터페이스명세/order|에러코드]] — CLAIM_PHOTO_REQUIRED (400)
 6. [[DM-시퀀스/order|시퀀스 분기]] — §7 클레임 신청 alt 분기
 7. [[DP-클래스설계/order|클래스 근거]] — ClaimImage 엔티티 주석
 ```
 
-이렇게 써두면 Foam 백링크 패널에서 `DE-EARS기능요구/order.md`를 열었을 때
+이렇게 써두면 Foam 백링크 패널에서 `DD-EARS기능요구/order.md`를 열었을 때
 "이 문서를 참조하는 문서 6건"이 자동으로 나열된다 — REQ-ORD-058이 어디까지 영향을 미치는지 grep 없이 즉시 확인 가능.
 
 ---
@@ -109,7 +109,7 @@ VENDOR 귀책 사유 선택 시 사진 1장 이상 필수 ([[DE-EARS기능요구
 ## 4. 백링크 패널 활용법
 
 1. Foam 설치 후 임의의 파일을 열면 사이드바에 **"Backlinks"** 패널이 생긴다.
-2. 예를 들어 `DE-EARS기능요구/order.md`를 열면, 이 파일을 `[[...]]`로 링크한 다른 모든 문서가 패널에 나열된다.
+2. 예를 들어 `DD-EARS기능요구/order.md`를 열면, 이 파일을 `[[...]]`로 링크한 다른 모든 문서가 패널에 나열된다.
 3. **"Unlinked References"**(미연결 언급) 섹션도 함께 표시된다 — 파일명과 똑같은 텍스트가 링크 없이 쓰인 곳을 찾아 "여기 링크로 바꿀까요?"라고 알려준다. 지금처럼 텍스트 ID만 있는 문서를 점진적으로 링크화할 때 누락 없이 작업할 수 있다.
 
 ---
@@ -121,7 +121,7 @@ VENDOR 귀책 사유 선택 시 사진 1장 이상 필수 ([[DE-EARS기능요구
 | 표 행 단위 정밀 링크 불가 | `REQ-ORD-058`이 마크다운 헤더가 아니라 표 셀 안에 있어 `#앵커`로 직접 못 감 | 파일 단위 링크 + 파일 내 `Ctrl+F` 검색으로 보완. 정밀도가 꼭 필요하면 해당 행 앞에 `<a id="req-ord-058"></a>` HTML 앵커를 수동 삽입 |
 | GitHub PR 리뷰 화면 미지원 | GitHub의 마크다운 프리뷰는 `[[위키링크]]` 문법을 렌더링하지 못함 (일반 텍스트로 보임) | PR 리뷰용으로는 표준 `[텍스트](경로)` 링크를 병행하거나, 로컬(Kiro/VS Code)에서만 추적 용도로 사용 |
 | 자동 링크화 아님 | Foam은 링크를 "인식"만 함. 기존 텍스트 ID를 링크로 바꾸는 건 수동(또는 스크립트) 작업 | 신규 문서부터 점진 적용 + 기존 문서는 자주 보는 것부터 소급 적용 |
-| 파일명 중복 시 모호성 | S2~S3 산출물은 "산출물 폴더/도메인·앱 파일" 구조라 `order.md`·`payment.md`·`admin.md` 등 동일 파일명이 여러 산출물 폴더에 항상 동시 존재 (예외가 아니라 기본값) | 링크 시 항상 산출물 폴더 포함 (`[[DE-EARS기능요구/order]]`), 바로 `[[order]]`만 쓰지 않는다 |
+| 파일명 중복 시 모호성 | S2~S3 산출물은 "산출물 폴더/도메인·앱 파일" 구조라 `order.md`·`payment.md`·`admin.md` 등 동일 파일명이 여러 산출물 폴더에 항상 동시 존재 (예외가 아니라 기본값) | 링크 시 항상 산출물 폴더 포함 (`[[DD-EARS기능요구/order]]`), 바로 `[[order]]`만 쓰지 않는다 |
 
 ---
 
@@ -129,8 +129,8 @@ VENDOR 귀책 사유 선택 시 사진 1장 이상 필수 ([[DE-EARS기능요구
 
 | 상황 | 규칙 |
 |---|---|
-| 신규 문서에서 REQ-ID/AC-ID를 처음 언급할 때 | `[[산출물폴더/도메인또는앱\|REQ-ORD-058]]` 형태의 별칭 링크 사용 (예: `[[DE-EARS기능요구/order\|REQ-ORD-058]]`) — 폴더 없이 `[[order\|...]]`만 쓰지 않는다 |
-| 이미 텍스트 ID로 굳어진 기존 문서 | 강제 소급 적용하지 않음. 자주 참조하는 문서(DE EARS, DG 상태머신, DL 인터페이스명세)부터 선택적으로 링크화 |
+| 신규 문서에서 REQ-ID/AC-ID를 처음 언급할 때 | `[[산출물폴더/도메인또는앱\|REQ-ORD-058]]` 형태의 별칭 링크 사용 (예: `[[DD-EARS기능요구/order\|REQ-ORD-058]]`) — 폴더 없이 `[[order\|...]]`만 쓰지 않는다 |
+| 이미 텍스트 ID로 굳어진 기존 문서 | 강제 소급 적용하지 않음. 자주 참조하는 문서(DD EARS, DH 상태머신, DL 인터페이스명세)부터 선택적으로 링크화 |
 | PR/코드리뷰에 첨부되는 문서 | 위키링크 대신 표준 `[텍스트](상대경로#앵커)` 링크 사용 (GitHub 프리뷰 호환) |
 | 그래프뷰로 전체 관계를 보고 싶을 때 | Foam 명령 팔레트 → `Foam: Show Graph` |
 
@@ -161,5 +161,5 @@ VENDOR 귀책 사유 선택 시 사진 1장 이상 필수 ([[DE-EARS기능요구
 |---|---|
 | Foam 개요·문법 | [Foam GitHub](https://github.com/foambubble/foam) — VS Code 기반 로컬 우선 마크다운 지식베이스 |
 | 백링크/미연결 언급 기능 | [Foam VS Code 확장](https://marketplace.visualstudio.com/items?itemName=foam.foam-vscode) |
-| REQ-ORD-058 참조 사슬 실 예시 | `DE-EARS기능요구/order.md`, `DF-도메인모델ERD/order.md`, `DG-상태머신/order.md`, `DK-세부유스케이스/order.md` (2026-08-21 기준 본문 발췌, 이후 산출물 폴더 구조로 재정리) |
+| REQ-ORD-058 참조 사슬 실 예시 | `DD-EARS기능요구/order.md`, `DF-도메인모델ERD/order.md`, `DH-상태머신/order.md`, `DK-세부유스케이스/order.md` (2026-08-21 기준 본문 발췌, 이후 산출물 폴더 구조로 재정리) |
 | DN 화면정의서 메타블록 적용 | `DN-화면레이아웃/` §0 및 18개 화면 섹션 (2026-08-21) |

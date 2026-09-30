@@ -347,7 +347,7 @@ Table prm_exhibition_promotion {
 
 | 항목 | 출처 |
 |---|---|
-| 엔티티 도출 | `DE-EARS기능요구(Promotion).md` 주어/목적어 명사 추출 |
+| 엔티티 도출 | `DD-EARS기능요구(Promotion).md` 주어/목적어 명사 추출 |
 | 테이블 접두사 `prm_` | `DB-도메인정의서.md` 스키마 그룹핑 |
 | 택1 규칙 | REQ-PRM-007, REQ-PRM-021 |
 | 장바구니 1건 제한 | REQ-PRM-032 |

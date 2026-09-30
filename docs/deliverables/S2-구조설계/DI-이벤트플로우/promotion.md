@@ -21,7 +21,7 @@
 
 ## 도메인정의서(DB) 이벤트 발행 기준 매핑
 
-> 도메인정의서(DB) Promotion "이벤트 발행" 목록(CouponIssued, CouponUsed, EventStarted, EventEnded)을 본 문서의 이벤트로 매핑한다. 그 외 이벤트는 비즈니스 프로세스(DH)에서 도출된 연동 이벤트이다.
+> 도메인정의서(DB) Promotion "이벤트 발행" 목록(CouponIssued, CouponUsed, EventStarted, EventEnded)을 본 문서의 이벤트로 매핑한다. 그 외 이벤트는 비즈니스 프로세스(DG)에서 도출된 연동 이벤트이다.
 
 | 도메인정의서 이벤트 | 본 문서 대응 이벤트 | 비고 |
 |---|---|---|
@@ -30,7 +30,7 @@
 | EventStarted | (이벤트·기획전관리 — 부록 A) | 이벤트 도메인 기능, 세부 미확정 |
 | EventEnded | EVENT_ENDED (행사 종료) / (이벤트 종료 — 부록 A) | 행사가 종료는 확정, 이벤트 종료는 부록 A |
 
-> DISPLAY_PRICE_CHANGED·COUPON_RESTORED·ORDER_* 수신 이벤트는 도메인정의서 발행 목록에는 없으나, 비즈니스 프로세스(DH)와 도메인 간 연동(의존 관계)에서 도출된 이벤트다.
+> DISPLAY_PRICE_CHANGED·COUPON_RESTORED·ORDER_* 수신 이벤트는 도메인정의서 발행 목록에는 없으나, 비즈니스 프로세스(DG)와 도메인 간 연동(의존 관계)에서 도출된 이벤트다.
 
 ---
 
@@ -239,7 +239,7 @@ note right: 승급 쿠폰 자동 발급
 
 | 항목 | 출처 |
 |---|---|
-| 이벤트 목록 | `DH-비즈니스프로세스(Promotion).md` 이벤트 발행 지점 |
+| 이벤트 목록 | `DG-비즈니스프로세스(Promotion).md` 이벤트 발행 지점 |
 | 발행/수신 관계 | `DB-도메인정의서.md` §4 Promotion "의존·이벤트 발행" |
 | Outbox 패턴 | `D9-컴포넌트.md` 배포 구조·도메인 간 통신 방식 |
 | 동기/비동기 판단 | 응답 즉시성 요구 여부 (UX 대기 vs 후속 처리) |
