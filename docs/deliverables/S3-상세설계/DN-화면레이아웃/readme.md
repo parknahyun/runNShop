@@ -27,7 +27,7 @@
 | 앱 | 파일 |
 |---|---|
 | mobile (고객웹) | [mobile.md](mobile.md) |
-| admin (플랫폼 어드민) | [admin.md](admin.md) |
+| admin (플랫폼 어드민) | [admin/index.md](admin/index.md) — 화면 단위 분리 |
 | partner (입점사 어드민) | [partner.md](partner.md) |
 
 ---
