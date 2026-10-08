@@ -1,3 +1,5 @@
+import Link from 'next/link';
+
 interface OrderData {
   orderId: string;
   platformOrderNo: string;
@@ -23,7 +25,7 @@ const STATUS_COLOR: Record<string, string> = {
 
 export function OrderListItem({ order }: { order: OrderData }) {
   return (
-    <div className="bg-white px-4 py-4">
+    <Link href={`/my/orders/${order.orderId}`} className="block bg-white px-4 py-4">
       {/* 주문일자 + 주문번호 */}
       <div className="flex items-center justify-between mb-2">
         <span className="text-xs text-gray-400">{order.orderDate}</span>
@@ -67,7 +69,7 @@ export function OrderListItem({ order }: { order: OrderData }) {
           <ActionButton label="리뷰 작성" variant="secondary" />
         )}
       </div>
-    </div>
+    </Link>
   );
 }
 
@@ -81,7 +83,10 @@ function ActionButton({ label, variant = 'primary' }: { label: string; variant?:
 
   return (
     <button
-      onClick={() => alert('프로토타입에서는 지원하지 않는 기능입니다.')}
+      onClick={(e) => {
+        e.stopPropagation();
+        alert('프로토타입에서는 지원하지 않는 기능입니다.');
+      }}
       className={`${base} ${styles[variant]}`}
     >
       {label}
