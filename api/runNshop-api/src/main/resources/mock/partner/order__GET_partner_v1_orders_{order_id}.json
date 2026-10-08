@@ -1,0 +1,16 @@
+{
+  "code": "SUCCESS",
+  "data": {
+    "orderId": "ord-001",
+    "platformOrderNo": "ORD-20260626-001",
+    "status": "PAYMENT_COMPLETED",
+    "productName": "나이키 페가수스 41",
+    "customerName": "홍*동",
+    "quantity": 1,
+    "amount": 152000,
+    "orderDate": "2026-06-26",
+    "history": [
+      { "at": "2026-06-26 09:15", "action": "주문 접수", "memo": "결제 완료" }
+    ]
+  }
+}

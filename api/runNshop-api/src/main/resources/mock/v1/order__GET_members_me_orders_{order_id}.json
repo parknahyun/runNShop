@@ -1,0 +1,51 @@
+{
+  "code": "SUCCESS",
+  "data": {
+    "orderId": "ord-001",
+    "platformOrderNo": "ORD-20260626-001",
+    "status": "DELIVERED",
+    "orderDate": "2026-06-26 09:15",
+    "items": [
+      {
+        "vendorName": "나이키코리아",
+        "vendorStatus": "DELIVERED",
+        "products": [
+          { "productName": "나이키 페가수스 41", "imageUrl": "https://placehold.co/80x80/f5f5f5/333?text=Pegasus41", "optionName": "블랙/265", "quantity": 1, "amount": 152000, "claimableQuantity": 1 },
+          { "productName": "나이키 드라이핏 ADV 러닝 티셔츠", "imageUrl": "https://placehold.co/80x80/f5f5f5/333?text=DryFit", "optionName": "네이비/L", "quantity": 2, "amount": 118000, "claimableQuantity": 2 }
+        ]
+      },
+      {
+        "vendorName": "아식스코리아",
+        "vendorStatus": "IN_DELIVERY",
+        "products": [
+          { "productName": "아식스 젤카야노 31", "imageUrl": "https://placehold.co/80x80/f5f5f5/333?text=Kayano31", "optionName": "화이트/270", "quantity": 1, "amount": 199000, "claimableQuantity": 1 }
+        ]
+      }
+    ],
+    "payment": {
+      "productAmount": 469000,
+      "productDiscount": -48000,
+      "cartDiscount": -3000,
+      "shippingFee": 0,
+      "totalAmount": 418000,
+      "method": "신용카드 (****-1234)",
+      "paidAt": "2026-06-26 09:15"
+    },
+    "shipping": {
+      "recipientName": "홍*동",
+      "phone": "010-****-5678",
+      "address": "[06234] 서울 강남구 테헤란로 123 런앤샵타워 5층",
+      "memo": "부재 시 문 앞에",
+      "carrier": "CJ대한통운",
+      "trackingNumber": "1234567890",
+      "deliveryStatus": "배송완료 (06.28 14:00)"
+    },
+    "history": [
+      { "at": "2026-06-28 14:00", "event": "배송완료" },
+      { "at": "2026-06-27 10:00", "event": "배송중" },
+      { "at": "2026-06-26 15:00", "event": "출고 처리" },
+      { "at": "2026-06-26 09:15", "event": "결제 완료" },
+      { "at": "2026-06-26 09:15", "event": "주문 접수" }
+    ]
+  }
+}

@@ -1,6 +1,7 @@
 package com.runnshop.order.controller
 
-import com.runnshop.common.MockLoader
+import com.runnshop.order.service.AdminOrderFilter
+import com.runnshop.order.service.OrderService
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
@@ -10,7 +11,7 @@ import org.springframework.web.bind.annotation.RestController
 
 @RestController
 @RequestMapping("/api/admin/v1/orders")
-class AdminOrderController(private val mockLoader: MockLoader) {
+class AdminOrderController(private val orderService: OrderService) {
 
     @GetMapping
     fun searchOrders(
@@ -21,13 +22,15 @@ class AdminOrderController(private val mockLoader: MockLoader) {
         @RequestParam(required = false, defaultValue = "1") page: Int?,
         @RequestParam(required = false, defaultValue = "10") size: Int?
     ): ResponseEntity<Any> {
-        val data = mockLoader.load("admin", "order__GET_admin_v1_orders.json")
+        val data = orderService.getAdminOrders(
+            AdminOrderFilter(keyword = keyword, status = status, from = from, to = to, page = page ?: 1, size = size ?: 10)
+        )
         return ResponseEntity.ok(data)
     }
 
     @GetMapping("/{orderId}")
     fun getOrderDetail(@PathVariable orderId: String): ResponseEntity<Any> {
-        val data = mockLoader.load("admin", "order__GET_admin_v1_orders_{order_id}.json")
+        val data = orderService.getAdminOrderDetail(orderId)
         return ResponseEntity.ok(data)
     }
 }
