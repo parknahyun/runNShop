@@ -14,8 +14,8 @@
 | 화면 ID | SCR-A-002-T4 |
 | 앱 | admin |
 | 진입 조건 | [../detail.md](../detail.md)(SCR-A-002) InnerTabs 활성 탭 = "CS·클레임" |
-| 관련 세부UC | [[DK-세부유스케이스/order|UC-6 (예외취소), UC-11 (클레임 접수)]] |
-| 호출 API | [[DL-인터페이스명세/order|API-023, API-024]] |
+| 관련 세부UC | UC-6 (예외취소), UC-11 (클레임 접수) ([DK-세부유스케이스/order.md](../../../../DK-세부유스케이스/order.md)) |
+| 호출 API | [API-023](../../../../DL-인터페이스명세/order.md#api-023), [API-024](../../../../DL-인터페이스명세/order.md#api-024) |
 
 ### 와이어프레임
 
@@ -60,7 +60,7 @@
 
 ### 유효성 검증
 
-> [[DJ-GWT수용기준/order|GWT §6 CS 예외취소 Bolt, AC-ORD-018~020]] · 에러코드는 DL 참조
+> [DJ-GWT수용기준/order.md](../../../../DJ-GWT수용기준/order.md) GWT §6 CS 예외취소 Bolt, AC-ORD-018~020 · 에러코드는 DL 참조
 
 ### 상태별 UI
 

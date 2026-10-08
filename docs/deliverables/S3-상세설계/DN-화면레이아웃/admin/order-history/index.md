@@ -17,7 +17,7 @@
 | 11 | 주문 상세 — 주문문의 탭 | SCR-A-002-T5 | [tabs/inquiry.md](tabs/inquiry.md) |
 | 11 | 주문 상세 — 변경이력 탭 | SCR-A-002-T6 | [tabs/log.md](tabs/log.md) |
 
-> 화면 ID·탭 구성은 [[DQ-프로그램목록/order]] §1 화면(SCR) 표와 1:1 대응한다.
+> 화면 ID·탭 구성은 [DQ-프로그램목록/order.md](../../../DQ-프로그램목록/order.md) §1 화면(SCR) 표와 1:1 대응한다.
 > 구현 소스: `apps/runNshop-admin/src/order/order-history/`(`OrderHistory.tsx`=목록, `OrderDetail.tsx`=컨테이너, `tabs/*.tsx`=각 탭)
 
 공통 작성 규칙·채널별 패턴 요약·근거는 [../../readme.md](../../readme.md)에 있습니다.

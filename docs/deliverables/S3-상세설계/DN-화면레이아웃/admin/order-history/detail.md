@@ -18,7 +18,7 @@
 | 화면 ID | SCR-A-002 (감싸는 화면, 호출 API 없음) |
 | 앱 | admin |
 | 접근 권한 | CS 담당자 (권한 체크 미적용 — 프로토타입) |
-| 관련 세부UC | [[DK-세부유스케이스/order|UC-6 (예외취소), UC-14 (조회)]] |
+| 관련 세부UC | UC-6 (예외취소), UC-14 (조회) ([DK-세부유스케이스/order.md](../../../DK-세부유스케이스/order.md)) |
 | 호출 API | — (탭별 호출 API는 각 탭 문서 참조) |
 
 ### 와이어프레임 — 탭 헤더 + InnerTabs
@@ -61,7 +61,7 @@
 
 ### 유효성 검증
 
-> [[DJ-GWT수용기준/order|GWT §6 CS 예외취소 Bolt]] · 에러코드는 DL 참조 (예외취소는 CS·클레임 탭 소관, [tabs/claim.md](tabs/claim.md) 참조)
+> [DJ-GWT수용기준/order.md](../../../DJ-GWT수용기준/order.md) GWT §6 CS 예외취소 Bolt · 에러코드는 DL 참조 (예외취소는 CS·클레임 탭 소관, [tabs/claim.md](tabs/claim.md) 참조)
 
 ### 상태별 UI
 

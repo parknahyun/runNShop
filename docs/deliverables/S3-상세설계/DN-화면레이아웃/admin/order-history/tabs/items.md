@@ -14,8 +14,8 @@
 | 화면 ID | SCR-A-002-T1 |
 | 앱 | admin |
 | 진입 조건 | [../detail.md](../detail.md)(SCR-A-002) InnerTabs 활성 탭 = "주문상품" (기본값) |
-| 관련 세부UC | [[DK-세부유스케이스/order|UC-14]] |
-| 호출 API | [[DL-인터페이스명세/order|API-023]] (`GET /api/admin/v1/orders/{orderId}`) |
+| 관련 세부UC | UC-14 ([DK-세부유스케이스/order.md](../../../../DK-세부유스케이스/order.md)) |
+| 호출 API | [API-023](../../../../DL-인터페이스명세/order.md#api-023) (`GET /api/admin/v1/orders/{orderId}`) |
 
 ### 와이어프레임
 

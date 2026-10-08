@@ -459,7 +459,8 @@
 
 ---
 
-## 15. GET /api/admin/v1/orders — 주문 검색 (어드민)
+<a id="api-022"></a>
+## 15. GET /api/admin/v1/orders — 주문 검색 (어드민) (API-022)
 
 | 항목 | 내용 |
 |---|---|
@@ -468,6 +469,20 @@
 | 인증 | Admin Bearer (필수) |
 | Query | `?keyword=&status=ALL&from=2026-06-01&to=2026-06-30&page=1&size=10&sort=orderDate&direction=desc` |
 
+> **`status` 값은 `ord_order.status`(원시 DB 상태) 그대로가 아니라, 목록·필터·배지에서 쓰는 "표시 상태"다.** `PREPARING` 구간을 운송장 등록 여부로 다시 나눠 아래처럼 매핑한다. `ord_order.status` 자체는 [[DH-상태머신/order]] §1(10상태)에서 변경 없음 — `PREPARING`은 그대로 유지되고, 운송장 등록은 §3 `ord_shipment.status`가 `PENDING→IN_TRANSIT`로 전이하는 기존 규칙([[DH-상태머신/order]] §3)을 그대로 쓴다.
+>
+> | 표시 status (API) | 원시 ord_order.status | 추가 조건 |
+> |---|---|---|
+> | `ORDER_RECEIVED` | `ORDER_RECEIVED` | — |
+> | `PAYMENT_COMPLETED` | `PAYMENT_COMPLETED` | — |
+> | `PREPARING` | `PREPARING` | shipment(OUTBOUND) 없음 또는 `status=PENDING` (운송장 미등록) |
+> | `IN_DELIVERY` | `PREPARING` | shipment(OUTBOUND).status=`IN_TRANSIT` (**운송장 등록됨**) |
+> | `DELIVERED` | `DELIVERED` | — |
+> | `CONFIRMED` | `CONFIRMED` | — |
+> | `CANCELLED` | `CANCELLED` | — |
+>
+> `status` Query 파라미터도 이 표시값 7종(+`ALL`) 중 하나를 받는다. 서버가 `ord_order`·`ord_shipment`를 조인해 표시 status로 변환 후 필터링한다.
+
 #### Response 200
 
 ```json
@@ -475,22 +490,28 @@
   "code": "SUCCESS",
   "data": {
     "orders": [
-      { "orderId": "ord-001", "platformOrderNo": "ORD-20260626-001", "productName": "나이키 페가수스 41", "customer": "홍*동", "vendorName": "나이키코리아", "status": "PAYMENT_COMPLETED", "amount": 152000, "orderDate": "2026-06-26 09:15" }
+      { "orderId": "ord-001", "platformOrderNo": "ORD-20260626-001", "productName": "나이키 페가수스 41", "customer": "홍*동", "vendorName": "나이키코리아", "status": "PAYMENT_COMPLETED", "amount": 152000, "orderDate": "2026-06-26 09:15" },
+      { "orderId": "ord-003", "platformOrderNo": "ORD-20260625-015", "productName": "호카 클리프턴 9", "customer": "이*미", "vendorName": "호카코리아", "status": "IN_DELIVERY", "amount": 169000, "orderDate": "2026-06-25 14:22" }
     ],
     "pagination": { "page": 1, "size": 10, "totalCount": 12, "totalPages": 2 }
   }
 }
 ```
 
+> `status: "IN_DELIVERY"`(ord-003)는 위 매핑표의 두 번째 행 — `ord_order.status`는 여전히 `PREPARING`이고 연결된 `ord_shipment(OUTBOUND)`가 운송장 등록되어 `IN_TRANSIT`인 경우다.
+
 ---
 
-## 16. GET /api/admin/v1/orders/{orderId} — 주문 상세
+<a id="api-023"></a>
+## 16. GET /api/admin/v1/orders/{orderId} — 주문 상세 (API-023)
 
 | 항목 | 내용 |
 |---|---|
 | Method | GET |
 | Path | /api/admin/v1/orders/{orderId} |
 | 인증 | Admin Bearer (필수) |
+
+> `status`는 §15와 동일한 "표시 상태" 규칙을 따른다 — `trackingNumber`가 등록된 `PREPARING` 주문은 `status: "IN_DELIVERY"`로 반환한다 (원시 `ord_order.status`는 `PREPARING` 유지, 매핑표는 §15 참조).
 
 #### Response 200
 
@@ -513,9 +534,12 @@
 }
 ```
 
+> `trackingNumber`가 비어있으면(미등록) `status`는 `"PREPARING"`, 값이 있으면 `"IN_DELIVERY"`로 반환한다. 위 예시(ord-001)는 아직 미등록 상태라 `PAYMENT_COMPLETED`로 남아있다 — 출고 전이므로 shipment 자체가 아직 없는 사례.
+
 ---
 
-## 17. POST /api/admin/v1/orders/{orderId}/force-cancel — 예외 취소
+<a id="api-024"></a>
+## 17. POST /api/admin/v1/orders/{orderId}/force-cancel — 예외 취소 (API-024)
 
 | 항목 | 내용 |
 |---|---|
@@ -540,7 +564,8 @@
 
 ---
 
-## 18. GET /api/admin/v1/claims — 클레임 목록
+<a id="api-025"></a>
+## 18. GET /api/admin/v1/claims — 클레임 목록 (API-025)
 
 | 항목 | 내용 |
 |---|---|
@@ -585,6 +610,7 @@
 
 ---
 
+<a id="api-026"></a>
 ## 19-1. POST /api/admin/v1/claims/{claimId}/blame-decision — 귀책 판정 (API-026)
 
 | 항목 | 내용 |
@@ -630,7 +656,8 @@
 
 ---
 
-## 20. POST /api/admin/v1/claims/{claimId}/complete — 클레임 완료
+<a id="api-027"></a>
+## 20. POST /api/admin/v1/claims/{claimId}/complete — 클레임 완료 (API-027)
 
 | 항목 | 내용 |
 |---|---|
@@ -652,7 +679,8 @@
 
 ---
 
-## 21. POST /api/admin/v1/claims/{claimId}/reject — 클레임 반려
+<a id="api-028"></a>
+## 21. POST /api/admin/v1/claims/{claimId}/reject — 클레임 반려 (API-028)
 
 | 항목 | 내용 |
 |---|---|
@@ -1044,7 +1072,8 @@
 
 ---
 
-## 33. POST /api/admin/v1/claims/{claimId}/refund — 환불 처리 (수동)
+<a id="api-029"></a>
+## 33. POST /api/admin/v1/claims/{claimId}/refund — 환불 처리 (수동) (API-029)
 
 | 항목 | 내용 |
 |---|---|
@@ -1080,7 +1109,8 @@
 
 ---
 
-## 34. POST /api/admin/v1/claims/{claimId}/dispose — 폐기 처리
+<a id="api-030"></a>
+## 34. POST /api/admin/v1/claims/{claimId}/dispose — 폐기 처리 (API-030)
 
 | 항목 | 내용 |
 |---|---|
@@ -1110,7 +1140,8 @@
 
 ---
 
-## 35. POST /api/admin/v1/claims/{claimId}/request-return-payment — 반송 배송비 추가결제 요청
+<a id="api-031"></a>
+## 35. POST /api/admin/v1/claims/{claimId}/request-return-payment — 반송 배송비 추가결제 요청 (API-031)
 
 | 항목 | 내용 |
 |---|---|
