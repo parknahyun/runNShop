@@ -1,12 +1,14 @@
 'use client'
-import { type Order, ORDER_STATUS_LABEL } from './mockData'
+import { useEffect, useState } from 'react'
+import { type OrderDetailData, type OrderClaim, type OrderInquiry, ORDER_STATUS_LABEL } from './mockData'
 import { InnerTabs } from '@/shell/shared/InnerTabs'
+import { api } from '../../../lib/api'
 import OrderItemsTab from './tabs/OrderItemsTab'
 import PaymentInfoTab from './tabs/PaymentInfoTab'
 import ShippingInfoTab from './tabs/ShippingInfoTab'
 
 interface Props {
-  order: Order
+  orderId: string
   onClose: () => void
 }
 
@@ -14,7 +16,9 @@ interface Props {
 // ClaimTab
 // ---------------------------------------------------------------------------
 
-function ClaimTab({ order }: { order: Order }) {
+const CLAIM_TYPE_LABEL: Record<string, string> = { RETURN: '반품', EXCHANGE: '교환' }
+
+function ClaimTab({ order }: { order: OrderDetailData }) {
   return (
     <div className="tab-panel-content">
       <section className="detail-section" style={{ marginTop: 0 }}>
@@ -31,7 +35,39 @@ function ClaimTab({ order }: { order: Order }) {
       </section>
       <section className="detail-section">
         <h2 className="section-title">클레임 이력</h2>
-        <p style={{ fontSize: 13, color: '#64748b' }}>클레임 이력이 없습니다.</p>
+        {order.claims.length === 0 ? (
+          <p style={{ fontSize: 13, color: '#64748b' }}>클레임 이력이 없습니다.</p>
+        ) : (
+          <div className="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>클레임번호</th>
+                  <th>유형</th>
+                  <th>상태</th>
+                  <th>환불금액</th>
+                  <th>추가배송비</th>
+                  <th>접수일시</th>
+                </tr>
+              </thead>
+              <tbody>
+                {order.claims.map((claim: OrderClaim) => (
+                  <tr key={claim.claimId}>
+                    <td className="link-cell">{claim.claimId}</td>
+                    <td>{CLAIM_TYPE_LABEL[claim.claimType] || claim.claimType}</td>
+                    <td><span className="badge">{claim.status}</span></td>
+                    <td className="amount-cell">{claim.refundAmount.toLocaleString()}원</td>
+                    <td>
+                      {claim.extraShippingFee.toLocaleString()}원{' '}
+                      <span className="badge">{claim.extraShippingFeeStatus === 'PAID' ? '결제완료' : '미결제'}</span>
+                    </td>
+                    <td style={{ fontSize: 12, color: '#64748b' }}>{claim.receivedAt}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </section>
     </div>
   )
@@ -41,29 +77,70 @@ function ClaimTab({ order }: { order: Order }) {
 // ChangeLogTab
 // ---------------------------------------------------------------------------
 
-function ChangeLogTab() {
+function ChangeLogTab({ order }: { order: OrderDetailData }) {
   return (
     <div className="tab-panel-content">
       <section className="detail-section" style={{ marginTop: 0 }}>
         <h2 className="section-title">변경 이력</h2>
-        <div className="timeline-wrap">
-          <div className="timeline">
-            <div className="timeline-item" data-variant="success">
-              <span className="timeline-item__time">06.26 09:15</span>
-              <span className="timeline-item__body">
-                <span className="timeline-item__event">주문 접수</span>
-                <span className="timeline-item__meta">결제 완료</span>
-              </span>
-            </div>
-            <div className="timeline-item">
-              <span className="timeline-item__time">06.26 09:15</span>
-              <span className="timeline-item__body">
-                <span className="timeline-item__event">재고 선점</span>
-                <span className="timeline-item__meta">SKU-001 × 1</span>
-              </span>
+        {order.logs.length === 0 ? (
+          <p style={{ fontSize: 13, color: '#64748b' }}>변경 이력이 없습니다.</p>
+        ) : (
+          <div className="timeline-wrap">
+            <div className="timeline">
+              {order.logs.map((log, i) => (
+                <div key={`${log.at}-${i}`} className="timeline-item" data-variant={i === 0 ? 'success' : undefined}>
+                  <span className="timeline-item__time">{log.at}</span>
+                  <span className="timeline-item__body">
+                    <span className="timeline-item__event">{log.event}</span>
+                    <span className="timeline-item__meta">{log.detail}</span>
+                  </span>
+                </div>
+              ))}
             </div>
           </div>
-        </div>
+        )}
+      </section>
+    </div>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// InquiryTab
+// ---------------------------------------------------------------------------
+
+function InquiryTab({ order }: { order: OrderDetailData }) {
+  return (
+    <div className="tab-panel-content">
+      <section className="detail-section" style={{ marginTop: 0 }}>
+        <h2 className="section-title">주문문의</h2>
+        {order.inquiries.length === 0 ? (
+          <p style={{ fontSize: 13, color: '#64748b' }}>주문문의 이력이 없습니다.</p>
+        ) : (
+          <div className="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>문의번호</th>
+                  <th>유형</th>
+                  <th>상태</th>
+                  <th>작성자</th>
+                  <th>등록일시</th>
+                </tr>
+              </thead>
+              <tbody>
+                {order.inquiries.map((inquiry: OrderInquiry) => (
+                  <tr key={inquiry.inquiryId}>
+                    <td className="link-cell">{inquiry.inquiryId}</td>
+                    <td>{inquiry.type}</td>
+                    <td><span className="badge">{inquiry.status}</span></td>
+                    <td>{inquiry.writer}</td>
+                    <td style={{ fontSize: 12, color: '#64748b' }}>{inquiry.createdAt}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </section>
     </div>
   )
@@ -73,7 +150,25 @@ function ChangeLogTab() {
 // OrderDetail (탭 콘텐츠 방식)
 // ---------------------------------------------------------------------------
 
-export default function OrderDetail({ order, onClose }: Props) {
+export default function OrderDetail({ orderId, onClose }: Props) {
+  const [order, setOrder] = useState<OrderDetailData | null>(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    setLoading(true)
+    api<OrderDetailData>(`/orders/${orderId}`)
+      .then((res) => setOrder(res))
+      .finally(() => setLoading(false))
+  }, [orderId])
+
+  if (loading || !order) {
+    return (
+      <div className="page">
+        <p className="state-msg">불러오는 중...</p>
+      </div>
+    )
+  }
+
   return (
     <div className="page">
       <div className="page-title-row">
@@ -91,7 +186,8 @@ export default function OrderDetail({ order, onClose }: Props) {
           { key: 'payment', label: '결제정보', content: <PaymentInfoTab order={order} /> },
           { key: 'shipping', label: '배송정보', content: <ShippingInfoTab order={order} /> },
           { key: 'claim', label: 'CS·클레임', content: <ClaimTab order={order} /> },
-          { key: 'log', label: '변경이력', content: <ChangeLogTab /> },
+          { key: 'inquiry', label: '주문문의', content: <InquiryTab order={order} /> },
+          { key: 'log', label: '변경이력', content: <ChangeLogTab order={order} /> },
         ]} />
       </div>
     </div>

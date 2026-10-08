@@ -3,10 +3,39 @@ import { useState } from 'react'
 import { Pagination } from '@/shell/shared/Pagination'
 import OrderDetail from './OrderDetail'
 import { useTabContext } from '@/shell/TabContext'
+import { api } from '../../../lib/api'
 import {
   type Order, type OrderStatus, type OrderFilter,
-  ORDER_STATUS_LABEL, MOCK_ORDERS, filterOrders,
+  ORDER_STATUS_LABEL,
 } from './mockData'
+
+// ---------------------------------------------------------------------------
+// 서버 응답 타입
+// ---------------------------------------------------------------------------
+
+interface OrderSummary {
+  all: number
+  orderReceived: number
+  paymentCompleted: number
+  preparing: number
+  inDelivery: number
+  delivered: number
+  confirmed: number
+  cancelled: number
+}
+
+interface OrderPagination {
+  page: number
+  size: number
+  totalCount: number
+  totalPages: number
+}
+
+interface OrderListResponse {
+  orders: Order[]
+  summary: OrderSummary
+  pagination: OrderPagination
+}
 
 // ---------------------------------------------------------------------------
 // FilterBar
@@ -45,43 +74,40 @@ function FilterBar({ filter, onChange, onSearch }: {
 // SummaryBar
 // ---------------------------------------------------------------------------
 
-function SummaryBar({ orders }: { orders: Order[] }) {
-  const paymentCompleted = orders.filter(o => o.status === 'PAYMENT_COMPLETED').length
-  const preparing = orders.filter(o => o.status === 'PREPARING').length
-  const inDelivery = orders.filter(o => o.status === 'IN_DELIVERY').length
-  const delivered = orders.filter(o => o.status === 'DELIVERED').length
-  const confirmed = orders.filter(o => o.status === 'CONFIRMED').length
-  const cancelled = orders.filter(o => o.status === 'CANCELLED').length
-
+function SummaryBar({ summary }: { summary: OrderSummary }) {
   return (
     <div className="summary-bar">
       <div className="summary-card">
         <div className="summary-card__label">전체</div>
-        <div className="summary-card__count">{orders.length}건</div>
+        <div className="summary-card__count">{summary.all}건</div>
+      </div>
+      <div className="summary-card">
+        <div className="summary-card__label">접수</div>
+        <div className="summary-card__count">{summary.orderReceived}건</div>
       </div>
       <div className="summary-card">
         <div className="summary-card__label">결제완료</div>
-        <div className="summary-card__count">{paymentCompleted}건</div>
+        <div className="summary-card__count">{summary.paymentCompleted}건</div>
       </div>
       <div className="summary-card">
         <div className="summary-card__label">준비중</div>
-        <div className="summary-card__count">{preparing}건</div>
+        <div className="summary-card__count">{summary.preparing}건</div>
       </div>
       <div className="summary-card summary-card--info">
         <div className="summary-card__label">배송중</div>
-        <div className="summary-card__count">{inDelivery}건</div>
+        <div className="summary-card__count">{summary.inDelivery}건</div>
       </div>
       <div className="summary-card">
         <div className="summary-card__label">배송완료</div>
-        <div className="summary-card__count">{delivered}건</div>
+        <div className="summary-card__count">{summary.delivered}건</div>
       </div>
       <div className="summary-card">
         <div className="summary-card__label">구매확정</div>
-        <div className="summary-card__count">{confirmed}건</div>
+        <div className="summary-card__count">{summary.confirmed}건</div>
       </div>
       <div className="summary-card summary-card--warn">
         <div className="summary-card__label">취소</div>
-        <div className="summary-card__count">{cancelled}건</div>
+        <div className="summary-card__count">{summary.cancelled}건</div>
       </div>
     </div>
   )
@@ -151,30 +177,46 @@ function OrderTable({ orders, onRowClick }: {
 export default function OrderHistory() {
   const { openTab } = useTabContext()
   const [filter, setFilter] = useState<OrderFilter>({ keyword: '', status: 'ALL', from: '', to: '' })
-  const [displayed, setDisplayed] = useState<Order[]>([])
+  const [orders, setOrders] = useState<Order[]>([])
+  const [summary, setSummary] = useState<OrderSummary | null>(null)
+  const [pagination, setPagination] = useState<OrderPagination | null>(null)
   const [loading, setLoading] = useState(false)
   const [searched, setSearched] = useState(false)
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
 
-  const totalPages = Math.max(1, Math.ceil(displayed.length / pageSize))
-  const pageItems = displayed.slice((page - 1) * pageSize, page * pageSize)
+  async function fetchOrders(filterToUse: OrderFilter, pageToUse: number, pageSizeToUse: number) {
+    setLoading(true)
+    const qs = new URLSearchParams({
+      keyword: filterToUse.keyword,
+      status: filterToUse.status,
+      from: filterToUse.from,
+      to: filterToUse.to,
+      page: String(pageToUse),
+      size: String(pageSizeToUse),
+    })
+    try {
+      const res = await api<OrderListResponse>(`/orders?${qs}`)
+      setOrders(res.orders)
+      setSummary(res.summary)
+      setPagination(res.pagination)
+      setPage(pageToUse)
+      setPageSize(pageSizeToUse)
+      setSearched(true)
+    } finally {
+      setLoading(false)
+    }
+  }
 
   function handleSearch() {
-    setLoading(true)
-    setTimeout(() => {
-      setDisplayed(filterOrders(MOCK_ORDERS, filter))
-      setPage(1)
-      setSearched(true)
-      setLoading(false)
-    }, 300)
+    fetchOrders(filter, 1, pageSize)
   }
 
   function handleOpenDetail(order: Order) {
     openTab({
       id: `order-detail/${order.orderId}`,
       label: `주문 ${order.platformOrderNo}`,
-      element: <OrderDetail order={order} onClose={() => {}} />,
+      element: <OrderDetail orderId={order.orderId} onClose={() => {}} />,
     })
   }
 
@@ -189,15 +231,15 @@ export default function OrderHistory() {
       {!loading && (
         <>
           <div className="op-summary-row">
-            {displayed.length > 0 && <SummaryBar orders={displayed} />}
+            {summary && <SummaryBar summary={summary} />}
             <Toolbar />
           </div>
-          {displayed.length > 0 ? (
+          {orders.length > 0 && pagination ? (
             <>
-              <OrderTable orders={pageItems} onRowClick={handleOpenDetail} />
-              <Pagination page={page} totalPages={totalPages} pageSize={pageSize}
-                onPageChange={setPage}
-                onPageSizeChange={(s) => { setPageSize(s); setPage(1) }} />
+              <OrderTable orders={orders} onRowClick={handleOpenDetail} />
+              <Pagination page={pagination.page} totalPages={pagination.totalPages} pageSize={pagination.size}
+                onPageChange={(p) => fetchOrders(filter, p, pageSize)}
+                onPageSizeChange={(s) => fetchOrders(filter, 1, s)} />
             </>
           ) : (
             <div className="table-wrap">

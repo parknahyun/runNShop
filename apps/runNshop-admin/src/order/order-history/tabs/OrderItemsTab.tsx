@@ -1,7 +1,7 @@
 'use client'
-import { type Order, ORDER_STATUS_LABEL } from '../mockData'
+import { type OrderDetailData, ORDER_STATUS_LABEL } from '../mockData'
 
-export default function OrderItemsTab({ order }: { order: Order }) {
+export default function OrderItemsTab({ order }: { order: OrderDetailData }) {
   return (
     <div className="tab-panel-content">
       <div className="order-meta">
@@ -20,13 +20,15 @@ export default function OrderItemsTab({ order }: { order: Order }) {
             </tr>
           </thead>
           <tbody>
-            <tr>
-              <td>{order.productName}</td>
-              <td>블랙 / 265</td>
-              <td>1</td>
-              <td className="amount-cell">{order.amount.toLocaleString()}원</td>
-              <td className="amount-cell">{order.amount.toLocaleString()}원</td>
-            </tr>
+            {order.items.map((item, i) => (
+              <tr key={`${item.productName}-${item.optionName}-${i}`}>
+                <td>{item.productName}</td>
+                <td>{item.optionName}</td>
+                <td>{item.quantity}</td>
+                <td className="amount-cell">{item.unitPrice.toLocaleString()}원</td>
+                <td className="amount-cell">{item.subtotal.toLocaleString()}원</td>
+              </tr>
+            ))}
           </tbody>
         </table>
       </div>
