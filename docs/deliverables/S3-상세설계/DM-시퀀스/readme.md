@@ -16,11 +16,13 @@
 
 ## 공통 규칙 (C3 아키텍처컨벤션 / C5 이벤트설계컨벤션 준수)
 
-### 1. Controller 네이밍 (C3 §4.2)
+### 1. Controller 분리 기준 (C3 §4.2)
 
-> 모든 시퀀스의 Controller participant는 **앱별로 분리된 이름**을 사용한다 (Service는 공유).
-> `{App}{Domain}Controller` 형식 — 예: `CustomerOrderController`(고객웹), `AdminOrderController`(어드민), `PartnerOrderController`(입점사).
-> 이하 다이어그램의 `CustomerCartController`, `CustomerOrderController`, `CustomerClaimController`, `CustomerClaimPaymentController`, `PartnerOrderController`, `PartnerShippingController`, `PartnerClaimController`, `AdminOrderController`, `AdminClaimController`가 이 규칙을 따른다.
+> Controller 분리 단위는 서브도메인·업무 특성에 따라 매번 판단한다 (판단 기준은 `.kiro/steering/api-design-rules.md` 참조 — 보편 규칙으로 고정하지 않음).
+>
+> **Order 도메인에 대한 확정 결과** (2026-10): `order/` 서브도메인은 앱별 응답/권한 차이가 있음에도 Service가 이미 공유 구조이고 메서드 분기로 충분히 명확해, **단일 `OrderController`**로 통합한다 — `getMyOrders()`(`/api/v1/members/me/orders`), `getMyOrderDetail()`(`/api/v1/members/me/orders/{orderId}`), `createOrderSheet()`/`getOrderSheet()`(`/api/v1/orders/sheet`), `getAdminOrders()`(`/api/admin/v1/orders`), `getAdminOrderDetail()`(`/api/admin/v1/orders/{orderId}`), `getPartnerOrders()`(`/api/partner/v1/orders`), `getPartnerOrderDetail()`(`/api/partner/v1/orders/{orderId}`). `claim/` 서브도메인(`getMyClaims`/`getMyClaimDetail` 포함)은 별도 `ClaimController`로 둔다. 이 결정은 Order 서브도메인에 한정되며, 다른 서브도메인(`cart/`, `shipping/`, 또는 Payment 등 타 도메인)에 자동 적용되지 않는다 — 각 담당자가 그때그때 판단한다.
+>
+> 과거(v1/v2) 버전에서 쓰던 `{App}{Domain}Controller`(`AdminOrderController`, `PartnerOrderController`, `CustomerClaimController`, `AdminClaimController` 등) 네이밍은 Order에서는 폐기됐다 — 아래 다이어그램에 남아있는 해당 이름은 위 통합 Controller의 메서드로 환산해 읽는다. 다른 도메인/서브도메인에서 이 네이밍을 쓰는 것 자체가 틀린 것은 아니다.
 
 ### 2. EventPublisher = Outbox 패턴 표현 (C5 §5.1)
 

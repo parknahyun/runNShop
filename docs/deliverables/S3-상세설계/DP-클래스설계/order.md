@@ -25,9 +25,7 @@ com.runnshop.order/
 │       └── CartResponse.kt
 ├── order/
 │   ├── controller/
-│   │   ├── OrderController.kt
-│   │   ├── AdminOrderController.kt
-│   │   └── PartnerOrderController.kt
+│   │   └── OrderController.kt        (v3: 앱별 Controller 통합 — getMyOrders/getAdminOrders/getPartnerOrders/createOrderSheet 등 메서드로 구분, DM-시퀀스/readme.md §1 v3 참조)
 │   ├── service/
 │   │   ├── OrderService.kt
 │   │   └── OrderSheetService.kt
@@ -61,9 +59,7 @@ com.runnshop.order/
 │       └── ShipmentResponse.kt
 ├── claim/
 │   ├── controller/
-│   │   ├── ClaimController.kt
-│   │   ├── AdminClaimController.kt
-│   │   └── PartnerClaimController.kt
+│   │   └── ClaimController.kt        (v3: 앱별 Controller 통합 — getMyClaims/getAdminClaims/getPartnerClaims 등 메서드로 구분, DM-시퀀스/readme.md §1 v3 참조)
 │   ├── service/
 │   │   └── ClaimService.kt
 │   ├── repository/

@@ -1,0 +1,7 @@
+{
+  "task_id": "task-order-domain-api-migration",
+  "task_description": "Order 도메인 목록/상세 화면(admin/partner/mobile)을 하드코딩 mock 배열에서 실제 백엔드 API 호출(FE → lib/api.ts → Controller → OrderService → MockLoader → mock JSON)로 전환. 조회 트리거(필터조회/페이지변경/페이지크기변경)는 전부 서버 재요청, 목록→상세는 orderId만 전달, FE 필드는 camelCase로 통일(단 admin customer / partner customerName은 DL 스펙대로 유지), partner mockData.ts의 snake_case를 camelCase로 교정.",
+  "status": "completed",
+  "feature_order": ["FEAT-001", "FEAT-002", "FEAT-003", "FEAT-004"],
+  "blocked_reason": null
+}
