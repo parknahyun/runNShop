@@ -1,11 +1,12 @@
 'use client'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { type Order, ORDER_STATUS_LABEL } from './mockData'
 import { InnerTabs } from '@/shell/shared/InnerTabs'
 import { DetailShell, type DetailMode } from '@/shell/shared/DetailShell'
+import { api } from '../../../lib/api'
 
 interface Props {
-  order: Order
+  orderId: string
   mode?: DetailMode
   onClose?: () => void
   onUpdate: (updated: Order) => void
@@ -23,10 +24,27 @@ function nowStr() {
   return `${d.getFullYear()}.${pad(d.getMonth() + 1)}.${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`
 }
 
-export default function OrderDetail({ order: initialOrder, mode = 'modal', onClose, onUpdate, readOnly = false }: Props) {
-  const [order, setOrder] = useState<Order>(initialOrder)
+export default function OrderDetail({ orderId, mode = 'modal', onClose, onUpdate, readOnly = false }: Props) {
+  const [order, setOrder] = useState<Order | null>(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    setLoading(true)
+    api<Order>(`/orders/${orderId}`)
+      .then((res) => setOrder(res))
+      .finally(() => setLoading(false))
+  }, [orderId])
+
+  if (loading || !order) {
+    return (
+      <DetailShell mode={mode} title="주문 상세" onClose={onClose}>
+        <p className="state-msg">불러오는 중...</p>
+      </DetailShell>
+    )
+  }
 
   function handleShip() {
+    if (!order) return
     if (!window.confirm('출고 처리하시겠습니까?')) return
     const updated: Order = {
       ...order,
@@ -38,12 +56,12 @@ export default function OrderDetail({ order: initialOrder, mode = 'modal', onClo
   }
 
   return (
-    <DetailShell mode={mode} title={order.platform_order_no}
+    <DetailShell mode={mode} title={order.platformOrderNo}
       meta={
         <>
-          <span style={{ fontSize: 12, color: '#94a3b8' }}>#{order.order_id}</span>
+          <span style={{ fontSize: 12, color: '#94a3b8' }}>#{order.orderId}</span>
           <OrderStatusBadge status={order.status} />
-          <span style={{ fontSize: 12, color: '#64748b' }}>{order.customer_name}</span>
+          <span style={{ fontSize: 12, color: '#64748b' }}>{order.customerName}</span>
           <span style={{ fontSize: 12, color: '#1e293b', fontWeight: 600 }}>{order.amount.toLocaleString()}원</span>
         </>
       }
@@ -74,16 +92,16 @@ function OrderInfoTab({ order }: { order: Order }) {
         <h2 className="section-title">주문 정보</h2>
         <div className="info-grid">
           <dl className="info-dl">
-            <div className="info-row"><dt>주문ID</dt><dd>{order.order_id}</dd></div>
-            <div className="info-row"><dt>플랫폼 주문번호</dt><dd>{order.platform_order_no}</dd></div>
-            <div className="info-row"><dt>상품명</dt><dd>{order.product_name}</dd></div>
-            <div className="info-row"><dt>고객명</dt><dd>{order.customer_name}</dd></div>
+            <div className="info-row"><dt>주문ID</dt><dd>{order.orderId}</dd></div>
+            <div className="info-row"><dt>플랫폼 주문번호</dt><dd>{order.platformOrderNo}</dd></div>
+            <div className="info-row"><dt>상품명</dt><dd>{order.productName}</dd></div>
+            <div className="info-row"><dt>고객명</dt><dd>{order.customerName}</dd></div>
           </dl>
           <dl className="info-dl">
             <div className="info-row"><dt>수량</dt><dd>{order.quantity}개</dd></div>
             <div className="info-row"><dt>금액</dt><dd style={{ fontWeight: 600 }}>{order.amount.toLocaleString()}원</dd></div>
             <div className="info-row"><dt>상태</dt><dd><OrderStatusBadge status={order.status} /></dd></div>
-            <div className="info-row"><dt>주문일자</dt><dd>{order.order_date}</dd></div>
+            <div className="info-row"><dt>주문일자</dt><dd>{order.orderDate}</dd></div>
           </dl>
         </div>
       </section>

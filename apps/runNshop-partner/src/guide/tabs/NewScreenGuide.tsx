@@ -33,7 +33,7 @@ export default function NewScreenGuide() {
       {/* 2. mockData.ts 작성 규칙 */}
       <h3 className="section-title" style={{ fontSize: 14, marginBottom: 8 }}>2. mockData.ts 작성 규칙</h3>
       <ul style={{ fontSize: 13, color: '#374151', lineHeight: 1.9, paddingLeft: 20, marginBottom: 20 }}>
-        <li>필드명은 <strong>snake_case</strong>를 쓴다 (admin은 camelCase — 앱 간 확립된 차이점)</li>
+        <li>필드명은 <strong>camelCase</strong>를 쓴다 (admin과 동일 — DL-인터페이스명세의 API 응답이 camelCase이므로 partner도 camelCase로 통일됨)</li>
         <li>상태 타입: <code>export type &lt;Domain&gt;Status = &apos;A&apos; | &apos;B&apos; | ...</code></li>
         <li>엔티티: <code>export interface &lt;Domain&gt; {'{ <domain>_id, ..., created_at, updated_at }'}</code></li>
         <li>라벨 맵: <code>export const &lt;DOMAIN&gt;_STATUS_LABEL: Record&lt;Status, string&gt;</code></li>
