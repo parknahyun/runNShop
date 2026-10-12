@@ -1,137 +1,202 @@
-# Implementation Plan — Order 도메인 Mock→API 전환
+# Implementation Plan — API URL / Mock 파일 네이밍 전사 리팩터
 
-> 이 작업은 FEAT 아티팩트(task.json, context.json, features/FEAT-00{1..4}.json, 같은 디렉터리)로도 분해되어
-> 있다. 워크플로우가 FEAT 기반 코더 루프로 교체되면 이 plan.md는 참고용이며, 교체되지 않으면 이 체크리스트를
-> 그대로 순서대로 수행한다. 각 항목의 상세 근거/와이어프레임 참조는 FEAT JSON의 `steps`에 더 촘촘히 적혀 있다.
+> 이 작업은 FEAT 아티팩트(task.json, context.json, features/FEAT-00{1,2}.json, 같은 디렉터리)로
+> 분해되어 있다. 워크플로우가 FEAT 기반 코더 루프로 교체되면 이 plan.md는 참고용이며, 교체되지
+> 않으면 이 체크리스트를 그대로 순서대로 수행한다.
+>
+> **범위**: naming/path-only. 비즈니스 로직, 응답 바디 스키마, Controller/Service 클래스 구조,
+> Mock JSON 데이터 내용은 변경하지 않는다. admin/partner URL은 변경하지 않는다(mock 폴더 이동만).
 
-## 0. 사전 확인 (완료, 기록용)
-- 1차 근거: `docs/deliverables/S3-상세설계/DL-인터페이스명세/order.md` §11/§15/§16/§22/§23/§30, `DP-클래스설계/order.md`(OrderService 메서드 네이밍), `DN-화면레이아웃/admin/order-history/*.md`, `partner.md` §13, `mobile.md` §8/§8-1.
-- 레이어 경계(사용자 확정): Controller(요청/응답만) → `com.runnshop.order.service.OrderService`(단일 클래스, 메서드로 앱별 분리: `getMyOrders`/`getAdminOrders`/`getPartnerOrders` + detail 메서드, 필터/정렬/페이징/집계 전부 이 안에서 수행, MockLoader 주입) → `MockLoader`(JSON 로딩, 변경 없음). `AdminOrderService`/`PartnerOrderService`처럼 앱별로 Service를 쪼개지 않는다.
-- Mock 파일 위치/네이밍(mock-data-rules.md)은 변경하지 않는다.
-- FE 필드는 전체 camelCase로 통일하되, DL 스펙상 의미가 다른 필드(admin `customer` vs partner `customerName`)는 통일하지 않고 각 DL 그대로 유지한다.
-- 목록→상세는 orderId만 전달, 상세 컴포넌트가 자체적으로 상세 API를 호출한다.
+## 사전 조사 결과 (grep 검증, plan 작성 시점 기준)
 
-## 1. 백엔드 — OrderService 레이어 추가 + Controller 리팩터링/신규 (체크포인트: `./gradlew build -x test`)
+- `/api/v1/` 매칭 소스 파일(스캐폴딩/참고자료 제외): 백엔드 Controller 9개 파일, FE
+  `apps/runNshop-mobile` 10개 `page.tsx`, `.kiro/KIRO_START.md`, DL-인터페이스명세
+  `order.md`/`payment.md`/`readme.md`. `apps/mobile_c`, `apps/admin_c`는 이전 태스크
+  context.json에 "관련없는 스캐폴딩, 건드리지 않음"으로 명시된 중복 디렉터리이므로 제외.
+  `apps/runNshop-admin/src/system/program-status/mockData.ts`의 `/api/v1/settlement`는 모니터링
+  화면의 샘플 로그 데이터(실제 라우트 아님) — 수정 대상 아님.
+- **불일치 발견**: 스펙 E항목은 "catalog/promotion/member 등 다른 도메인 DL 문서가 있으면 동일 규칙
+  적용"이라고 했으나, `docs/deliverables/S3-상세설계/DL-인터페이스명세/`에는 `order.md`,
+  `payment.md`, `readme.md` 3개만 존재한다(catalog/promotion/member 전용 DL 문서 없음). 즉
+  catalog/promotion/member의 `/api/v1/...` Path는 `order.md`/`payment.md`에는 등장하지 않고
+  코드(Controller)에만 존재하므로 C항목(코드)만 적용하고 E항목에서 추가로 찾을 문서는 없다.
+- Mock 파일 수 확인: `mock/admin/`(6) + `mock/partner/`(8) + `mock/v1/`(11) = 25개, 스펙 B항목
+  리스트와 1:1 정확히 일치.
+- `OrderController.kt`의 `POST /api/v1/orders/sheet`와 `GET /api/v1/orders/sheet`는 현재도 동일한
+  mock 파일(`order__POST_orders_sheet.json`)을 로드한다(기존 동작) — 이 불일치는 그대로 보존하고
+  파일명/경로만 이동한다(`mobile__POST_my_orders_sheet.json`로 양쪽 다 로드).
 
-- [ ] 1.1 `api/runNshop-api/src/main/kotlin/com/runnshop/order/service/OrderService.kt` 신규 생성.
-      `@Service` 클래스, 생성자로 `MockLoader` 주입. 메서드: `getAdminOrders(filter: AdminOrderFilter)`,
-      `getAdminOrderDetail(orderId: String)`, `getPartnerOrders(vendorId: String, filter: PartnerOrderFilter)`,
-      `getPartnerOrderDetail(orderId: String)`, `getMyOrders(memberId, page, size, status)`(최소 구현),
-      `getMyOrderDetail(orderId: String)`. 필터 data class(`AdminOrderFilter`, `PartnerOrderFilter`)는 같은
-      파일 또는 `com.runnshop.order.dto`에 둔다.
-      `getAdminOrders`: `mockLoader.load("admin","order__GET_admin_v1_orders.json")`의 `data.orders`를
-      keyword(platformOrderNo/productName/customer 부분일치)→status(ALL이면 통과)→from~to(orderDate
-      앞 10자 비교) 순으로 필터링, size 단위로 page 슬라이싱. summary는 keyword/from/to만 적용한(status 필터
-      적용 전) 결과 기준 상태별 집계. pagination은 {page,size,totalCount,totalPages} 재계산.
-      `getPartnerOrders`: `mockLoader.load("partner","order__GET_partner_v1_orders.json")`에 동일 패턴 적용
-      (summary는 DL §22에 없으므로 만들지 않음). `get*OrderDetail`: 기존 상세 mock을 그대로 반환(orderId
-      매칭은 필수 아님, 지시사항).
+## 1. 백엔드 — Mock 파일 이동 + Controller/Service URL·mockLoader 인자 변경 (체크포인트: `./gradlew build -x test`)
+
+- [ ] 1.1 Mock 파일 25건을 `git mv`로 `mock/{channel}/...` → `mock/{domain}/{channel}__...` 이동
+      (아래 B 매핑 표 전체). 이동 후 `mock/admin/`, `mock/partner/`, `mock/v1/`(과 `.gitkeep`) 디렉터리를
+      git에서 완전히 제거한다.
+      Files: `api/runNshop-api/src/main/resources/mock/**`
+      Verify: `find api/runNshop-api/src/main/resources/mock -type d` 결과에 `admin`/`partner`/`v1`이
+      없고 `order/catalog/config/vendor/member/promotion` 6개 폴더만 보임.
+
+- [ ] 1.2 `OrderController.kt`: `/api/v1/orders/sheet`(POST/GET) → `/api/mobile/v1/my/orders/sheet`,
+      `/api/v1/members/me/orders` → `/api/mobile/v1/my/orders`. mockLoader.load() 2개 호출의 첫 번째
+      인자를 "v1"→"order", 파일명을 "mobile__POST_my_orders_sheet.json"/"mobile__GET_my_orders.json"로
+      변경. `/api/admin/v1/orders`, `/api/partner/v1/orders` 관련 URL은 변경하지 않음(이미 OrderService
+      경유라 mockLoader 직접 호출 없음).
+      Files: `api/runNshop-api/src/main/kotlin/com/runnshop/order/controller/OrderController.kt`
+
+- [ ] 1.3 `OrderService.kt`: 6개 `mockLoader.load()` 호출의 두 인자를 각각 변경
+      (`admin`→`order`/`admin__GET_orders.json`, `admin`→`order`/`admin__GET_orders_{order_id}.json`,
+      `partner`→`order`/`partner__GET_orders.json`, `partner`→`order`/`partner__GET_orders_{order_id}.json`,
+      `v1`→`order`/`mobile__GET_my_orders.json`, `v1`→`order`/`mobile__GET_my_orders_{order_id}.json`).
+      URL 변경 없음(이 파일엔 URL이 없음).
       Files: `api/runNshop-api/src/main/kotlin/com/runnshop/order/service/OrderService.kt`
-      Verify: `cd api/runNshop-api && ./gradlew build -x test` → BUILD SUCCESSFUL.
 
-- [ ] 1.2 `AdminOrderController.kt` 수정: 생성자 주입을 `MockLoader`→`OrderService`로 교체,
-      `searchOrders`/`getOrderDetail`이 Service 메서드만 호출하고 가공 로직 없음.
-      Files: `api/runNshop-api/src/main/kotlin/com/runnshop/order/controller/AdminOrderController.kt`
-      Verify: 위와 동일 build.
+- [ ] 1.4 `ClaimController.kt`: `/api/v1/members/me/claims`(+`/{claimId}`) → `/api/mobile/v1/my/claims`
+      (+`/{claimId}`). mockLoader 인자를 "v1"→"order", 파일명을 "mobile__GET_my_claims.json" /
+      "mobile__GET_my_claims_{claim_id}.json"로 변경.
+      Files: `api/runNshop-api/src/main/kotlin/com/runnshop/order/controller/ClaimController.kt`
 
-- [ ] 1.3 `PartnerOrderController.kt` 신규 생성 (`@RequestMapping("/api/partner/v1/orders")`,
-      `OrderService` 주입, GET 목록(쿼리 status/from/to/keyword/page/size) + GET /{orderId}).
-      API-024(`/ship`)는 범위 밖, 추가하지 않음.
-      Files: `api/runNshop-api/src/main/kotlin/com/runnshop/order/controller/PartnerOrderController.kt`
-      Verify: build.
+- [ ] 1.5 `CustomerCartController.kt`: `/api/v1/cart` → `/api/mobile/v1/my/cart`. mockLoader 인자를
+      "v1"→"order", 파일명을 "mobile__GET_my_cart.json"로 변경.
+      Files: `api/runNshop-api/src/main/kotlin/com/runnshop/order/controller/CustomerCartController.kt`
 
-- [ ] 1.4 `CustomerOrderController.kt`에 `GET /api/v1/members/me/orders/{orderId}` 추가 (OrderService 경유).
-      기존 메서드는 변경하지 않음.
-      Files: `api/runNshop-api/src/main/kotlin/com/runnshop/order/controller/CustomerOrderController.kt`
-      Verify: build.
+- [ ] 1.6 `CustomerProductController.kt`(공용 리소스, `/my` 아님): `/api/v1/products/{productId}` →
+      `/api/mobile/v1/products/{productId}`. mockLoader 인자를 "v1"→"catalog", 파일명을
+      "mobile__GET_products_{product_id}.json"로 변경.
+      Files: `api/runNshop-api/src/main/kotlin/com/runnshop/catalog/controller/CustomerProductController.kt`
 
-- [ ] 1.5 Mock JSON 신규 생성 3건 (기존 admin JSON은 그대로 유지, 수정 안 함):
-      `mock/partner/order__GET_partner_v1_orders.json`(DL §22 스키마, 8~10건, 7종 status),
-      `mock/partner/order__GET_partner_v1_orders_{order_id}.json`(DL §23 스키마),
-      `mock/v1/order__GET_members_me_orders_{order_id}.json`(mobile.md §8-1 필드: orderId,
-      platformOrderNo, status, orderDate, items[](vendorName 그룹핑→products[]), payment{...},
-      shipping{...}, history[](at,event)).
-      Files: 위 3개 경로(`api/runNshop-api/src/main/resources/mock/partner/...`,
-      `api/runNshop-api/src/main/resources/mock/v1/...`)
-      Verify: `./gradlew build -x test` 성공 + 아래 1.6 curl로 내용 확인.
+- [ ] 1.7 `CustomerDisplayController.kt`(공용): `/api/v1/display/pages/home` →
+      `/api/mobile/v1/display/pages/home`. mockLoader 인자를 "v1"→"catalog", 파일명을
+      "mobile__GET_display_pages_home.json"로 변경.
+      Files: `api/runNshop-api/src/main/kotlin/com/runnshop/catalog/controller/CustomerDisplayController.kt`
 
-- [ ] 1.6 런타임 검증 (체크포인트): 서버 기동(`./gradlew bootRun`, 포트 8080) 후
-      `curl 'localhost:8080/api/admin/v1/orders?status=CANCELLED'`,
-      `curl 'localhost:8080/api/admin/v1/orders?page=2&size=3'`,
-      `curl 'localhost:8080/api/admin/v1/orders/ord-001'`,
-      `curl 'localhost:8080/api/partner/v1/orders?status=PREPARING'` vs 무필터,
-      `curl 'localhost:8080/api/partner/v1/orders/ord-001'`,
-      `curl 'localhost:8080/api/v1/members/me/orders/ord-001'`
-      으로 쿼리별 응답이 실제로 달라지는지 확인 후 서버 종료.
-      Verify: 각 curl이 `code":"SUCCESS"` + 쿼리에 따라 다른 `orders`/`pagination` 반환.
+- [ ] 1.8 `PartnerProductController.kt`: URL(`/api/partner/v1/products`) 변경 없음. mockLoader 인자만
+      "partner"→"catalog", 파일명을 "partner__GET_products.json"로 변경.
+      Files: `api/runNshop-api/src/main/kotlin/com/runnshop/catalog/controller/PartnerProductController.kt`
 
-## 2. admin FE (`apps/runNshop-admin/src/order/order-history/`)
+- [ ] 1.9 `CustomerMemberController.kt`(본인 소유): `/api/v1/members/me/summary` →
+      `/api/mobile/v1/my/summary`. mockLoader 인자를 "v1"→"member", 파일명을
+      "mobile__GET_my_summary.json"로 변경.
+      Files: `api/runNshop-api/src/main/kotlin/com/runnshop/member/controller/CustomerMemberController.kt`
 
-- [ ] 2.1 `mockData.ts`: `OrderStatus`에 `ORDER_RECEIVED` 추가(+라벨 '접수'), `MOCK_ORDERS`/`filterOrders()`
-      삭제. 타입(`Order`,`OrderFilter`)과 `ORDER_STATUS_LABEL`만 남김. 파일명 유지.
-      Files: `apps/runNshop-admin/src/order/order-history/mockData.ts`
+- [ ] 1.10 `CustomerExhibitionController.kt`(공용, `/my` 아님): `/api/v1/exhibitions` →
+      `/api/mobile/v1/exhibitions`, `/api/v1/display/pages/exhibition/{exhibitionCode}` →
+      `/api/mobile/v1/display/pages/exhibition/{exhibitionCode}`. mockLoader 인자를 "v1"→"promotion",
+      파일명을 "mobile__GET_exhibitions.json" / "mobile__GET_display_pages_exhibition_{exhibition_code}.json"로.
+      Files: `api/runNshop-api/src/main/kotlin/com/runnshop/promotion/controller/CustomerExhibitionController.kt`
 
-- [ ] 2.2 `OrderHistory.tsx`: `MOCK_ORDERS`/`filterOrders` 제거, `lib/api.ts`의 `api()`로 교체. 필터조회/
-      페이지변경/페이지크기변경 3곳 모두 `fetchOrders(filter,page,size)`→`api('/orders?'+qs)` 호출. `summary`,
-      `pagination`은 서버 응답을 그대로 state에 반영(클라 재계산 제거). `SummaryBar`는 `orders` 대신 `summary`
-      객체를 받도록 변경. 행 클릭 시 `OrderDetail`에 `orderId`만 전달.
-      Files: `apps/runNshop-admin/src/order/order-history/OrderHistory.tsx`
+- [ ] 1.11 `AdminHomeController.kt`: URL(`/api/admin/v1/home/...`) 변경 없음. 4개 mockLoader 호출의
+      첫 인자를 각각 "config"(summary/pending/alerts) 또는 "order"(trend)로, 파일명을
+      "admin__GET_home_summary.json" / "admin__GET_home_pending.json" / "admin__GET_home_trend.json" /
+      "admin__GET_home_alerts.json"로 변경.
+      Files: `api/runNshop-api/src/main/kotlin/com/runnshop/config/controller/AdminHomeController.kt`
 
-- [ ] 2.3 `OrderDetail.tsx`: props `{order,onClose}`→`{orderId,onClose}`, `useEffect`로 상세 API 호출,
-      로딩 처리. `ClaimTab`은 `order.claims[]`, `ChangeLogTab`은 `order.logs[]`로 하드코딩 더미 교체.
-      `InquiryTab`(신규, `order.inquiries[]` 목록만 표시)을 InnerTabs에 추가.
-      Files: `apps/runNshop-admin/src/order/order-history/OrderDetail.tsx`
+- [ ] 1.12 `PartnerHomeController.kt`: URL(`/api/partner/v1/home/...`) 변경 없음. 5개 mockLoader
+      호출의 첫 인자를 각각 "vendor"(summary/pending/notices) 또는 "order"(trend)/"catalog"
+      (products/summary)로, 파일명을 "partner__GET_home_summary.json" / "partner__GET_home_pending.json" /
+      "partner__GET_home_trend.json" / "partner__GET_home_products_summary.json" /
+      "partner__GET_home_notices.json"로 변경.
+      Files: `api/runNshop-api/src/main/kotlin/com/runnshop/vendor/controller/PartnerHomeController.kt`
 
-- [ ] 2.4 `tabs/OrderItemsTab.tsx`, `tabs/PaymentInfoTab.tsx`, `tabs/ShippingInfoTab.tsx`: 각각
-      `order.items[]`/`order.payment`/`order.shipping` 실데이터로 하드코딩 교체(옵션명, 할인계산,
-      결제수단/PG/거래ID, 연락처/주소/배송사/운송장 등 전부 제거).
-      Files: `apps/runNshop-admin/src/order/order-history/tabs/OrderItemsTab.tsx`,
-      `.../tabs/PaymentInfoTab.tsx`, `.../tabs/ShippingInfoTab.tsx`
-      Verify (2.1~2.4): `cd apps/runNshop-admin && npm run build` 성공, 그리고
-      `grep -rn 'MOCK_ORDERS\|filterOrders' apps/runNshop-admin/src/order/order-history/` 결과 없음.
+- [ ] 1.13 `MockLoader.kt`: 로직/시그니처 변경 없음. KDoc 주석의 `@param channel 앱 채널 (v1, admin,
+      partner)` 설명만 "이제 첫 번째 인자는 도메인 폴더명(order/catalog/...), 두 번째 인자(filename)에
+      채널 접두사(admin__/partner__/mobile__)가 포함된다"로 정정(사실 설명 갱신, 동작 변경 없음).
+      Files: `api/runNshop-api/src/main/kotlin/com/runnshop/common/MockLoader.kt`
 
-## 3. partner FE (`apps/runNshop-partner/src/order/order-list/`)
+- [ ] 1.14 백엔드 빌드 + 런타임 검증(체크포인트): `cd api/runNshop-api && ./gradlew clean build -x test`
+      성공 후 `./gradlew bootRun`(백그라운드, 포트 8080) 기동. 아래 전부 curl, 전부 `"code":"SUCCESS"`
+      확인(이동이 잘못되면 `"code":"NOT_FOUND"`가 뜬다 — 그걸 잡아내는 것이 목적):
+      `GET /api/mobile/v1/my/cart`, `GET /api/mobile/v1/my/orders`,
+      `GET /api/mobile/v1/my/orders/{orderId}`(임의 id), `POST /api/mobile/v1/my/orders/sheet`,
+      `GET /api/mobile/v1/my/orders/sheet`, `GET /api/mobile/v1/my/claims`,
+      `GET /api/mobile/v1/my/claims/{claimId}`, `GET /api/mobile/v1/my/summary`,
+      `GET /api/mobile/v1/products/{productId}`, `GET /api/mobile/v1/display/pages/home`,
+      `GET /api/mobile/v1/exhibitions`, `GET /api/mobile/v1/display/pages/exhibition/{code}`,
+      `GET /api/admin/v1/orders`, `GET /api/admin/v1/orders/{orderId}`,
+      `GET /api/admin/v1/home/summary`, `GET /api/admin/v1/home/pending`,
+      `GET /api/admin/v1/home/trend`, `GET /api/admin/v1/home/alerts`,
+      `GET /api/partner/v1/orders`, `GET /api/partner/v1/orders/{orderId}`,
+      `GET /api/partner/v1/products`, `GET /api/partner/v1/home/summary`,
+      `GET /api/partner/v1/home/pending`, `GET /api/partner/v1/home/trend`,
+      `GET /api/partner/v1/home/products/summary`, `GET /api/partner/v1/home/notices`.
+      서버 종료.
 
-- [ ] 3.1 `mockData.ts`: 전체 필드 snake_case→camelCase(`orderId`,`platformOrderNo`,`productName`,
-      `customerName`,`orderDate`), `ORDER_RECEIVED` 상태 추가, `MOCK_ORDERS` 삭제. 파일명 유지.
-      Files: `apps/runNshop-partner/src/order/order-list/mockData.ts`
+## 2. Front-end(mobile 콜 경로/PREFIX) + DL 문서 + KIRO_START.md (1단계 완료 후 — 새 URL에 맞춤)
 
-- [ ] 3.2 `OrderListPage.tsx`: `MOCK_ORDERS` 제거, `lib/api.ts`의 `api()`로 교체(DL §22 쿼리 순서
-      status/from/to/keyword/page/size). admin과 동일하게 필터조회/페이지/페이지크기 전부 서버 재요청,
-      `.slice()` 클라 페이징 제거. 모든 `o.order_id` 등 snake_case 참조를 camelCase로. `useDetailOpener`에
-      전달하는 아이템을 `order` 객체 대신 `orderId`(string)로 변경, `OrderDetail`에 `orderId`만 전달.
-      Files: `apps/runNshop-partner/src/order/order-list/OrderListPage.tsx`
+- [ ] 2.1 `apps/runNshop-mobile/lib/api.ts`: `PREFIX = '/api/v1'` → `'/api/mobile/v1'`.
+      Files: `apps/runNshop-mobile/lib/api.ts`
 
-- [ ] 3.3 `OrderDetail.tsx`: props `{order,...}`→`{orderId,mode,onClose,onUpdate,readOnly}`로 변경,
-      `useEffect`로 `/orders/${orderId}` 호출. 모든 snake_case 필드 참조를 camelCase로.
-      Files: `apps/runNshop-partner/src/order/order-list/OrderDetail.tsx`
+- [ ] 2.2 mobile 앱의 "본인 소유" 리소스 호출 경로 7곳 변경(공용 리소스는 변경 없음 — 아래 2.3 확인만):
+      `app/cart/page.tsx` `'/cart'`→`'/my/cart'`,
+      `app/orders/new/page.tsx` `'/orders/sheet'`→`'/my/orders/sheet'`,
+      `app/my/claims/page.tsx` `'/members/me/claims'`→`'/my/claims'`,
+      `app/my/claims/[claimId]/page.tsx` `` `/members/me/claims/${claimId}` ``→`` `/my/claims/${claimId}` ``,
+      `app/my/page.tsx` `'/members/me/summary'`→`'/my/summary'`,
+      `app/my/orders/page.tsx` `'/members/me/orders'`→`'/my/orders'`,
+      `app/my/orders/[orderId]/page.tsx` `` `/members/me/orders/${orderId}` ``→`` `/my/orders/${orderId}` ``.
+      Files: 위 7개 경로.
 
-- [ ] 3.4 `src/guide/tabs/NewScreenGuide.tsx`: "필드명은 snake_case를 쓴다(admin은 camelCase)" 문장을
-      "partner도 admin과 동일하게 camelCase를 쓴다"로 교정.
-      Files: `apps/runNshop-partner/src/guide/tabs/NewScreenGuide.tsx`
-      Verify (3.1~3.4): `cd apps/runNshop-partner && npm run build` 성공, 그리고
-      `grep -rn 'order_id\|platform_order_no\|product_name\|customer_name\|order_date\|MOCK_ORDERS' apps/runNshop-partner/src/order/order-list/` 결과 없음.
+- [ ] 2.3 공용(비소유) 리소스 호출부 확인만(변경 없음): `app/page.tsx`(`/display/pages/home`),
+      `app/exhibitions/page.tsx`(`/exhibitions`), `app/exhibitions/[exhibitionCode]/page.tsx`
+      (`` `/display/pages/exhibition/${...}` ``), `app/products/[productId]/page.tsx`
+      (`` `/products/${...}` ``) — PREFIX 변경만으로 올바른 새 URL이 되므로 상대경로는 그대로.
+      admin/partner `lib/api.ts`의 PREFIX는 이미 올바르므로 변경 없음; admin/partner 호출부에 변경된
+      리소스명 참조가 없음을 확인(grep 결과 없음, 이미 확인됨).
 
-## 4. mobile FE
+- [ ] 2.4 DL `order.md`: 전체 Path 표기(헤더 라인 포함) + 인라인 prose의 모든 `/api/v1/...`를 아래
+      원칙으로 치환 — admin/partner Path는 변경 없음, mobile 소유 리소스(`cart`,`orders`,`claims`)는
+      `/api/mobile/v1/my/...`, 공용 리소스는 `/api/mobile/v1/...`. 미구현 API(cart/items,
+      orders/{id}/cancel 등)도 포함해 전부 갱신(§1~§44, §10-1/§19-1/§32-1/§32-2/§39-1/§39-2 포함).
+      Files: `docs/deliverables/S3-상세설계/DL-인터페이스명세/order.md`
 
-- [ ] 4.1 `components/my/OrderListItem.tsx`: 카드 전체를 `<Link href={`/my/orders/${order.orderId}`}>`로
-      감싸고, 내부 `ActionButton` 클릭 시 `e.stopPropagation()`으로 상세 이동을 막은 채 alert만 발생.
-      Files: `apps/runNshop-mobile/components/my/OrderListItem.tsx`
+- [ ] 2.5 DL `payment.md`: §12/§13/§14(`/api/v1/payment-methods...`)→`/api/mobile/v1/my/payment-methods...`,
+      §41(`/api/v1/members/me/payments`)→`/api/mobile/v1/my/payments`. §42/§43(admin)은 변경 없음.
+      Files: `docs/deliverables/S3-상세설계/DL-인터페이스명세/payment.md`
 
-- [ ] 4.2 `app/my/orders/[orderId]/page.tsx` 신규 생성. 템플릿:
-      `app/my/claims/[claimId]/page.tsx`(async Server Component + `params: Promise<{orderId}>` await +
-      `api<T>()` try/catch + Header/BottomNav). mobile.md §8-1대로 상태뱃지, 주문 기본정보, 입점사별 그룹
-      상품목록(아이템 액션버튼은 alert만), 결제정보, 배송정보, Timeline(`history`, `ClaimStatusTimeline`
-      재사용 가능), 하단 고정 주문취소 버튼(`status==='PAYMENT_COMPLETED'`일 때만).
-      Files: `apps/runNshop-mobile/app/my/orders/[orderId]/page.tsx`
+- [ ] 2.6 DL `readme.md`: "API 목록 요약" 표의 mobile 행(#1~#19-2, #41) Path 열과 "Idempotency-Key" 표의
+      #5/#6/#31 Path를 2.4/2.5와 동일 규칙으로 갱신. admin/partner 행은 변경 없음.
+      Files: `docs/deliverables/S3-상세설계/DL-인터페이스명세/readme.md`
 
-- [ ] 4.3 `app/my/orders/page.tsx`는 이미 서버 fetch로 구현되어 있어 수정하지 않음(확인만).
-      Verify (4.1~4.2): `cd apps/runNshop-mobile && npm run build` 성공, 그리고
-      `grep -n 'params: Promise' apps/runNshop-mobile/app/my/orders/[orderId]/page.tsx` 로 비동기
-      params 패턴 적용 확인.
+- [ ] 2.7 `.kiro/KIRO_START.md`: 디렉터리 트리의 `mock/v1|admin|partner` → `mock/{domain}` 구조로,
+      접근통제 표/규칙 블록의 `/api/v1/**` → `/api/mobile/v1/**`, Controller 예시(CustomerOrderController)
+      URL을 `/api/mobile/v1/my/orders`로, 공용 ProductController 다중매핑 예시에 `/api/mobile/v1/...`
+      추가, Mock 파일 위치/네이밍 규칙 섹션 예시를 새 규칙(`{channel}__{METHOD}_{PATH}.json`,
+      폴더=도메인)으로, 실행방법 섹션의 "고객웹 API: .../api/v1/..." → ".../api/mobile/v1/...", FE 호출
+      예제 코드 3블록 중 mobile PREFIX와 사용예시(`/cart`→`/my/cart`), 프로토타입 시작 프롬프트의
+      `GET /api/v1/display/pages/home` → `GET /api/mobile/v1/display/pages/home`, 개발규칙 Back-end
+      섹션의 prefix 나열에 `mobile` 반영.
+      Files: `.kiro/KIRO_START.md`
 
-## 5. 최종 통합 검증
-- [ ] 5.1 백엔드 재빌드(`./gradlew build -x test`) + 전체 curl 재검증(1.6 반복, admin/partner/mobile 상세
-      엔드포인트 포함).
-- [ ] 5.2 admin/partner/mobile 3개 앱 `npm run build` 전부 성공.
-- [ ] 5.3 사용자가 `npm run dev`로 수동 화면 확인(조회/필터/페이지이동/상세진입)할 수 있도록 결과 요약 기록.
+- [ ] 2.8 최종 검증: `cd apps/runNshop-mobile && npm run build`,
+      `cd apps/runNshop-admin && npm run build`, `cd apps/runNshop-partner && npm run build` 3개 전부
+      성공. 그리고 `grep -rn "/api/v1/" apps/runNshop-mobile/lib apps/runNshop-mobile/app` 결과가
+      없음(모두 `/api/mobile/v1/` 또는 상대경로로 전환 완료) — 보조 확인용, 주 검증은 각 앱의
+      `npm run build` 성공 여부.
+
+## B. Mock 파일 이동 매핑 (1.1에서 전부 수행)
+
+```
+mock/admin/order__GET_admin_v1_orders.json            -> mock/order/admin__GET_orders.json
+mock/admin/order__GET_admin_v1_orders_{order_id}.json -> mock/order/admin__GET_orders_{order_id}.json
+mock/admin/order__GET_home_trend.json                 -> mock/order/admin__GET_home_trend.json
+mock/admin/config__GET_home_alerts.json               -> mock/config/admin__GET_home_alerts.json
+mock/admin/config__GET_home_pending.json              -> mock/config/admin__GET_home_pending.json
+mock/admin/config__GET_home_summary.json              -> mock/config/admin__GET_home_summary.json
+mock/partner/order__GET_partner_v1_orders.json            -> mock/order/partner__GET_orders.json
+mock/partner/order__GET_partner_v1_orders_{order_id}.json -> mock/order/partner__GET_orders_{order_id}.json
+mock/partner/order__GET_home_trend.json                   -> mock/order/partner__GET_home_trend.json
+mock/partner/catalog__GET_home_products_summary.json      -> mock/catalog/partner__GET_home_products_summary.json
+mock/partner/catalog__GET_products.json                   -> mock/catalog/partner__GET_products.json
+mock/partner/vendor__GET_home_notices.json                -> mock/vendor/partner__GET_home_notices.json
+mock/partner/vendor__GET_home_pending.json                -> mock/vendor/partner__GET_home_pending.json
+mock/partner/vendor__GET_home_summary.json                -> mock/vendor/partner__GET_home_summary.json
+mock/v1/order__GET_cart.json                             -> mock/order/mobile__GET_my_cart.json
+mock/v1/order__GET_members_me_claims.json                -> mock/order/mobile__GET_my_claims.json
+mock/v1/order__GET_members_me_claims_{claim_id}.json     -> mock/order/mobile__GET_my_claims_{claim_id}.json
+mock/v1/order__GET_members_me_orders.json                -> mock/order/mobile__GET_my_orders.json
+mock/v1/order__GET_members_me_orders_{order_id}.json     -> mock/order/mobile__GET_my_orders_{order_id}.json
+mock/v1/order__POST_orders_sheet.json                    -> mock/order/mobile__POST_my_orders_sheet.json
+mock/v1/catalog__GET_display_pages_home.json             -> mock/catalog/mobile__GET_display_pages_home.json
+mock/v1/catalog__GET_products_{product_id}.json          -> mock/catalog/mobile__GET_products_{product_id}.json
+mock/v1/member__GET_members_me_summary.json              -> mock/member/mobile__GET_my_summary.json
+mock/v1/promotion__GET_display_pages_exhibition_{exhibition_code}.json -> mock/promotion/mobile__GET_display_pages_exhibition_{exhibition_code}.json
+mock/v1/promotion__GET_exhibitions.json                  -> mock/promotion/mobile__GET_exhibitions.json
+```
