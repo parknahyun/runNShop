@@ -8,9 +8,9 @@ import org.springframework.web.bind.annotation.RestController
 @RestController
 class CustomerCartController(private val mockLoader: MockLoader) {
 
-    @GetMapping("/api/v1/cart")
+    @GetMapping("/api/mobile/v1/my/cart")
     fun getCart(): ResponseEntity<Any> {
-        val data = mockLoader.load("v1", "order__GET_cart.json")
+        val data = mockLoader.load("order", "mobile__GET_my_cart.json")
         return ResponseEntity.ok(data)
     }
 }

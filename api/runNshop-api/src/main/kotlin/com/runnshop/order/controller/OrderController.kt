@@ -24,27 +24,27 @@ class OrderController(
 
     // ── 주문서 (고객) ──
 
-    @PostMapping("/api/v1/orders/sheet")
+    @PostMapping("/api/mobile/v1/my/orders/sheet")
     fun createOrderSheet(): ResponseEntity<Any> {
-        val data = mockLoader.load("v1", "order__POST_orders_sheet.json")
+        val data = mockLoader.load("order", "mobile__POST_my_orders_sheet.json")
         return ResponseEntity.ok(data)
     }
 
-    @GetMapping("/api/v1/orders/sheet")
+    @GetMapping("/api/mobile/v1/my/orders/sheet")
     fun getOrderSheet(): ResponseEntity<Any> {
-        val data = mockLoader.load("v1", "order__POST_orders_sheet.json")
+        val data = mockLoader.load("order", "mobile__POST_my_orders_sheet.json")
         return ResponseEntity.ok(data)
     }
 
     // ── 고객 주문 목록/상세 ──
 
-    @GetMapping("/api/v1/members/me/orders")
+    @GetMapping("/api/mobile/v1/my/orders")
     fun getMyOrders(): ResponseEntity<Any> {
-        val data = mockLoader.load("v1", "order__GET_members_me_orders.json")
+        val data = mockLoader.load("order", "mobile__GET_my_orders.json")
         return ResponseEntity.ok(data)
     }
 
-    @GetMapping("/api/v1/members/me/orders/{orderId}")
+    @GetMapping("/api/mobile/v1/my/orders/{orderId}")
     fun getMyOrderDetail(@PathVariable orderId: String): ResponseEntity<Any> {
         val data = orderService.getMyOrderDetail(orderId)
         return ResponseEntity.ok(data)

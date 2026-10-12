@@ -12,31 +12,31 @@ class PartnerHomeController(private val mockLoader: MockLoader) {
 
     @GetMapping("/summary")
     fun getSummary(): ResponseEntity<Any> {
-        val data = mockLoader.load("partner", "vendor__GET_home_summary.json")
+        val data = mockLoader.load("vendor", "partner__GET_home_summary.json")
         return ResponseEntity.ok(data)
     }
 
     @GetMapping("/pending")
     fun getPending(): ResponseEntity<Any> {
-        val data = mockLoader.load("partner", "vendor__GET_home_pending.json")
+        val data = mockLoader.load("vendor", "partner__GET_home_pending.json")
         return ResponseEntity.ok(data)
     }
 
     @GetMapping("/trend")
     fun getTrend(): ResponseEntity<Any> {
-        val data = mockLoader.load("partner", "order__GET_home_trend.json")
+        val data = mockLoader.load("order", "partner__GET_home_trend.json")
         return ResponseEntity.ok(data)
     }
 
     @GetMapping("/products/summary")
     fun getProductsSummary(): ResponseEntity<Any> {
-        val data = mockLoader.load("partner", "catalog__GET_home_products_summary.json")
+        val data = mockLoader.load("catalog", "partner__GET_home_products_summary.json")
         return ResponseEntity.ok(data)
     }
 
     @GetMapping("/notices")
     fun getNotices(): ResponseEntity<Any> {
-        val data = mockLoader.load("partner", "vendor__GET_home_notices.json")
+        val data = mockLoader.load("vendor", "partner__GET_home_notices.json")
         return ResponseEntity.ok(data)
     }
 }

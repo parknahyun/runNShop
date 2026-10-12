@@ -12,7 +12,7 @@ class PartnerProductController(private val mockLoader: MockLoader) {
 
     @GetMapping
     fun getProducts(): ResponseEntity<Any> {
-        val data = mockLoader.load("partner", "catalog__GET_products.json")
+        val data = mockLoader.load("catalog", "partner__GET_products.json")
         return ResponseEntity.ok(data)
     }
 }

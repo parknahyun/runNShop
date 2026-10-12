@@ -12,25 +12,25 @@ class AdminHomeController(private val mockLoader: MockLoader) {
 
     @GetMapping("/summary")
     fun getSummary(): ResponseEntity<Any> {
-        val data = mockLoader.load("admin", "config__GET_home_summary.json")
+        val data = mockLoader.load("config", "admin__GET_home_summary.json")
         return ResponseEntity.ok(data)
     }
 
     @GetMapping("/pending")
     fun getPending(): ResponseEntity<Any> {
-        val data = mockLoader.load("admin", "config__GET_home_pending.json")
+        val data = mockLoader.load("config", "admin__GET_home_pending.json")
         return ResponseEntity.ok(data)
     }
 
     @GetMapping("/trend")
     fun getTrend(): ResponseEntity<Any> {
-        val data = mockLoader.load("admin", "order__GET_home_trend.json")
+        val data = mockLoader.load("order", "admin__GET_home_trend.json")
         return ResponseEntity.ok(data)
     }
 
     @GetMapping("/alerts")
     fun getAlerts(): ResponseEntity<Any> {
-        val data = mockLoader.load("admin", "config__GET_home_alerts.json")
+        val data = mockLoader.load("config", "admin__GET_home_alerts.json")
         return ResponseEntity.ok(data)
     }
 }

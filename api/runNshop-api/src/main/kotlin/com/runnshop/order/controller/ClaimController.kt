@@ -15,15 +15,15 @@ import org.springframework.web.bind.annotation.RestController
 @RestController
 class ClaimController(private val mockLoader: MockLoader) {
 
-    @GetMapping("/api/v1/members/me/claims")
+    @GetMapping("/api/mobile/v1/my/claims")
     fun getMyClaims(): ResponseEntity<Any> {
-        val data = mockLoader.load("v1", "order__GET_members_me_claims.json")
+        val data = mockLoader.load("order", "mobile__GET_my_claims.json")
         return ResponseEntity.ok(data)
     }
 
-    @GetMapping("/api/v1/members/me/claims/{claimId}")
+    @GetMapping("/api/mobile/v1/my/claims/{claimId}")
     fun getMyClaimDetail(@PathVariable claimId: String): ResponseEntity<Any> {
-        val data = mockLoader.load("v1", "order__GET_members_me_claims_{claim_id}.json")
+        val data = mockLoader.load("order", "mobile__GET_my_claims_{claim_id}.json")
         return ResponseEntity.ok(data)
     }
 }

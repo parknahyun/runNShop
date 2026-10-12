@@ -8,9 +8,9 @@ import org.springframework.web.bind.annotation.RestController
 @RestController
 class CustomerDisplayController(private val mockLoader: MockLoader) {
 
-    @GetMapping("/api/v1/display/pages/home")
+    @GetMapping("/api/mobile/v1/display/pages/home")
     fun getHomePage(): ResponseEntity<Any> {
-        val data = mockLoader.load("v1", "catalog__GET_display_pages_home.json")
+        val data = mockLoader.load("catalog", "mobile__GET_display_pages_home.json")
         return ResponseEntity.ok(data)
     }
 }

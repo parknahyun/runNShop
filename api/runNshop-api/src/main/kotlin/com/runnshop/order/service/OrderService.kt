@@ -41,7 +41,7 @@ class OrderService(private val mockLoader: MockLoader) {
     )
 
     fun getAdminOrders(filter: AdminOrderFilter): Map<String, Any> {
-        val loaded = mockLoader.load("admin", "order__GET_admin_v1_orders.json")
+        val loaded = mockLoader.load("order", "admin__GET_orders.json")
         val allOrders = extractOrders(loaded)
 
         val keywordDateFiltered = allOrders.filter {
@@ -70,7 +70,7 @@ class OrderService(private val mockLoader: MockLoader) {
     fun getPartnerOrders(vendorId: String, filter: PartnerOrderFilter): Map<String, Any> {
         // vendorId: 이번 프로토타입은 mock 데이터셋이 이미 '해당 입점사 주문만'이라는 전제라
         // 실제 필터링에는 쓰지 않는다 — 향후 실 DB 연동 시 자리 표시(placeholder)
-        val loaded = mockLoader.load("partner", "order__GET_partner_v1_orders.json")
+        val loaded = mockLoader.load("order", "partner__GET_orders.json")
         val allOrders = extractOrders(loaded)
 
         val filtered = allOrders.filter {
@@ -95,16 +95,16 @@ class OrderService(private val mockLoader: MockLoader) {
     }
 
     fun getMyOrders(memberId: String, page: Int, size: Int, status: String?): Map<String, Any> =
-        mockLoader.load("v1", "order__GET_members_me_orders.json")
+        mockLoader.load("order", "mobile__GET_my_orders.json")
 
     fun getAdminOrderDetail(orderId: String): Map<String, Any> =
-        mockLoader.load("admin", "order__GET_admin_v1_orders_{order_id}.json")
+        mockLoader.load("order", "admin__GET_orders_{order_id}.json")
 
     fun getPartnerOrderDetail(orderId: String): Map<String, Any> =
-        mockLoader.load("partner", "order__GET_partner_v1_orders_{order_id}.json")
+        mockLoader.load("order", "partner__GET_orders_{order_id}.json")
 
     fun getMyOrderDetail(orderId: String): Map<String, Any> =
-        mockLoader.load("v1", "order__GET_members_me_orders_{order_id}.json")
+        mockLoader.load("order", "mobile__GET_my_orders_{order_id}.json")
 
     // ── 내부 가공 로직 ──
 
