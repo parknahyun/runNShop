@@ -26,7 +26,7 @@ export default async function MyOrdersPage() {
   let data: OrderListData | null = null;
 
   try {
-    data = await api<OrderListData>('/members/me/orders');
+    data = await api<OrderListData>('/my/orders');
   } catch (e) {
     // fallback
   }

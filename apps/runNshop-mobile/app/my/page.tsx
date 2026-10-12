@@ -25,7 +25,7 @@ export default async function MyPage() {
   let member: MemberSummary | null = null;
 
   try {
-    member = await api<MemberSummary>('/members/me/summary');
+    member = await api<MemberSummary>('/my/summary');
   } catch (e) {
     // fallback
   }

@@ -61,7 +61,7 @@ export default async function ClaimDetailPage({ params }: { params: Promise<{ cl
   let claim: ClaimDetail | null = null;
 
   try {
-    claim = await api<ClaimDetail>(`/members/me/claims/${claimId}`);
+    claim = await api<ClaimDetail>(`/my/claims/${claimId}`);
   } catch (e) {
     // fallback
   }

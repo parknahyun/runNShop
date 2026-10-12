@@ -42,9 +42,7 @@ runNshop/
 │           │   ├── {domain}/dto/
 │           │   └── common/              ← MockLoader, CorsConfig
 │           └── resources/
-│               ├── mock/v1/             ← 고객웹 Mock JSON
-│               ├── mock/admin/          ← 어드민 Mock JSON
-│               ├── mock/partner/        ← 입점사 Mock JSON
+│               ├── mock/{domain}/       ← 12개 업무도메인별 폴더(admin/partner/mobile 공용)
 │               └── application.yml
 ├── docs/                        ← 설계 문서
 │   ├── 1. 요구사항/
@@ -135,14 +133,14 @@ com.runnshop.{domain}/
 
 | 앱 | API Path Prefix | 인증 방식 |
 |----|----------------|----------|
-| 플랫폼 고객웹 | `/api/v1/**` | JWT + Redis |
+| 플랫폼 고객웹 | `/api/mobile/v1/**` | JWT + Redis |
 | 플랫폼 어드민 | `/api/admin/v1/**` | JWT + 세션 8시간 |
 | 플랫폼 입점사 | `/api/partner/v1/**` | JWT + 2단계 인증 + 세션 3시간 |
 
 ### 접근 통제 규칙
 
 ```
-/api/v1/**          → 플랫폼 고객웹(runNshop-mobile)만 접근 가능
+/api/mobile/v1/**   → 플랫폼 고객웹(runNshop-mobile, mobile 채널 전용)만 접근 가능
 /api/admin/v1/**    → 플랫폼 어드민(runNshop-admin)만 접근 가능
 /api/partner/v1/**  → 플랫폼 입점사(runNshop-partner)만 접근 가능
 ```
@@ -153,7 +151,7 @@ com.runnshop.{domain}/
 // 앱 전용 API — 해당 앱에서만 사용하는 경우
 // com.runnshop.order.controller.CustomerOrderController
 @RestController
-@RequestMapping("/api/v1/orders")       // 플랫폼 고객웹 전용
+@RequestMapping("/api/mobile/v1/my/orders")       // 플랫폼 고객웹 전용
 class CustomerOrderController { ... }
 
 // com.runnshop.order.controller.AdminOrderController
@@ -175,7 +173,7 @@ class PartnerOrderController { ... }
 class ProductController(private val productService: ProductService) {
 
     @GetMapping(
-        "/api/v1/products/{productId}",         // 플랫폼 고객웹
+        "/api/mobile/v1/products/{productId}",  // 플랫폼 고객웹
         "/api/admin/v1/products/{productId}",   // 플랫폼 어드민
         "/api/partner/v1/products/{productId}"  // 플랫폼 입점사
     )
@@ -194,29 +192,41 @@ class ProductController(private val productService: ProductService) {
 
 ### Mock 파일 위치
 
+폴더는 **도메인(업무영역) 기준**으로 나눈다 (12개 업무도메인). 채널(admin/partner/mobile)로는 폴더를 나누지 않는다 — 하나의 도메인 폴더 안에 모든 채널의 Mock 파일이 함께 들어간다.
+
 ```
 api/runNshop-api/src/main/resources/mock/
-├── v1/              ← 플랫폼 고객웹 Mock JSON
-├── admin/           ← 플랫폼 어드민 Mock JSON
-└── partner/         ← 플랫폼 입점사 Mock JSON
+├── order/           ← Order 도메인 (admin/partner/mobile 공용)
+├── catalog/         ← Catalog 도메인
+├── member/          ← Member 도메인
+├── payment/         ← Payment 도메인
+├── promotion/       ← Promotion 도메인
+├── settlement/      ← Settlement 도메인
+├── vendor/          ← Vendor 도메인
+├── notification/    ← Notification 도메인
+├── community/       ← Community 도메인
+├── search/          ← Search 도메인
+├── config/          ← Config 도메인
+└── audit/           ← Audit 도메인
 ```
 
 ### Mock 파일 네이밍 규칙
 
 ```
-{domain}__{HTTP_METHOD}_{API_PATH}.json
+{channel}__{HTTP_METHOD}_{API_PATH}.json
 
-예시:
-catalog__GET_products_{product_id}.json     → GET /api/v1/products/{product_id}
-order__GET_members_me_orders.json           → GET /api/v1/members/me/orders
-order__GET_admin_orders.json                → GET /api/admin/v1/orders
-vendor__GET_partner_home_summary.json       → GET /api/partner/v1/home/summary
-member__GET_members_me_summary.json         → GET /api/v1/members/me/summary
-promotion__GET_exhibitions.json             → GET /api/v1/exhibitions
+예시 (폴더: mock/{domain}/):
+catalog/mobile__GET_products_{product_id}.json   → GET /api/mobile/v1/products/{product_id}
+order/mobile__GET_my_orders.json                 → GET /api/mobile/v1/my/orders
+order/admin__GET_orders.json                     → GET /api/admin/v1/orders
+order/partner__GET_orders.json                   → GET /api/partner/v1/orders
+vendor/partner__GET_home_summary.json            → GET /api/partner/v1/home/summary
+member/mobile__GET_my_summary.json               → GET /api/mobile/v1/my/summary
+promotion/mobile__GET_exhibitions.json           → GET /api/mobile/v1/exhibitions
 ```
 
-> **구분자**: `__` (이중 언더스코어)로 도메인과 API를 분리한다.
-> 파일명 앞부분이 도메인이므로 탐색기에서 알파벳순 정렬 시 도메인별로 자동 그룹핑된다.
+> **구분자**: `__` (이중 언더스코어)로 **채널**과 API를 분리한다 (도메인은 폴더가 담당하므로 파일명에서는 뺀다).
+> `{channel}`: `admin` | `partner` | `mobile` 중 하나. API_PATH는 URL의 `/`를 `_`로 치환하고 Path Prefix(`/api/{channel}/v1`)는 생략하되 `/my`는 그대로 포함한다. path parameter는 `{param_name}` 형태의 snake_case로 표기한다.
 
 ### 응답 구조 표준
 
@@ -248,7 +258,7 @@ promotion__GET_exhibitions.json             → GET /api/v1/exhibitions
 cd api/runNshop-api
 ./gradlew bootRun
 # → http://localhost:8080
-# 플랫폼 고객웹 API: http://localhost:8080/api/v1/...
+# 플랫폼 고객웹 API: http://localhost:8080/api/mobile/v1/...
 # 플랫폼 어드민 API: http://localhost:8080/api/admin/v1/...
 # 플랫폼 입점사 API: http://localhost:8080/api/partner/v1/...
 ```
@@ -279,7 +289,7 @@ npm run dev
 ```typescript
 // apps/runNshop-mobile/lib/api.ts
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:8080';
-const PREFIX = '/api/v1';
+const PREFIX = '/api/mobile/v1';
 
 export async function api<T>(path: string): Promise<T> {
   const res = await fetch(`${API_BASE}${PREFIX}${path}`);
@@ -289,7 +299,7 @@ export async function api<T>(path: string): Promise<T> {
 
 // 사용 예시
 const home = await api('/display/pages/home');
-const cart = await api('/cart');
+const cart = await api('/my/cart');
 ```
 
 ```typescript
@@ -351,7 +361,7 @@ const settlements = await api('/settlements');
 docs/6. 화면정의/의 화면 정의서를 참고해서
 CUS-001 메인 홈을 모바일 360px Next.js 프로토타입으로 만들어줘.
 데이터는 Back-end API(http://localhost:8080)에서 fetch로 가져와:
-  - GET /api/v1/display/pages/home
+  - GET /api/mobile/v1/display/pages/home
 스타일 가이드(http://localhost:3000/guide)를 참고해.
 ```
 
@@ -394,7 +404,7 @@ VND-000-001 로그인 + VND-HOME 홈 탭을 PC 웹 Next.js 프로토타입으로
 
 ### Back-end
 - 단일 실행 모듈, 12개 업무도메인 패키지로 분리
-- URL path prefix로 앱별 접근 통제 (`/api/v1/`, `/api/admin/v1/`, `/api/partner/v1/`)
+- URL path prefix로 앱별 접근 통제 (`/api/mobile/v1/`, `/api/admin/v1/`, `/api/partner/v1/`)
 - 프로토타입 단계: Controller → MockLoader → JSON 반환
 - 이후 단계: Controller → Service → Repository 레이어 확장
 - MSA 전환 시: 도메인 패키지 = 독립 서비스 분리 단위

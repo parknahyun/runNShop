@@ -6,12 +6,12 @@
 
 ---
 
-## 1. POST /api/v1/cart/items — 장바구니 담기
+## 1. POST /api/mobile/v1/my/cart/items — 장바구니 담기
 
 | 항목 | 내용 |
 |---|---|
 | Method | POST |
-| Path | /api/v1/cart/items |
+| Path | /api/mobile/v1/my/cart/items |
 | 인증 | Bearer {memberId} (필수) |
 | 설명 | 상품을 장바구니에 추가. 동일 상품+옵션 존재 시 수량 합산 |
 
@@ -52,12 +52,12 @@
 
 ---
 
-## 2. GET /api/v1/cart — 장바구니 조회
+## 2. GET /api/mobile/v1/my/cart — 장바구니 조회
 
 | 항목 | 내용 |
 |---|---|
 | Method | GET |
-| Path | /api/v1/cart |
+| Path | /api/mobile/v1/my/cart |
 | 인증 | Bearer {memberId} (필수) |
 
 #### Response 200
@@ -105,12 +105,12 @@
 
 ---
 
-## 3. PATCH /api/v1/cart/items/{cartItemId}/quantity — 수량 변경
+## 3. PATCH /api/mobile/v1/my/cart/items/{cartItemId}/quantity — 수량 변경
 
 | 항목 | 내용 |
 |---|---|
 | Method | PATCH |
-| Path | /api/v1/cart/items/{cartItemId}/quantity |
+| Path | /api/mobile/v1/my/cart/items/{cartItemId}/quantity |
 | 인증 | Bearer {memberId} (필수) |
 
 #### Request Body
@@ -138,12 +138,12 @@
 
 ---
 
-## 4. DELETE /api/v1/cart/items/{cartItemId} — 장바구니 삭제
+## 4. DELETE /api/mobile/v1/my/cart/items/{cartItemId} — 장바구니 삭제
 
 | 항목 | 내용 |
 |---|---|
 | Method | DELETE |
-| Path | /api/v1/cart/items/{cartItemId} |
+| Path | /api/mobile/v1/my/cart/items/{cartItemId} |
 | 인증 | Bearer {memberId} (필수) |
 
 #### Response 200
@@ -154,12 +154,12 @@
 
 ---
 
-## 5. POST /api/v1/orders/sheet — 주문서 생성
+## 5. POST /api/mobile/v1/my/orders/sheet — 주문서 생성
 
 | 항목 | 내용 |
 |---|---|
 | Method | POST |
-| Path | /api/v1/orders/sheet |
+| Path | /api/mobile/v1/my/orders/sheet |
 | 인증 | Bearer {memberId} (필수) |
 | Header | `Idempotency-Key: {ULID}` (선택, 중복 생성 방지) |
 | 설명 | 장바구니 선택 상품으로 주문서 생성. 배송지·쿠폰·포인트·결제수단 정보 반환 |
@@ -191,12 +191,12 @@
 
 ---
 
-## 6. POST /api/v1/orders/{orderSheetId}/pay — 결제 요청
+## 6. POST /api/mobile/v1/my/orders/{orderSheetId}/pay — 결제 요청
 
 | 항목 | 내용 |
 |---|---|
 | Method | POST |
-| Path | /api/v1/orders/{orderSheetId}/pay |
+| Path | /api/mobile/v1/my/orders/{orderSheetId}/pay |
 | 인증 | Bearer {memberId} (필수) |
 | Header | `Idempotency-Key: {ULID}` (필수 권장, 재고 이중 선점·이중 결제 방지) |
 | 설명 | 배송지·약관 검증 → 주문 생성(ORDER_RECEIVED) → Catalog 재고 선점(동기, 성공 시 PAYMENT_PENDING) → Payment에 결제 요청 전달(동기 호출이나 PG 승인 자체는 기다리지 않고 "접수됨"만 확인) 까지 처리 후 즉시 200 응답한다. **PG 승인 성공/실패 결과는 이 응답에 포함되지 않는다** — 이후 Payment가 비동기로 발행하는 PAYMENT_APPROVED/PAYMENT_FAILED 이벤트를 Order가 소비해 주문 상태를 PAYMENT_COMPLETED 또는 PAYMENT_FAILED로 확정한다(REQ-ORD-012~014, 시퀀스 §4/§16 참조). |
@@ -228,7 +228,7 @@
 }
 ```
 
-> 이 응답은 PG 승인 완료를 의미하지 않는다. 최종 결제 성공/실패는 클라이언트가 주문 상세(#17 `GET /api/v1/members/me/orders/{orderId}`) 조회 또는 푸시 알림으로 확인한다(status가 `PAYMENT_COMPLETED`/`PAYMENT_FAILED`로 갱신됨).
+> 이 응답은 PG 승인 완료를 의미하지 않는다. 최종 결제 성공/실패는 클라이언트가 주문 상세(#17 `GET /api/mobile/v1/my/orders/{orderId}`) 조회 또는 푸시 알림으로 확인한다(status가 `PAYMENT_COMPLETED`/`PAYMENT_FAILED`로 갱신됨).
 
 #### Error Responses
 
@@ -243,12 +243,12 @@
 
 ---
 
-## 7. POST /api/v1/orders/{orderId}/cancel — 고객 주문 취소
+## 7. POST /api/mobile/v1/my/orders/{orderId}/cancel — 고객 주문 취소
 
 | 항목 | 내용 |
 |---|---|
 | Method | POST |
-| Path | /api/v1/orders/{orderId}/cancel |
+| Path | /api/mobile/v1/my/orders/{orderId}/cancel |
 | 인증 | Bearer {memberId} (필수) |
 
 #### Request Body
@@ -275,12 +275,12 @@
 
 ---
 
-## 8. POST /api/v1/orders/{orderId}/confirm — 구매확정
+## 8. POST /api/mobile/v1/my/orders/{orderId}/confirm — 구매확정
 
 | 항목 | 내용 |
 |---|---|
 | Method | POST |
-| Path | /api/v1/orders/{orderId}/confirm |
+| Path | /api/mobile/v1/my/orders/{orderId}/confirm |
 | 인증 | Bearer {memberId} (필수) |
 
 #### Response 200
@@ -300,12 +300,12 @@
 
 ---
 
-## 9. PUT /api/v1/orders/{orderId}/shipping-address — 배송지 변경
+## 9. PUT /api/mobile/v1/my/orders/{orderId}/shipping-address — 배송지 변경
 
 | 항목 | 내용 |
 |---|---|
 | Method | PUT |
-| Path | /api/v1/orders/{orderId}/shipping-address |
+| Path | /api/mobile/v1/my/orders/{orderId}/shipping-address |
 | 인증 | Bearer {memberId} (필수) |
 
 #### Request Body
@@ -334,12 +334,12 @@
 
 ---
 
-## 10. POST /api/v1/orders/{orderId}/claims — 반품/교환 신청
+## 10. POST /api/mobile/v1/my/orders/{orderId}/claims — 반품/교환 신청
 
 | 항목 | 내용 |
 |---|---|
 | Method | POST |
-| Path | /api/v1/orders/{orderId}/claims |
+| Path | /api/mobile/v1/my/orders/{orderId}/claims |
 | 인증 | Bearer {memberId} (필수) |
 
 #### Request Body
@@ -404,14 +404,14 @@
 
 ---
 
-## 10-1. POST /api/v1/claims/{claimId}/cancel — 클레임 자진 취소
+## 10-1. POST /api/mobile/v1/my/claims/{claimId}/cancel — 클레임 자진 취소
 
 > 신규 (시퀀스 §7-2 대응). 고객이 마이페이지 클레임상세에서 접수한 클레임을 스스로 취소한다. CS 귀책판정(#19-1) 또는 수거(PICKUP) 프로세스가 시작되기 전, 즉 `RECEIVED`/`PAYMENT_PENDING` 상태에서만 허용한다.
 
 | 항목 | 내용 |
 |---|---|
 | Method | POST |
-| Path | /api/v1/claims/{claimId}/cancel |
+| Path | /api/mobile/v1/my/claims/{claimId}/cancel |
 | 인증 | Bearer {memberId} (필수) |
 | 설명 | 클레임 상태가 `RECEIVED` 또는 `PAYMENT_PENDING`일 때만 자진 취소를 허용한다. 취소 시 상태 → `REJECTED`(사유="고객 자진 철회"), 고객에게 알림톡 발송. `INSPECTING` 등 CS 귀책판정 이후 상태에서는 거부한다(REQ-ORD-073, REQ-ORD-071). |
 
@@ -434,12 +434,12 @@
 
 ---
 
-## 11. GET /api/v1/members/me/orders — 내 주문 목록
+## 11. GET /api/mobile/v1/my/orders — 내 주문 목록
 
 | 항목 | 내용 |
 |---|---|
 | Method | GET |
-| Path | /api/v1/members/me/orders |
+| Path | /api/mobile/v1/my/orders |
 | 인증 | Bearer {memberId} (필수) |
 | Query | `?page=1&size=10&status=ALL&sort=orderDate&direction=desc` |
 
@@ -855,12 +855,12 @@
 
 ---
 
-## 30. GET /api/v1/members/me/orders/{orderId} — 내 주문 상세
+## 30. GET /api/mobile/v1/my/orders/{orderId} — 내 주문 상세
 
 | 항목 | 내용 |
 |---|---|
 | Method | GET |
-| Path | /api/v1/members/me/orders/{orderId} |
+| Path | /api/mobile/v1/my/orders/{orderId} |
 | 인증 | Bearer {memberId} (필수) |
 | 설명 | 본인 주문 상세 (입점사별 상품, 결제정보, 배송정보, 주문이력) |
 
@@ -894,12 +894,12 @@
 
 ---
 
-## 31. POST /api/v1/claims/{claimId}/shipping-payment — 클레임 배송비 결제
+## 31. POST /api/mobile/v1/my/claims/{claimId}/shipping-payment — 클레임 배송비 결제
 
 | 항목 | 내용 |
 |---|---|
 | Method | POST |
-| Path | /api/v1/claims/{claimId}/shipping-payment |
+| Path | /api/mobile/v1/my/claims/{claimId}/shipping-payment |
 | 인증 | Bearer {memberId} (필수) |
 | Header | `Idempotency-Key: {ULID}` (필수 권장, 중복 결제 방지) |
 | 설명 | 클레임 수거/반송 배송비 결제. PG SDK 인증 후 서버 확인. 쿠폰 적용 가능 |
@@ -939,12 +939,12 @@
 
 ---
 
-## 32. PUT /api/v1/cart/items/{cartItemId}/option — 장바구니 옵션 변경
+## 32. PUT /api/mobile/v1/my/cart/items/{cartItemId}/option — 장바구니 옵션 변경
 
 | 항목 | 내용 |
 |---|---|
 | Method | PUT |
-| Path | /api/v1/cart/items/{cartItemId}/option |
+| Path | /api/mobile/v1/my/cart/items/{cartItemId}/option |
 | 인증 | Bearer {memberId} (필수) |
 | 설명 | 장바구니 상품의 옵션(색상/사이즈) 변경. 품절 = 실재고 − 장바구니 선점수량 ≤ 0 |
 
@@ -972,12 +972,12 @@
 
 ---
 
-## 32-1. GET /api/v1/orders/{orderSheetId}/coupon-combinations — 쿠폰 조합별 할인 계산
+## 32-1. GET /api/mobile/v1/my/orders/{orderSheetId}/coupon-combinations — 쿠폰 조합별 할인 계산
 
 | 항목 | 내용 |
 |---|---|
 | Method | GET |
-| Path | /api/v1/orders/{orderSheetId}/coupon-combinations |
+| Path | /api/mobile/v1/my/orders/{orderSheetId}/coupon-combinations |
 | 인증 | Bearer {memberId} (필수) |
 | 설명 | 쿠폰 팝업 진입 시 호출. 적용 가능한 모든 쿠폰 조합별 할인 결과를 미리 계산하여 반환 (FE 캐시용). 가장 유리한 조합을 `recommended`로 표시 |
 
@@ -1023,12 +1023,12 @@
 
 ---
 
-## 32-2. POST /api/v1/orders/{orderSheetId}/calculate — 쿠폰 확정 재계산 (Phase 2)
+## 32-2. POST /api/mobile/v1/my/orders/{orderSheetId}/calculate — 쿠폰 확정 재계산 (Phase 2)
 
 | 항목 | 내용 |
 |---|---|
 | Method | POST |
-| Path | /api/v1/orders/{orderSheetId}/calculate |
+| Path | /api/mobile/v1/my/orders/{orderSheetId}/calculate |
 | 인증 | Bearer {memberId} (필수) |
 | 설명 | 쿠폰 팝업 [적용하기] 클릭 시 호출. 선택된 쿠폰 조합으로 서버 재계산 (정합성 검증 + 최종 금액 확정) |
 
@@ -1383,12 +1383,12 @@
 
 ---
 
-## 28. GET /api/v1/members/me/claims — 내 클레임 목록
+## 28. GET /api/mobile/v1/my/claims — 내 클레임 목록
 
 | 항목 | 내용 |
 |---|---|
 | Method | GET |
-| Path | /api/v1/members/me/claims |
+| Path | /api/mobile/v1/my/claims |
 | 인증 | Bearer {memberId} (필수) |
 | Query | `?status=ALL&page=1&size=10&sort=createdAt&direction=desc` |
 | 설명 | 본인이 접수한 클레임(취소/반품/교환) 목록을 최신순으로 반환 |
@@ -1426,12 +1426,12 @@
 
 ---
 
-## 29. GET /api/v1/members/me/claims/{claimId} — 내 클레임 상세
+## 29. GET /api/mobile/v1/my/claims/{claimId} — 내 클레임 상세
 
 | 항목 | 내용 |
 |---|---|
 | Method | GET |
-| Path | /api/v1/members/me/claims/{claimId} |
+| Path | /api/mobile/v1/my/claims/{claimId} |
 | 인증 | Bearer {memberId} (필수) |
 | 설명 | 클레임 상세 정보 (상품정보, 사유, 수거정보, 환불정보, 처리 타임라인) |
 

@@ -32,7 +32,7 @@ export default async function MyClaimsPage() {
   let data: ClaimListData | null = null;
 
   try {
-    data = await api<ClaimListData>('/members/me/claims');
+    data = await api<ClaimListData>('/my/claims');
   } catch (e) {
     // fallback
   }

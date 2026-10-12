@@ -27,28 +27,28 @@
 
 | # | Method | Path | 설명 | 채널 |
 |---|---|---|---|---|
-| 1 | POST | /api/v1/cart/items | 장바구니 담기 | mobile |
-| 2 | GET | /api/v1/cart | 장바구니 조회 | mobile |
-| 3 | PATCH | /api/v1/cart/items/{cartItemId}/quantity | 수량 변경 | mobile |
-| 4 | DELETE | /api/v1/cart/items/{cartItemId} | 장바구니 삭제 | mobile |
-| 5 | POST | /api/v1/orders/sheet | 주문서 생성 | mobile |
-| 6 | POST | /api/v1/orders/{orderSheetId}/pay | 결제 요청 | mobile |
-| 7 | POST | /api/v1/orders/{orderId}/cancel | 고객 주문 취소 | mobile |
-| 8 | POST | /api/v1/orders/{orderId}/confirm | 구매확정 | mobile |
-| 9 | PUT | /api/v1/orders/{orderId}/shipping-address | 배송지 변경 | mobile |
-| 10 | POST | /api/v1/orders/{orderId}/claims | 반품/교환 신청 | mobile |
-| 10-1 | POST | /api/v1/claims/{claimId}/cancel | 클레임 자진 취소 (본문 §10-1, 시퀀스 §7-2) | mobile |
-| 11 | GET | /api/v1/members/me/orders | 내 주문 목록 | mobile |
-| 12 | GET | /api/v1/payment-methods | 결제수단 목록 | mobile |
-| 13 | POST | /api/v1/payment-methods | 결제수단 등록 | mobile |
-| 14 | DELETE | /api/v1/payment-methods/{methodId} | 결제수단 삭제 | mobile |
-| 15 | GET | /api/v1/members/me/claims | 내 클레임 목록 | mobile |
-| 16 | GET | /api/v1/members/me/claims/{claimId} | 내 클레임 상세 | mobile |
-| 17 | GET | /api/v1/members/me/orders/{orderId} | 내 주문 상세 | mobile |
-| 18 | POST | /api/v1/claims/{claimId}/shipping-payment | 클레임 배송비 결제 | mobile |
-| 19 | PUT | /api/v1/cart/items/{cartItemId}/option | 장바구니 옵션 변경 | mobile |
-| 19-1 | GET | /api/v1/orders/{orderSheetId}/coupon-combinations | 쿠폰 조합별 할인 계산 (캐시) | mobile |
-| 19-2 | POST | /api/v1/orders/{orderSheetId}/calculate | 쿠폰 확정 재계산 (Phase 2) | mobile |
+| 1 | POST | /api/mobile/v1/my/cart/items | 장바구니 담기 | mobile |
+| 2 | GET | /api/mobile/v1/my/cart | 장바구니 조회 | mobile |
+| 3 | PATCH | /api/mobile/v1/my/cart/items/{cartItemId}/quantity | 수량 변경 | mobile |
+| 4 | DELETE | /api/mobile/v1/my/cart/items/{cartItemId} | 장바구니 삭제 | mobile |
+| 5 | POST | /api/mobile/v1/my/orders/sheet | 주문서 생성 | mobile |
+| 6 | POST | /api/mobile/v1/my/orders/{orderSheetId}/pay | 결제 요청 | mobile |
+| 7 | POST | /api/mobile/v1/my/orders/{orderId}/cancel | 고객 주문 취소 | mobile |
+| 8 | POST | /api/mobile/v1/my/orders/{orderId}/confirm | 구매확정 | mobile |
+| 9 | PUT | /api/mobile/v1/my/orders/{orderId}/shipping-address | 배송지 변경 | mobile |
+| 10 | POST | /api/mobile/v1/my/orders/{orderId}/claims | 반품/교환 신청 | mobile |
+| 10-1 | POST | /api/mobile/v1/my/claims/{claimId}/cancel | 클레임 자진 취소 (본문 §10-1, 시퀀스 §7-2) | mobile |
+| 11 | GET | /api/mobile/v1/my/orders | 내 주문 목록 | mobile |
+| 12 | GET | /api/mobile/v1/my/payment-methods | 결제수단 목록 | mobile |
+| 13 | POST | /api/mobile/v1/my/payment-methods | 결제수단 등록 | mobile |
+| 14 | DELETE | /api/mobile/v1/my/payment-methods/{methodId} | 결제수단 삭제 | mobile |
+| 15 | GET | /api/mobile/v1/my/claims | 내 클레임 목록 | mobile |
+| 16 | GET | /api/mobile/v1/my/claims/{claimId} | 내 클레임 상세 | mobile |
+| 17 | GET | /api/mobile/v1/my/orders/{orderId} | 내 주문 상세 | mobile |
+| 18 | POST | /api/mobile/v1/my/claims/{claimId}/shipping-payment | 클레임 배송비 결제 | mobile |
+| 19 | PUT | /api/mobile/v1/my/cart/items/{cartItemId}/option | 장바구니 옵션 변경 | mobile |
+| 19-1 | GET | /api/mobile/v1/my/orders/{orderSheetId}/coupon-combinations | 쿠폰 조합별 할인 계산 (캐시) | mobile |
+| 19-2 | POST | /api/mobile/v1/my/orders/{orderSheetId}/calculate | 쿠폰 확정 재계산 (Phase 2) | mobile |
 | 20 | GET | /api/admin/v1/orders | 주문 검색 (어드민) | admin |
 | 21 | GET | /api/admin/v1/orders/{orderId} | 주문 상세 | admin |
 | 22 | POST | /api/admin/v1/orders/{orderId}/force-cancel | 예외 취소 | admin |
@@ -73,7 +73,7 @@
 | 39-1 | POST | /api/partner/v1/claims/{claimId}/exchange-ship | 교환상품 선출고 운송장 등록 | partner |
 | 39-2 | POST | /api/admin/v1/claims/{claimId}/return-delivered | 반송 배송완료 확인 (택배사 콜백/배치) | admin |
 | 40 | GET | /api/partner/v1/claims | 클레임 현황 (통합) | partner |
-| 41 | GET | /api/v1/members/me/payments | 내 결제 이력 조회 | mobile |
+| 41 | GET | /api/mobile/v1/my/payments | 내 결제 이력 조회 | mobile |
 | 42 | GET | /api/admin/v1/payments/search | CS 결제 검색 | admin |
 | 43 | GET | /api/admin/v1/payments/{paymentId}/pg-logs | PG 거래 로그 조회 | admin |
 | 44 | POST | /api/partner/v1/shipping/{shipmentId}/reship | 배송 실패 재발송 처리 | partner/admin |
@@ -138,9 +138,9 @@ Response는 `totalCount` 단일 필드 대신 `pagination` 객체를 포함한�
 
 | API | 대상 이유 |
 |---|---|
-| #5 POST /api/v1/orders/sheet | 주문서 중복 생성 방지 |
-| #6 POST /api/v1/orders/{orderSheetId}/pay | 결제 요청 중복 접수 방지 (재고 이중 선점·이중 결제 방지) |
-| #31 POST /api/v1/claims/{claimId}/shipping-payment | 배송비 결제 중복 접수 방지 |
+| #5 POST /api/mobile/v1/my/orders/sheet | 주문서 중복 생성 방지 |
+| #6 POST /api/mobile/v1/my/orders/{orderSheetId}/pay | 결제 요청 중복 접수 방지 (재고 이중 선점·이중 결제 방지) |
+| #31 POST /api/mobile/v1/my/claims/{claimId}/shipping-payment | 배송비 결제 중복 접수 방지 |
 
 ---
 

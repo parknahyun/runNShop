@@ -75,7 +75,7 @@ export default async function OrderNewPage() {
   let sheet: OrderSheetData | null = null;
 
   try {
-    sheet = await api<OrderSheetData>('/orders/sheet');
+    sheet = await api<OrderSheetData>('/my/orders/sheet');
   } catch (e) {
     // fallback
   }

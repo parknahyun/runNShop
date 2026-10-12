@@ -45,7 +45,7 @@ export default async function CartPage() {
   let cartData: CartData | null = null;
 
   try {
-    cartData = await api<CartData>('/cart');
+    cartData = await api<CartData>('/my/cart');
   } catch (e) {
     // fallback
   }

@@ -6,12 +6,12 @@
 
 ---
 
-## 12. GET /api/v1/payment-methods — 결제수단 목록
+## 12. GET /api/mobile/v1/my/payment-methods — 결제수단 목록
 
 | 항목 | 내용 |
 |---|---|
 | Method | GET |
-| Path | /api/v1/payment-methods |
+| Path | /api/mobile/v1/my/payment-methods |
 | 인증 | Bearer {memberId} (필수) |
 
 #### Response 200
@@ -27,12 +27,12 @@
 
 ---
 
-## 13. POST /api/v1/payment-methods — 결제수단 등록
+## 13. POST /api/mobile/v1/my/payment-methods — 결제수단 등록
 
 | 항목 | 내용 |
 |---|---|
 | Method | POST |
-| Path | /api/v1/payment-methods |
+| Path | /api/mobile/v1/my/payment-methods |
 | 인증 | Bearer {memberId} (필수) |
 | 설명 | PG 토큰 발급 후 저장 (카드번호 서버 미저장) |
 
@@ -53,12 +53,12 @@
 
 ---
 
-## 14. DELETE /api/v1/payment-methods/{methodId} — 결제수단 삭제
+## 14. DELETE /api/mobile/v1/my/payment-methods/{methodId} — 결제수단 삭제
 
 | 항목 | 내용 |
 |---|---|
 | Method | DELETE |
-| Path | /api/v1/payment-methods/{methodId} |
+| Path | /api/mobile/v1/my/payment-methods/{methodId} |
 | 인증 | Bearer {memberId} (필수) |
 
 #### Response 200
@@ -69,12 +69,12 @@
 
 ---
 
-## 41. GET /api/v1/members/me/payments — 내 결제 이력 조회
+## 41. GET /api/mobile/v1/my/payments — 내 결제 이력 조회
 
 | 항목 | 내용 |
 |---|---|
 | Method | GET |
-| Path | /api/v1/members/me/payments |
+| Path | /api/mobile/v1/my/payments |
 | 인증 | Bearer {memberId} (필수) |
 | Query | `?from=&to=&page=1&size=10&sort=paidAt&direction=desc` |
 | 설명 | 본인 결제 건만 최신순으로 반환 (REQ-PAY-020) |

@@ -80,7 +80,7 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ or
   let data: OrderDetailData | null = null;
 
   try {
-    data = await api<OrderDetailData>(`/members/me/orders/${orderId}`);
+    data = await api<OrderDetailData>(`/my/orders/${orderId}`);
   } catch (e) {
     // fallback
   }
