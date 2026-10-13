@@ -22,5 +22,18 @@
       "Bash(curl -s \"http://localhost:3001/api/spec?file=product/product-list/ProductListPage.spec.md\" --max-time 8 -o /dev/null -w \"list-spec:%{http_code}\\\\n\")",
       "Bash(tee /private/tmp/claude-501/-Users-fepest-Documents-AI---runNshop/bac60d7e-0b5b-43e8-b7a4-149225ba3175/scratchpad/tsc_out.txt)"
     ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node .claude/hooks/workflow-guard.js"
+          }
+        ]
+      }
+    ]
   }
 }
