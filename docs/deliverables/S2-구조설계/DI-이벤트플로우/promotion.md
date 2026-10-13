@@ -13,7 +13,7 @@
 | ID | DESIGN-EVENT-PROMOTION-001 |
 | 상태 | **Draft** |
 | 작성일 | 2026-07-08 |
-| 갱신일 | 2026-07-08 |
+| 갱신일 | 2026-10-13 (입점사 쿠폰 승인 이벤트 추가, 이슈 #11) |
 
 > **범위**: Promotion 도메인과 Order·Catalog·Member·Notification 간 이벤트. 1차 본개발(Order+Payment)에서 Promotion은 PublicApi Mock으로 제공하며, 2차 파트에서 본 이벤트 구현.
 
@@ -30,6 +30,8 @@
 | EventStarted | (이벤트·기획전관리 — 부록 A) | 이벤트 도메인 기능, 세부 미확정 |
 | EventEnded | EVENT_ENDED (행사 종료) / (이벤트 종료 — 부록 A) | 행사가 종료는 확정, 이벤트 종료는 부록 A |
 
+> COUPON_SUBMITTED·COUPON_APPROVED·COUPON_REJECTED·COUPON_DEACTIVATED는 입점사(partner) 쿠폰 승인 워크플로우(REQ-PRM-040~042, 045)에서 도출된 이벤트이며 도메인정의서 발행 목록에는 없다(2026-10-13, 이슈 #11). 직매입 쿠폰은 승인 게이트를 생략하므로 COUPON_SUBMITTED·COUPON_APPROVED를 발행하지 않는다.
+>
 > DISPLAY_PRICE_CHANGED·COUPON_RESTORED·ORDER_* 수신 이벤트는 도메인정의서 발행 목록에는 없으나, 비즈니스 프로세스(DG)와 도메인 간 연동(의존 관계)에서 도출된 이벤트다.
 
 ---
@@ -43,6 +45,10 @@
 | COUPON_ISSUED | Promotion | Notification* | 쿠폰 발급 완료 | 고객에게 쿠폰 발급 알림 |
 | COUPON_USED | Promotion | Settlement* | 쿠폰 사용 (주문 결제) | 정산 시 쿠폰 할인액 반영 |
 | COUPON_RESTORED | Promotion | — | 쿠폰 복원 (주문 취소) | 내부 처리 (발급 건 AVAILABLE 복원) |
+| COUPON_SUBMITTED | Promotion | Notification* | 입점사 쿠폰 등록 (PENDING_APPROVAL 진입) | 승인 담당 관리자에게 승인 요청 알림 |
+| COUPON_APPROVED | Promotion | Notification* | 관리자 쿠폰 승인 (ACTIVE 전환) | 등록한 입점사에게 승인 알림 |
+| COUPON_REJECTED | Promotion | Notification* | 관리자 쿠폰 반려 (REJECTED 전환) | 등록한 입점사에게 반려 사유 알림 |
+| COUPON_DEACTIVATED | Promotion | Notification* | 입점사 쿠폰 비활성화 (ACTIVE→EXPIRED 조기 전환) | 관리자·입점사에게 비활성화 알림 |
 | ORDER_CANCELLED | Order | Promotion | 주문 취소 | 사용된 쿠폰 복원 (USED→AVAILABLE) |
 | ORDER_CONFIRMED | Order | Promotion* | 구매 확정 | 쿠폰 사용 확정 (복원 불가 상태 잠금) |
 | MEMBER_GRADE_CHANGED | Member | Promotion* | 회원 등급 변경 | 등급별 쿠폰 자동 발급 (승급 쿠폰) |
@@ -81,6 +87,12 @@ PRO -> NTF : COUPON_ISSUED 이벤트\n(발급 알림)
 
 == 쿠폰 사용 ==
 PRO -> STL : COUPON_USED 이벤트\n(정산 반영)
+
+== 입점사 쿠폰 승인 ==
+PRO -> NTF : COUPON_SUBMITTED 이벤트\n(승인 요청 알림)
+PRO -> NTF : COUPON_APPROVED 이벤트\n(승인 알림)
+PRO -> NTF : COUPON_REJECTED 이벤트\n(반려 사유 알림)
+PRO -> NTF : COUPON_DEACTIVATED 이벤트\n(비활성화 알림)
 
 == 주문 취소 시 쿠폰 복원 ==
 ORD -> PRO : ORDER_CANCELLED 이벤트
@@ -206,6 +218,72 @@ note right: 승급 쿠폰 자동 발급
 }
 ```
 
+### COUPON_SUBMITTED
+
+```json
+{
+  "eventType": "COUPON_SUBMITTED",
+  "eventId": "evt-ulid-107",
+  "timestamp": "2026-08-10T09:00:00Z",
+  "payload": {
+    "couponId": "cpn-ulid-002",
+    "couponName": "입점사 신상 5천원 할인",
+    "couponType": "PRODUCT",
+    "vendorId": "vnd-ulid-001",
+    "status": "PENDING_APPROVAL"
+  }
+}
+```
+
+### COUPON_APPROVED
+
+```json
+{
+  "eventType": "COUPON_APPROVED",
+  "eventId": "evt-ulid-108",
+  "timestamp": "2026-08-10T11:00:00Z",
+  "payload": {
+    "couponId": "cpn-ulid-002",
+    "vendorId": "vnd-ulid-001",
+    "approvedBy": "adm-001",
+    "status": "ACTIVE"
+  }
+}
+```
+
+### COUPON_REJECTED
+
+```json
+{
+  "eventType": "COUPON_REJECTED",
+  "eventId": "evt-ulid-109",
+  "timestamp": "2026-08-10T11:05:00Z",
+  "payload": {
+    "couponId": "cpn-ulid-002",
+    "vendorId": "vnd-ulid-001",
+    "rejectedBy": "adm-001",
+    "rejectReason": "최소 주문금액 기준 미달",
+    "status": "REJECTED"
+  }
+}
+```
+
+### COUPON_DEACTIVATED
+
+```json
+{
+  "eventType": "COUPON_DEACTIVATED",
+  "eventId": "evt-ulid-110",
+  "timestamp": "2026-08-20T09:00:00Z",
+  "payload": {
+    "couponId": "cpn-ulid-002",
+    "vendorId": "vnd-ulid-001",
+    "deactivatedBy": "VENDOR",
+    "status": "EXPIRED"
+  }
+}
+```
+
 ---
 
 ## 동기 vs 비동기 판단
@@ -219,6 +297,7 @@ note right: 승급 쿠폰 자동 발급
 | Promotion → Notification (쿠폰 발급 알림) | **비동기** (이벤트) | 알림은 후속 처리 |
 | Promotion → Settlement (쿠폰 사용) | **비동기** (이벤트) | 정산은 후속 처리 |
 | Member → Promotion (등급 변경) | **비동기** (이벤트) | 자동 발급은 후속 처리 |
+| Promotion → Notification (입점사 쿠폰 등록·승인·반려·비활성화 알림) | **비동기** (이벤트) | 알림은 후속 처리, 승인 처리 응답과 무관 |
 
 ---
 
@@ -246,3 +325,4 @@ note right: 승급 쿠폰 자동 발급
 | 쿠폰 복원 | REQ-PRM-003~004, 정산 정책 |
 | 가격 복원 | REQ-PRM-011~012, 정책서 §3.7 |
 | 승급 쿠폰 | 정책서 §4.3 회원 등급 혜택 |
+| 입점사 쿠폰 승인 이벤트 | REQ-PRM-040~042·045, `DH-상태머신/promotion.md` §2 쿠폰 상태머신(PENDING_APPROVAL·ACTIVE·REJECTED·EXPIRED) (이슈 #11, 2026-10-13) |
