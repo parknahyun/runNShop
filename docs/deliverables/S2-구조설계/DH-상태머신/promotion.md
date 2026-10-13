@@ -13,7 +13,7 @@
 | ID | DESIGN-SM-PROMOTION-001 |
 | 상태 | **Draft** |
 | 작성일 | 2026-07-08 |
-| 갱신일 | 2026-07-08 |
+| 갱신일 | 2026-10-13 (partner 쿠폰 "협의 대기" 해제, 이슈 #7) |
 
 ---
 
@@ -174,15 +174,15 @@ end note
 
 ## 2. prm_coupon.status (쿠폰 정의)
 
-> ⚠️ **협의 대기**: PENDING_APPROVAL 상태 및 직매입/입점형 승인 분기(is_platform_direct)는 입점사(partner) 프로모션 등록을 전제로 한다. 도메인정의서(DB)에 partner 채널이 추가된 후 확정한다(협의문서: `20260708_도메인정의서 Promotion 채널 보완 제안`). partner 채널 미확정 시 쿠폰은 admin(MD) 등록·즉시 ACTIVE 흐름만 유효하다.
+> **확정**: PENDING_APPROVAL 상태 및 직매입/입점형 승인 분기(is_platform_direct)는 입점사(partner) 프로모션 등록을 전제로 하며, 도메인정의서(DB)에 partner 채널이 추가되어(2026-10-13, 이슈 #5) 확정되었다. 직매입 쿠폰은 admin(MD) 등록 시 즉시 ACTIVE, 입점형 쿠폰은 입점사 등록 → PENDING_APPROVAL → 관리자 승인 시 ACTIVE 흐름이다.
 
 ### 상태 목록
 
 | 상태 | 설명 | 진입 조건 |
 |---|---|---|
-| PENDING_APPROVAL | 벤더 등록, MD 승인 대기 (⚠️ partner 협의 대기) | 입점사 쿠폰 등록 시 |
+| PENDING_APPROVAL | 벤더 등록, MD 승인 대기 | 입점사 쿠폰 등록 시 |
 | ACTIVE | 승인 완료, 발급·사용 가능 | MD 승인 또는 MD 직접 등록 |
-| REJECTED | 반려 (사유 기록) (⚠️ partner 협의 대기) | MD 반려 |
+| REJECTED | 반려 (사유 기록) | MD 반려 |
 | EXPIRED | 만료 (기간 경과 또는 조기 비활성화) | 배치 또는 비활성화 (⚠️ 발급·사용 가능 판정은 `status=ACTIVE AND now ≤ valid_to` 조합 — §3 판정식 원칙 동일 적용) |
 
 ### 전이 다이어그램
@@ -363,5 +363,5 @@ end note
 | 수량구간 할인 (선착순 없음, 기간 종료) | REQ-PRM-020, 021, 정책서 §3.11 |
 | 쿠폰 사용 검증 (AVAILABLE만) | REQ-PRM-003, 004 (상태 기반, 사용횟수 개념 아님) |
 | 장바구니 1건 제한 | REQ-PRM-032 |
-| 쿠폰 승인 워크플로우 (⚠️ partner 협의 대기) | REQ-PRM-040~042 |
+| 쿠폰 승인 워크플로우 | REQ-PRM-040~042 |
 | 쿠폰 복원 (주문 취소) | 정책서 §9 + 정산 정책 연동 |
