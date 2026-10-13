@@ -1,0 +1,12 @@
+{
+  "code": "SUCCESS",
+  "data": {
+    "items": [
+      { "type": "PRODUCT_REVIEW", "label": "상품 심사 대기", "count": 15, "link": "/products/review" },
+      { "type": "VENDOR_APPLY", "label": "입점 심사 대기", "count": 3, "link": "/vendors/apply" },
+      { "type": "CLAIM_PENDING", "label": "클레임 미처리", "count": 8, "link": "/orders/claims" },
+      { "type": "SETTLEMENT_CONFIRM", "label": "정산 확정 대기", "count": 2, "link": "/settlements" },
+      { "type": "OPERATOR_APPLY", "label": "운영자 승인 대기", "count": 1, "link": "/settings/operators/apply" }
+    ]
+  }
+}

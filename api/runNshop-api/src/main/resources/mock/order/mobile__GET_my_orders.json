@@ -1,0 +1,68 @@
+{
+  "code": "SUCCESS",
+  "data": {
+    "totalCount": 5,
+    "orders": [
+      {
+        "orderId": "ord-001",
+        "platformOrderNo": "ORD-20260626-001",
+        "productName": "나이키 페가수스 41",
+        "imageUrl": "https://placehold.co/80x80/f5f5f5/333?text=Pegasus41",
+        "optionName": "블랙 / 265",
+        "quantity": 1,
+        "amount": 152000,
+        "status": "DELIVERED",
+        "statusLabel": "배송완료",
+        "orderDate": "2026-06-26"
+      },
+      {
+        "orderId": "ord-002",
+        "platformOrderNo": "ORD-20260624-015",
+        "productName": "아식스 젤카야노 31",
+        "imageUrl": "https://placehold.co/80x80/f5f5f5/333?text=Kayano31",
+        "optionName": "화이트 / 270",
+        "quantity": 1,
+        "amount": 199000,
+        "status": "IN_DELIVERY",
+        "statusLabel": "배송중",
+        "orderDate": "2026-06-24"
+      },
+      {
+        "orderId": "ord-003",
+        "platformOrderNo": "ORD-20260622-008",
+        "productName": "호카 클리프턴 9",
+        "imageUrl": "https://placehold.co/80x80/f5f5f5/333?text=Clifton9",
+        "optionName": "오렌지 / 275",
+        "quantity": 1,
+        "amount": 169000,
+        "status": "CONFIRMED",
+        "statusLabel": "구매확정",
+        "orderDate": "2026-06-22"
+      },
+      {
+        "orderId": "ord-004",
+        "platformOrderNo": "ORD-20260620-003",
+        "productName": "나이키 드라이핏 ADV 러닝 티셔츠",
+        "imageUrl": "https://placehold.co/80x80/f5f5f5/333?text=DryFit",
+        "optionName": "네이비 / L",
+        "quantity": 2,
+        "amount": 118000,
+        "status": "CONFIRMED",
+        "statusLabel": "구매확정",
+        "orderDate": "2026-06-20"
+      },
+      {
+        "orderId": "ord-005",
+        "platformOrderNo": "ORD-20260618-021",
+        "productName": "온 클라우드서퍼 2",
+        "imageUrl": "https://placehold.co/80x80/f5f5f5/333?text=Cloudsurfer",
+        "optionName": "블랙 / 270",
+        "quantity": 1,
+        "amount": 209000,
+        "status": "CANCELLED",
+        "statusLabel": "취소",
+        "orderDate": "2026-06-18"
+      }
+    ]
+  }
+}

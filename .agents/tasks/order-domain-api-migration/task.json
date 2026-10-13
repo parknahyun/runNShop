@@ -1,0 +1,7 @@
+{
+  "task_id": "task-order-domain-api-migration",
+  "task_description": "회사 전체 API URL / Mock 파일 네이밍 리팩터 (naming/path-only, 비즈니스 로직·응답 바디·Mock JSON 데이터 내용 불변). (1) URL prefix를 /api/{channel}/{version}/{resource} 형태로 통일하고 고객웹(mobile) prefix를 /api/v1/**(채널명 없음)에서 /api/mobile/v1/**로 전환, (2) mobile 채널의 '본인 소유' 리소스(orders/claims/cart/payment-methods/summary)에 /my/ 세그먼트 적용, (3) Mock 파일 위치를 mock/{channel}/{domain}__... 에서 mock/{domain}/{channel}__... 구조로 전면 이동, (4) DL-인터페이스명세(order.md/payment.md/readme.md) Path 표기와 .kiro/KIRO_START.md 레퍼런스 갱신. admin/partner URL은 변경하지 않는다(해당 mock 폴더 이동만 수행). Controller/Service 클래스 구조는 변경하지 않는다.",
+  "status": "completed",
+  "feature_order": ["FEAT-001", "FEAT-002"],
+  "blocked_reason": null
+}

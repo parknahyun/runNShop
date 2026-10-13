@@ -1,0 +1,362 @@
+# 신규 참여자 온보딩 가이드
+
+**버전: 1.0**
+**전제**: Kiro IDE가 이미 설치되어 있다 (설치 자체는 https://kiro.dev/downloads 참고).
+**목적**: Kiro 설치 이후 "이 저장소에 연결 → 로컬에서 앱 실행 → 방법론에 따라 산출물 작성 →
+AI 코딩"까지, 처음 참여하는 사람이 실제로 손으로 따라 할 수 있는 순서로 정리한다.
+**관련 문서**: `docs/methodology/AI활용_개발방법론_v2.3.md`(방법론 전체 구조),
+`docs/methodology/AI활용_개발방법론_적용가이드_v2.0.md`(단계별 대표 산출물 실습, 이 문서의 3장이 요약),
+`.kiro/KIRO_START.md`(프로젝트 구조·기술스택·실행 명령어 상세)
+
+---
+
+## 1. Git 연결
+
+### 1.1 저장소 클론
+
+```bash
+git clone https://github.com/3top-fepest/runNshop.git
+cd runNshop
+```
+
+### 1.2 스파스 체크아웃 확인
+
+이 저장소는 `docs_archive/`·`docs_backup/`·`docs/methodology/archive/`·`docs/archive/`를
+워킹트리에서 제외하는 스파스 체크아웃(non-cone 모드)을 사용한다. 클론 직후 아래로 상태를
+확인한다:
+
+```bash
+git sparse-checkout list
+```
+
+```
+/*
+!/docs_archive/
+!/docs_backup/
+!/docs/methodology/archive/
+!/docs/archive/
+```
+
+위 4개 패턴이 그대로 보이면 정상이다. 이 설정은 `.git/info/sparse-checkout`에만 있는
+로컬 파일이라 커밋되지 않는다 — 클론마다 다시 지정해야 한다. 목록이 비어 있거나
+`/*` 한 줄뿐이면 아래 명령으로 다시 설정한다:
+
+```bash
+git sparse-checkout init --no-cone
+git sparse-checkout set --no-cone '/*' '!/docs_archive/' '!/docs_backup/' '!/docs/methodology/archive/' '!/docs/archive/'
+```
+
+> **주의**: `docs/` 하위 폴더를 이름 변경(rename)할 때는 위 패턴 중 그 폴더를 가리키는 항목도
+> 함께 갱신해야 한다. 패턴이 옛 경로를 가리킨 채로 남아 있으면 `git sparse-checkout reapply`나
+> 재클론 시 제외됐던 파일(`archive/` 등)이 워킹트리에 다시 나타날 수 있다. 폴더를 옮긴 뒤에는
+> `git sparse-checkout reapply`로 실제 반영 상태를 확인하는 것을 권장한다.
+
+### 1.3 브랜치 확인
+
+```bash
+git branch -a
+```
+
+- `main` — 항상 배포 가능 상태
+- `docs/api-convention-compliance-fixes` 등 `{type}/{설명}` 형식의 작업 브랜치
+
+작업을 시작하기 전에 반드시 새 브랜치를 만든다(직접 main에 커밋하지 않는다):
+
+```bash
+git checkout main
+git pull origin main
+git checkout -b feat/{app}-{설명}   # 예: feat/mobile-cart-badge
+```
+
+`{type}`은 `feat`/`fix`/`refactor`/`chore`, `{app}`은 `mobile`/`admin`/`partner`/`api`/`common` 중
+하나를 쓴다(코딩 표준 steering 규칙).
+
+### 1.4 Kiro에서 프로젝트 열기
+
+Kiro IDE에서 클론한 `runNshop` 폴더를 워크스페이스로 연다. `.kiro/steering/` 아래 8개 파일이
+자동으로 인식되며, 그중 `coding-standards.md`·`mock-data-rules.md`·`api-design-rules.md` 3개는
+`inclusion: always`라 매 대화마다 자동 적용된다. 별도 설정은 필요 없다 — 파일이 이미 저장소에
+커밋되어 있다.
+
+---
+
+## 2. 로컬 실행
+
+### 2.1 Back-end API (Kotlin + Spring Boot, 포트 8080)
+
+```bash
+cd api/runNshop-api
+./gradlew bootRun
+```
+
+기동되면 `http://localhost:8080/api/v1/cart`로 확인(장바구니 Mock 응답이 반환되면 정상).
+
+### 2.2 Front-end 앱 3종
+
+```bash
+# 플랫폼 고객웹 (Next.js 14, Tailwind)
+cd apps/runNshop-mobile && npm install && npm run dev   # http://localhost:3000
+
+# 플랫폼 어드민 (Next.js 15, CSR SPA)
+cd apps/runNshop-admin && npm install && npm run dev    # http://localhost:3001
+
+# 플랫폼 입점사 (Next.js 15, CSR SPA)
+cd apps/runNshop-partner && npm install && npm run dev  # http://localhost:3002
+```
+
+세 앱 모두 `NEXT_PUBLIC_API_BASE=http://localhost:8080`를 기본값으로 쓴다 — 다른 값이 필요하면
+각 앱 루트에 `.env.local`을 만든다(`.kiro/KIRO_START.md` "환경변수 정의" 참고).
+
+### 2.3 확인 체크리스트
+
+- [ ] `./gradlew bootRun`으로 API 서버가 8080에서 뜬다
+- [ ] mobile(3000)·admin(3001)·partner(3002) 세 앱이 각각 뜬다
+- [ ] mobile에서 상품상세 → 장바구니 흐름이 실제 API 응답(Mock)으로 동작한다
+
+---
+
+## 3. 방법론에 따라 산출물 작성하기 — Catalog 도메인 합류 시나리오
+
+이 저장소는 사람이 산출물을 처음부터 새로 쓰는 게 아니라, **방법론(지침서)이 정한 순서·양식대로
+AI 초안을 생성하고 사람이 검토·확정**하는 방식으로 진행한다. Order·Payment(1차 파트)는 이미
+상세설계까지 진행됐고, Catalog는 2차 파트로 아직 Domain 단위 설계가 착수되지 않은 상태다
+(`docs/deliverables/S0~S1`에는 Project 범위 산출물만 있고, `S2~S3`에는 Catalog 파일이 아직
+없다). 아래는 **Catalog 도메인 작업에 새로 합류했다고 가정**하고, 현황 확인 → 수정 → 신규 →
+검토 순서로 실습한다. 검토를 마지막에 두는 이유는, 지금까지 고치고 새로 만든 결과를 아직
+해결되지 않은 경계 이슈와 함께 최종 점검하는 게이트로 두는 게 자연스럽기 때문이다.
+
+### 3.1 지금 필요한 문서가 무엇인지 확인
+
+| 하려는 일 | 볼 문서 |
+|---|---|
+| "이 산출물이 몇 단계·어느 Scope에 속하나" | 지침서 6장 (단계별 표) |
+| "이 산출물에 어떤 항목을 담아야 하나" | `docs/methodology/appendix/AI활용_개발방법론_산출물_표준양식_v1.0.md` |
+| "어떤 프롬프트로 AI 초안을 뽑나" | `docs/methodology/appendix/AI활용_개발방법론_프롬프트_라이브러리_v2.0.md` |
+| "어떤 순서·기준으로 판단하며 완성하나" | `docs/methodology/AI활용_개발방법론_적용가이드_v2.0.md` |
+| "실제 완성된 결과물이 어떤 모습인가" | `docs/deliverables/` (단계별 실 프로젝트 산출물) |
+
+산출물 종류(Proposal/Spec/Design/Task)마다 세부 판단 기준이 다르다 — 작성가이드 문서의 "온보딩"
+섹션과 "0. 공통 작성 절차"를 먼저 읽고, 아래 실습에서 담당 산출물 절만 골라 참고한다.
+
+### 3.2 산출물 현황 확인
+
+Catalog 도메인에 합류하면 가장 먼저 "이미 있는 것"과 "아직 없는 것"을 구분한다.
+
+| 확인 대상 | 실제 위치 | 상태 |
+|---|---|---|
+| 도메인 경계 (Project 범위, 이미 확정) | `docs/deliverables/S1-범위정의/DB-도메인정의서.md` "3. Catalog" 절 | 완료 — 소유 데이터·경계 규칙 확정됨 |
+| 컴포넌트 (Project 범위, 이미 확정) | `docs/deliverables/S1-범위정의/D9-컴포넌트.md` | 완료 — `catalog` 패키지 스캐폴딩됨 |
+| Domain 단위 설계 (상위UC·EARS·ERD·상태머신) | `docs/deliverables/S2-구조설계/` | 미착수 — Order·Payment 파일만 있음 |
+| Bolt 단위 설계 (세부UC·인터페이스명세·시퀀스 등) | `docs/deliverables/S3-상세설계/` | 미착수 |
+| 업무 참고자료 (정식 산출물 아님) | `docs/reference/working/도메인기능표/02-Catalog.md` | 있음 — 49개 기능, 난이도·공수 포함 |
+| 다른 도메인이 Catalog를 미리 참조한 부분 | `docs/deliverables/S2-구조설계/DI-이벤트플로우/order.md` | Catalog 관련 이벤트 3건이 `*`(지연 구현)로 표시됨 |
+
+→ 결론: Project 범위(도메인정의서·컴포넌트)는 끝나 있으니 건드리지 않는다. 지금 할 일은
+① Catalog가 관여하는 기존 산출물의 **수정**(이벤트플로우의 `*` 해제)과 ② Catalog 자체의
+Domain 단위 산출물 **신규 작성**이다.
+
+### 3.3 산출물 수정 작업
+
+`DI-이벤트플로우/order.md`는 이미 존재하는 산출물이지만, Catalog가 착수되기 전이라 Catalog가
+수신하는 이벤트(`ORDER_CANCELLED`·`CLAIM_COMPLETED`·`CLAIM_EXCHANGE_SHIPPED`)가 `*`(수신측
+지연 구현) 표시로 남아 있다. Catalog 착수 시점이 되었으니 이 표시를 해제하고 실제 수신 처리를
+보완한다.
+
+1. **위치 확인** — 지침서 6.3 구조설계 표에서 `DI 이벤트 플로우`(Domain 간 범위)
+2. **수정 대상 확인** — `docs/deliverables/S2-구조설계/DI-이벤트플로우/order.md`에서 `Catalog*`로
+   표시된 행 전체(`ORDER_CANCELLED`·`CLAIM_COMPLETED`·`CLAIM_EXCHANGE_SHIPPED`)
+3. **AI 초안 생성**:
+
+   ```
+   [역할]
+   당신은 이벤트 기반 아키텍처에 능한 시니어 설계자입니다.
+
+   [컨텍스트]
+   - 기존 이벤트플로우: docs/deliverables/S2-구조설계/DI-이벤트플로우/order.md
+     (ORDER_CANCELLED·CLAIM_COMPLETED·CLAIM_EXCHANGE_SHIPPED 행, Catalog가 `*`로 표시됨)
+   - Catalog 도메인 경계: docs/deliverables/S1-범위정의/DB-도메인정의서.md "3. Catalog" 절
+   - Catalog 소유 데이터: 재고 선점/복원 PublicApi (도메인정의서 "하는 것" 목록)
+
+   [작업]
+   Catalog가 착수되었으므로, 위 3개 이벤트의 Catalog 수신측 처리를 `*`(지연) 표시에서
+   실제 시퀀스로 전환해 이 문서를 갱신하세요.
+
+   [출력형식]
+   - 기존 표 형식 유지, `*` 제거하고 "Catalog 수신 처리" 열에 실제 동작(재고 복원/차감) 기술
+   - 필요 시 시퀀스 다이어그램(plantuml) 보완
+
+   [제약조건]
+   - 기존 발행측(Order) 로직·이벤트명은 변경하지 않음, 수신측만 보완
+   - Outbox 패턴(C5 이벤트설계컨벤션) 준수
+
+   [품질기준]
+   - 5.1 일관성 — 기존 문서의 다른 행과 표 구조 동일
+   - 5.3 변경 영향 분석 — 이 변경이 상태머신·시퀀스에 영향 있는지 명시
+   ```
+
+4. **Human Review** — 재고 복원 로직의 동시성 처리(선점 취소 시점) 확정
+5. **선후행 정합성 확인** — 이 수정 결과를 3.4에서 신규 작성할 Catalog 상태머신·시퀀스와
+   나중에 대조해 모순이 없는지 확인(3.5에서 함께 점검)
+
+### 3.4 산출물 신규 작업
+
+Catalog의 Domain 단위 산출물이 아직 없으므로 상위 유스케이스부터 새로 작성한다.
+
+1. **위치 확인** — 지침서 6.3 구조설계 표에서 `DC 상위 유스케이스`(Domain 범위, 입력자료:
+   도메인정의서·정책서)
+2. **선행 산출물 확인** — `docs/deliverables/S1-범위정의/DB-도메인정의서.md` "3. Catalog"
+   절, `docs/reference/working/도메인기능표/02-Catalog.md`(업무 후보 49건)
+3. **AI 초안 생성** — 프롬프트 라이브러리 "14. Design — 상위 유스케이스" 절을 Catalog에
+   맞게 채운다:
+
+   ```
+   [역할]
+   당신은 도메인 분석에 능한 시니어 시스템 분석가입니다.
+
+   [컨텍스트]
+   - 도메인정의서: docs/deliverables/S1-범위정의/DB-도메인정의서.md "3. Catalog" 절
+     (하는 것/하지 않는 것, 소유 데이터)
+   - 도메인기능표: docs/reference/working/도메인기능표/02-Catalog.md (49개 기능 후보, 참고자료일
+     뿐 정식 확정 아님)
+   - 기존 패턴 참고: docs/deliverables/S2-구조설계/DC-상위유스케이스/order.md
+     (액터-UC 관계도 형식)
+
+   [작업]
+   Catalog 도메인의 액터별 상위 유스케이스를 도출하세요.
+
+   [출력형식]
+   - 액터 정의(고객/입점사/어드민 역할별 권한 범위)
+   - 액터-유스케이스 관계도(plantuml usecase)
+   - 유스케이스가 여러 업무 갈래로 나뉘면 업무그룹(대분류)으로 소제목 구분
+
+   [제약조건]
+   - 세부 유스케이스(버튼 단위)가 아니라 액터가 "하나의 목표를 완수하는" 수준으로 작성
+   - 도메인기능표의 N/A 항목(코드·정책 근거 없는 기능)은 유스케이스로 만들지 않음
+   - Bounded Context 경계(Catalog가 "하지 않는 것")를 넘지 않음
+
+   [품질기준]
+   - 5.1 완전성 — 도메인기능표의 "근거 있음" 기능이 최소 1개 유스케이스에 대응
+   - Bolt 분할(부록 A 기준)의 입력자료가 되므로 액터 목표 단위 준수
+   ```
+
+4. **Gap 판별** — 도메인기능표의 N/A 항목(연령 제한·세금 설정 등 근거 없는 기능)은 유스케이스로
+   만들지 않고 제외 사유를 남긴다
+5. **다음 산출물로 이어짐** — 확정된 상위 유스케이스는 EARS(DD)·ERD(DF)의 입력자료가 된다
+   (지침서 6.3 순서)
+
+### 3.5 산출물 검토 작업
+
+Domain 설계를 확정하기 전에, 3.3~3.4에서 만든 결과와 아직 해결되지 않은 경계 이슈를 함께
+점검한다. `docs/reference/working/도메인기능표/README.md` "Human Review 필요 항목" 표에 Catalog(02)
+관련 미해결 4건이 이미 있다:
+
+| # | 항목 | 검토 시 확인할 점 |
+|---|---|---|
+| 4 | 상품문의 소유권 (Catalog vs Community) | 도메인정의서 "경계 규칙 #9"(상품문의=Community 소유)와 3.4에서 작성한 상위 유스케이스가 어긋나지 않는지 |
+| 7 | Catalog 상품 등록 이중 플로우 정본 결정 | `runNshop-partner` 마법사형 등록과 admin 단순 모달 중 어느 것을 정본으로 삼을지, 3.4 상위 유스케이스에 두 플로우를 모두 남겼는지 |
+| 13 | "장바구니 담기" 도메인 소유권 (Order vs Catalog) | 이미 Order 도메인으로 구현·설계됨(`DC-상위유스케이스/order.md`) — 3.4에서 Catalog가 이를 중복 정의하지 않았는지 |
+| 17 | 기획전참여신청·이벤트신청 소관 (Catalog vs Promotion) | 3.4 상위 유스케이스에 포함할지, Promotion 착수 시로 미룰지 |
+
+이 표와 별개로, 3.3에서 수정한 이벤트플로우도 함께 검토한다 — 재고 복원 시퀀스가 3.4의 상위
+유스케이스(재고 선점·복원 관련 항목)와 같은 전제를 쓰고 있는지 대조한다.
+
+검토 결과 확정된 항목만 반영해 3.3·3.4의 초안을 최종본으로 승격하고, 아직 결정이 안 된 항목은
+Human Review로 계속 남긴다(작성가이드 "0. 공통 작성 절차" 4·6번과 동일한 절차).
+
+### 3.6 참고 자산(자산활용)
+
+산출물을 새로 쓸 때는 아래 자산을 먼저 확인해 재사용한다(신규 작성보다 자산 재사용이 우선):
+
+- `docs/deliverables/conventions/` — C1~C9 컨벤션(보안·용어·아키텍처·데이터·이벤트·API·디자인시스템·
+  UX Writing·코딩)
+- `docs/reference/working/도메인기능표/`, `도메인정의서.md` — 업무 이해를 위한 참고 자료
+- `.kiro/steering/` — 위 컨벤션 중 코드 구현에 바로 쓰이는 규칙의 Kiro 전용 축약본
+
+---
+
+## 4. AI로 코딩하기
+
+설계 산출물이 확정되면, 그 산출물을 컨텍스트로 Kiro에게 코드 구현을 요청한다. 아래는 실제
+저장소 상태를 기준으로 한 실습이다.
+
+### 4.1 실제 코드 상태 확인
+
+`GET /api/v1/cart`는 이미 구현돼 있다:
+
+```kotlin
+// api/runNshop-api/src/main/kotlin/com/runnshop/order/controller/CustomerCartController.kt
+@RestController
+class CustomerCartController(private val mockLoader: MockLoader) {
+    @GetMapping("/api/v1/cart")
+    fun getCart(): ResponseEntity<Any> {
+        val data = mockLoader.load("v1", "order__GET_cart.json")
+        return ResponseEntity.ok(data)
+    }
+}
+```
+
+반면 클래스 설계(`docs/deliverables/S3-상세설계/DP-클래스설계/order.md`)에는
+`CartController.addToCart`(`POST /api/v1/cart/items`, 장바구니 담기)가 정의돼 있지만 아직
+코드로 구현되지 않았다 — `order/service/`, `order/dto/` 패키지가 비어 있는 상태다. 이 gap이
+아래 실습의 대상이다.
+
+### 4.2 실습: "장바구니 담기" API 구현 요청
+
+Kiro 채팅에 아래처럼 요청한다(프롬프트 라이브러리 "30. Code — 코드 구현" 절 형식을 따른 예시):
+
+```
+[역할] Kotlin/Spring Boot 커머스 백엔드 개발자로서
+
+[컨텍스트]
+- 클래스 설계: docs/deliverables/S3-상세설계/DP-클래스설계/order.md의
+  CartController.addToCart, CartService.addToCart
+- 인터페이스 명세: docs/deliverables/S3-상세설계/DL-인터페이스명세/order.md
+  "1. POST /api/v1/cart/items"
+- GWT: docs/deliverables/S3-상세설계/DJ-GWT수용기준/order.md §1
+  (AC-ORD-008: 품절 상품 담기 시도 → PRODUCT_NOT_AVAILABLE)
+- 기존 구현: CustomerCartController.kt (GET /api/v1/cart, 참고용 패턴)
+
+[작업] POST /api/v1/cart/items(장바구니 담기)를 구현하세요.
+
+[출력형식] Controller → Service → MockLoader 구조, Mock JSON은
+  order__POST_cart_items.json으로 신규 생성
+
+[제약조건] steering의 coding-standards.md·mock-data-rules.md·api-design-rules.md 준수,
+  DTO는 인터페이스 명세의 Request/Response 필드와 1:1 대응
+
+[품질기준] 컴파일 성공, GWT AC-ORD-008의 예외 응답(409 PRODUCT_NOT_AVAILABLE)이
+  Mock으로 재현되는지 확인
+```
+
+Kiro는 `.kiro/steering/`의 always 규칙(코딩 표준·Mock 규칙·API 설계 규칙)을 자동으로 함께
+참조하므로 위 프롬프트에 그 내용을 다시 나열할 필요는 없다.
+
+### 4.3 결과 검증
+
+1. **컴파일** — `./gradlew build`
+2. **실행 확인** — `bootRun` 후 `POST http://localhost:8080/api/v1/cart/items`에 정상/품절 두
+   케이스로 요청해 GWT `AC-ORD-008`의 기대 응답(`409 PRODUCT_NOT_AVAILABLE`)이 재현되는지 확인
+3. **설계 정합성** — 실제 구현이 클래스 설계와 다르게 나온 부분이 있으면(코딩 표준 "구현 완료
+   표시" 규칙 등), 조용히 넘어가지 않고 클래스 설계 문서에 diff로 남긴다(작성가이드 "코드 구현"
+   절 판단 기준)
+
+### 4.4 반복
+
+Bolt 하나(설계 확정 → AI 초안 → 사람 검토 → 코드 구현 → 자동 검증)가 끝나면 다음 Bolt로
+넘어간다. 방법론 전체 반복 구조는 지침서 4.3 "단계진행 절차"를 참고한다.
+
+---
+
+## 변경 이력
+
+v1.0 (2026-08-25): 초판 작성 — Kiro 설치 이후 git 연결부터 로컬 실행, 방법론에 따른 산출물
+작성, AI 코딩까지를 실제 저장소 상태(장바구니 담기 Bolt) 기준 실습으로 구성.
+
+v1.1 (2026-08-25): 3장 "방법론에 따라 산출물 작성하기"를 **Catalog 도메인 합류 시나리오**로
+재구성 — 기존에는 이미 상세설계까지 끝난 Order 도메인의 인터페이스 명세 1건만 예로 들었으나,
+아직 착수되지 않은 Catalog 도메인(`docs/deliverables/S2~S3`에 파일 없음, 참고자료
+`도메인기능표/02-Catalog.md`만 존재)을 예로 들어 "신규 합류자가 실제로 마주치는 상태"를
+반영했다. 3.2 산출물 현황 확인(있는 것/없는 것 구분) → 3.3 산출물 수정 작업(이벤트플로우의
+Catalog `*` 지연표시 해제) → 3.4 산출물 신규 작업(상위 유스케이스 신규 작성) → 3.5 산출물
+검토 작업(도메인기능표 README의 Catalog 관련 미해결 Human Review 4건 + 3.3·3.4 결과 교차
+점검)의 4단계로 분리했다. 기존 3.3(참고 자산)은 3.6으로 이동.

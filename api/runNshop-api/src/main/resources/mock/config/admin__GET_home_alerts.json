@@ -1,0 +1,10 @@
+{
+  "code": "SUCCESS",
+  "data": {
+    "items": [
+      { "id": 1, "level": "WARN", "message": "출고기한 초과 주문 2건 발생", "created_at": "2026-06-26 09:15:00" },
+      { "id": 2, "level": "INFO", "message": "정산 확정 완료 (2026년 5월)", "created_at": "2026-06-25 18:00:00" },
+      { "id": 3, "level": "ERROR", "message": "결제 승인 오류 임계치 초과 (10분 내 3건)", "created_at": "2026-06-25 14:32:00" }
+    ]
+  }
+}

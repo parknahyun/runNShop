@@ -1,0 +1,173 @@
+{
+  "code": "SUCCESS",
+  "data": {
+    "page_code": "HOME",
+    "areas": [
+      {
+        "area_type": "MAIN_BANNER",
+        "title": "메인 배너",
+        "items": [
+          {
+            "id": 1,
+            "image_url": "https://placehold.co/360x200/FF4D00/ffffff?text=SUMMER+RUNNING",
+            "title": "여름 러닝 기획전",
+            "link": "/exhibitions/SUMMER2026"
+          },
+          {
+            "id": 2,
+            "image_url": "https://placehold.co/360x200/1A1A1A/ffffff?text=NEW+ARRIVALS",
+            "title": "신상품 입고",
+            "link": "/category/CAT_001"
+          },
+          {
+            "id": 3,
+            "image_url": "https://placehold.co/360x200/00C853/ffffff?text=CHALLENGE",
+            "title": "7월 러닝 챌린지",
+            "link": "/exhibitions/CHALLENGE202607"
+          }
+        ]
+      },
+      {
+        "area_type": "MD_RECOMMEND",
+        "title": "MD 추천 상품",
+        "items": [
+          {
+            "product_id": 101,
+            "product_name": "나이키 페가수스 41",
+            "brand": "Nike",
+            "image_url": "https://placehold.co/360x360/f5f5f5/333?text=Pegasus+41",
+            "price_original": 179000,
+            "price_sale": 152000,
+            "discount_rate": 15,
+            "rating": 4.7,
+            "review_count": 324
+          },
+          {
+            "product_id": 102,
+            "product_name": "아식스 젤카야노 31",
+            "brand": "Asics",
+            "image_url": "https://placehold.co/360x360/f5f5f5/333?text=Kayano+31",
+            "price_original": 229000,
+            "price_sale": 199000,
+            "discount_rate": 13,
+            "rating": 4.8,
+            "review_count": 512
+          },
+          {
+            "product_id": 103,
+            "product_name": "호카 클리프턴 9",
+            "brand": "Hoka",
+            "image_url": "https://placehold.co/360x360/f5f5f5/333?text=Clifton+9",
+            "price_original": 199000,
+            "price_sale": 169000,
+            "discount_rate": 15,
+            "rating": 4.6,
+            "review_count": 287
+          },
+          {
+            "product_id": 104,
+            "product_name": "뉴발란스 퓨얼셀 SC 트레이너",
+            "brand": "New Balance",
+            "image_url": "https://placehold.co/360x360/f5f5f5/333?text=FuelCell+SC",
+            "price_original": 259000,
+            "price_sale": 219000,
+            "discount_rate": 15,
+            "rating": 4.5,
+            "review_count": 156
+          }
+        ]
+      },
+      {
+        "area_type": "EXHIBITION",
+        "title": "진행중 기획전",
+        "items": [
+          {
+            "exhibition_code": "SUMMER2026",
+            "title": "여름 러닝 페스티벌",
+            "thumbnail_url": "https://placehold.co/340x200/FF4D00/fff?text=SUMMER+FEST",
+            "status": "ACTIVE",
+            "start_date": "2026-06-01",
+            "end_date": "2026-07-31"
+          },
+          {
+            "exhibition_code": "TRAIL2026",
+            "title": "트레일 러닝 장비 특가",
+            "thumbnail_url": "https://placehold.co/340x200/00C853/fff?text=TRAIL+SALE",
+            "status": "ACTIVE",
+            "start_date": "2026-06-15",
+            "end_date": "2026-07-15"
+          }
+        ]
+      },
+      {
+        "area_type": "NEW_PRODUCT",
+        "title": "신상품",
+        "items": [
+          {
+            "product_id": 201,
+            "product_name": "아디다스 아디제로 보스턴 13",
+            "brand": "Adidas",
+            "image_url": "https://placehold.co/360x360/f5f5f5/333?text=Boston+13",
+            "price_original": 189000,
+            "price_sale": 189000,
+            "discount_rate": 0,
+            "rating": 0,
+            "review_count": 0
+          },
+          {
+            "product_id": 202,
+            "product_name": "온 클라우드서퍼 2",
+            "brand": "On",
+            "image_url": "https://placehold.co/360x360/f5f5f5/333?text=Cloudsurfer+2",
+            "price_original": 209000,
+            "price_sale": 209000,
+            "discount_rate": 0,
+            "rating": 0,
+            "review_count": 0
+          },
+          {
+            "product_id": 203,
+            "product_name": "살로몬 S/LAB 울트라 4",
+            "brand": "Salomon",
+            "image_url": "https://placehold.co/360x360/f5f5f5/333?text=SLAB+Ultra4",
+            "price_original": 349000,
+            "price_sale": 349000,
+            "discount_rate": 0,
+            "rating": 0,
+            "review_count": 0
+          }
+        ]
+      },
+      {
+        "area_type": "BRAND_BANNER",
+        "title": "브랜드",
+        "items": [
+          {
+            "brand_id": 1,
+            "brand_name": "Nike",
+            "image_url": "https://placehold.co/160x80/1A1A1A/fff?text=Nike",
+            "link": "/category/CAT_001?brand=nike"
+          },
+          {
+            "brand_id": 2,
+            "brand_name": "Asics",
+            "image_url": "https://placehold.co/160x80/1A1A1A/fff?text=Asics",
+            "link": "/category/CAT_001?brand=asics"
+          },
+          {
+            "brand_id": 3,
+            "brand_name": "Hoka",
+            "image_url": "https://placehold.co/160x80/1A1A1A/fff?text=Hoka",
+            "link": "/category/CAT_001?brand=hoka"
+          },
+          {
+            "brand_id": 4,
+            "brand_name": "On",
+            "image_url": "https://placehold.co/160x80/1A1A1A/fff?text=On",
+            "link": "/category/CAT_001?brand=on"
+          }
+        ]
+      }
+    ]
+  }
+}

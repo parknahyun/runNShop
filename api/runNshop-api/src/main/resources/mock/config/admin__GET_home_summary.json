@@ -1,0 +1,15 @@
+{
+  "code": "SUCCESS",
+  "data": {
+    "cards": [
+      { "key": "new_orders", "label": "신규 주문", "value": 47, "change": 12, "unit": "건" },
+      { "key": "new_members", "label": "신규 회원", "value": 23, "change": 5, "unit": "명" },
+      { "key": "claims", "label": "클레임", "value": 8, "change": -2, "unit": "건" }
+    ],
+    "products_summary": {
+      "on_sale": 1247,
+      "sold_out": 89,
+      "under_review": 15
+    }
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "code": "SUCCESS",
+  "data": {
+    "orders": [
+      { "orderId": "ord-001", "platformOrderNo": "ORD-20260626-001", "productName": "나이키 페가수스 41", "customer": "홍*동", "vendorName": "나이키코리아", "status": "ORDER_RECEIVED", "amount": 152000, "orderDate": "2026-06-26 09:15" },
+      { "orderId": "ord-002", "platformOrderNo": "ORD-20260626-002", "productName": "아식스 젤카야노 31", "customer": "김*수", "vendorName": "아식스코리아", "status": "PAYMENT_COMPLETED", "amount": 199000, "orderDate": "2026-06-26 10:30" },
+      { "orderId": "ord-003", "platformOrderNo": "ORD-20260625-015", "productName": "호카 클리프턴 9", "customer": "이*미", "vendorName": "호카코리아", "status": "PREPARING", "amount": 169000, "orderDate": "2026-06-25 14:22" },
+      { "orderId": "ord-004", "platformOrderNo": "ORD-20260625-014", "productName": "뉴발란스 퓨얼셀 SC", "customer": "박*희", "vendorName": "뉴발란스", "status": "IN_DELIVERY", "amount": 219000, "orderDate": "2026-06-25 11:45" },
+      { "orderId": "ord-005", "platformOrderNo": "ORD-20260624-042", "productName": "온 클라우드서퍼 2", "customer": "최*준", "vendorName": "온코리아", "status": "DELIVERED", "amount": 209000, "orderDate": "2026-06-24 16:00" },
+      { "orderId": "ord-006", "platformOrderNo": "ORD-20260624-041", "productName": "아디다스 보스턴 13", "customer": "정*영", "vendorName": "아디다스코리아", "status": "CONFIRMED", "amount": 189000, "orderDate": "2026-06-24 13:20" },
+      { "orderId": "ord-007", "platformOrderNo": "ORD-20260623-033", "productName": "살로몬 S/LAB 울트라 4", "customer": "강*현", "vendorName": "살로몬코리아", "status": "CANCELLED", "amount": 349000, "orderDate": "2026-06-23 09:45" },
+      { "orderId": "ord-008", "platformOrderNo": "ORD-20260623-032", "productName": "브룩스 글리세린 21", "customer": "윤*서", "vendorName": "브룩스코리아", "status": "PAYMENT_COMPLETED", "amount": 229000, "orderDate": "2026-06-23 08:10" }
+    ],
+    "summary": {
+      "all": 8,
+      "orderReceived": 1,
+      "paymentCompleted": 2,
+      "preparing": 1,
+      "inDelivery": 1,
+      "delivered": 1,
+      "confirmed": 1,
+      "cancelled": 1
+    },
+    "pagination": { "page": 1, "size": 10, "totalCount": 8, "totalPages": 1 }
+  }
+}

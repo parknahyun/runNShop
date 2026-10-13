@@ -1,0 +1,40 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm --version)",
+      "Bash(npm init *)",
+      "Bash(npm install *)",
+      "Bash(node mock-server.js)",
+      "Bash(curl -s http://localhost:3001/api/routes)",
+      "Bash(curl -s http://localhost:3001/api/v1/cart)",
+      "Bash(curl -s http://localhost:3002/api/routes)",
+      "Bash(xargs -I{} echo {})",
+      "Bash(lsof -iTCP:3001 -sTCP:LISTEN -n -P)",
+      "Bash(curl -s -o /tmp/claim_page.html -w \"%{http_code}\\\\n\" http://localhost:3001/)",
+      "Bash(curl -s \"http://localhost:3001/api/spec?file=order/claim/ClaimPage.spec.md\")",
+      "Bash(chromium-cli --help)",
+      "Bash(node -e ' *)",
+      "Bash(npm ls *)",
+      "Bash(mkdir -p /private/tmp/claude-501/-Users-fepest-Documents-AI---runNshop/6a636e7e-bb84-4cee-8648-d5e02911e728/scratchpad/pw)",
+      "Bash(echo \"npm install exit: $?\")",
+      "Bash(npx playwright *)",
+      "Bash(mkdir -p shots)",
+      "Bash(node verify.js)",
+      "Bash(node verify2.js)",
+      "Bash(nohup npm run dev)",
+      "Bash(echo \"started pid $!\")",
+      "Bash(timeout 30 bash -c 'until curl -sf http://localhost:3001 >/dev/null; do sleep 1; done')",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" http://localhost:3001)",
+      "Bash(echo \"install exit: $?\")",
+      "Bash(kill 2323)",
+      "Bash(rm -rf .next)",
+      "Bash(nohup npm run dev > /tmp/runNshop-admin-dev.log 2>&1 & *)",
+      "Bash(node repro3.js)",
+      "Bash(node repro2.js)",
+      "Bash(node repro.js)"
+    ],
+    "additionalDirectories": [
+      "/private/tmp"
+    ]
+  }
+}

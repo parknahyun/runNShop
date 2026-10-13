@@ -1,0 +1,42 @@
+{
+  "code": "SUCCESS",
+  "data": {
+    "claimId": "clm-001",
+    "claimNo": "CLM-20260628-001",
+    "claimType": "RETURN",
+    "claimTypeLabel": "반품",
+    "status": "IN_PROGRESS",
+    "statusLabel": "처리중",
+    "orderId": "ord-003",
+    "platformOrderNo": "ORD-20260622-008",
+    "productName": "호카 클리프턴 9",
+    "imageUrl": "https://placehold.co/80x80/f5f5f5/333?text=Clifton9",
+    "optionName": "오렌지 / 275",
+    "quantity": 1,
+    "amount": 169000,
+    "refundAmount": 169000,
+    "reason": "사이즈가 맞지 않습니다",
+    "detailReason": "정사이즈보다 작게 나와서 한 치수 큰 걸로 교환하려다가 반품으로 변경했습니다.",
+    "responsibility": "CUSTOMER",
+    "responsibilityLabel": "구매자 귀책",
+    "returnShippingFee": 5000,
+    "createdAt": "2026-06-28 10:30",
+    "pickup": {
+      "carrier": "CJ대한통운",
+      "trackingNo": "9876543210",
+      "status": "수거중",
+      "requestedAt": "2026-06-29 09:00"
+    },
+    "refund": {
+      "method": "신용카드 (****-1234)",
+      "status": "환불 대기",
+      "expectedAt": "수거 확인 후 3~5영업일"
+    },
+    "timeline": [
+      { "at": "2026-06-28 10:30", "event": "반품 신청", "description": "고객이 반품을 접수했습니다." },
+      { "at": "2026-06-28 14:00", "event": "접수 확인", "description": "CS 담당자가 접수를 확인했습니다." },
+      { "at": "2026-06-29 09:00", "event": "수거 요청", "description": "CJ대한통운 수거가 요청되었습니다." },
+      { "at": "2026-06-29 15:00", "event": "수거 진행중", "description": "택배 기사가 방문 예정입니다." }
+    ]
+  }
+}

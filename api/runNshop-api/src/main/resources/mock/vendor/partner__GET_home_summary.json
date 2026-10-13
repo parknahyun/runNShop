@@ -1,0 +1,17 @@
+{
+  "code": "SUCCESS",
+  "data": {
+    "vendor": {
+      "vendor_id": 10,
+      "vendor_name": "나이키코리아",
+      "grade": "우수 (Pacer)",
+      "grade_score": 78
+    },
+    "cards": [
+      { "key": "today_orders", "label": "오늘 주문", "value": 12, "change": 3, "unit": "건" },
+      { "key": "today_sales", "label": "오늘 매출", "value": 2340000, "change": 450000, "unit": "원" },
+      { "key": "pending_shipping", "label": "출고 대기", "value": 5, "change": -2, "unit": "건" },
+      { "key": "claims", "label": "클레임 처리", "value": 2, "change": 1, "unit": "건" }
+    ]
+  }
+}

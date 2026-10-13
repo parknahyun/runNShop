@@ -1,0 +1,52 @@
+{
+  "code": "SUCCESS",
+  "data": {
+    "items": [
+      {
+        "exhibition_code": "SUMMER2026",
+        "title": "여름 러닝 페스티벌",
+        "thumbnail_url": "https://placehold.co/340x200/FF4D00/fff?text=SUMMER+FEST",
+        "status": "ACTIVE",
+        "start_date": "2026-06-01",
+        "end_date": "2026-07-31",
+        "product_count": 24
+      },
+      {
+        "exhibition_code": "TRAIL2026",
+        "title": "트레일 러닝 장비 특가",
+        "thumbnail_url": "https://placehold.co/340x200/00C853/fff?text=TRAIL+SALE",
+        "status": "ACTIVE",
+        "start_date": "2026-06-15",
+        "end_date": "2026-07-15",
+        "product_count": 18
+      },
+      {
+        "exhibition_code": "NEWRUNNER",
+        "title": "입문자를 위한 러닝 스타터 팩",
+        "thumbnail_url": "https://placehold.co/340x200/1A1A1A/fff?text=STARTER+PACK",
+        "status": "ACTIVE",
+        "start_date": "2026-06-10",
+        "end_date": "2026-07-10",
+        "product_count": 12
+      },
+      {
+        "exhibition_code": "MARATHON2026",
+        "title": "마라톤 시즌 준비",
+        "thumbnail_url": "https://placehold.co/340x200/3b82f6/fff?text=MARATHON",
+        "status": "SCHEDULED",
+        "start_date": "2026-08-01",
+        "end_date": "2026-09-30",
+        "product_count": 30
+      },
+      {
+        "exhibition_code": "SPRING2026",
+        "title": "봄 시즌 기획전",
+        "thumbnail_url": "https://placehold.co/340x200/9ca3af/fff?text=SPRING+ENDED",
+        "status": "ENDED",
+        "start_date": "2026-03-01",
+        "end_date": "2026-05-31",
+        "product_count": 20
+      }
+    ]
+  }
+}

@@ -1,0 +1,33 @@
+{
+  "code": "SUCCESS",
+  "data": {
+    "orderId": "ord-004",
+    "platformOrderNo": "ORD-20260625-014",
+    "status": "IN_DELIVERY",
+    "customer": "박*희",
+    "vendorName": "뉴발란스",
+    "amount": 219000,
+    "orderDate": "2026-06-25 11:45",
+    "items": [
+      { "productName": "뉴발란스 퓨얼셀 SC", "optionName": "그레이/270", "quantity": 1, "unitPrice": 219000, "subtotal": 219000 }
+    ],
+    "payment": { "method": "신용카드", "pgProvider": "토스페이먼츠", "transactionId": "TXN-004", "paidAt": "2026-06-25 11:45" },
+    "shipping": { "recipientName": "박*희", "phone": "010-****-1234", "address": "[06234] 서울 강남구 테헤란로 123", "carrier": "CJ대한통운", "trackingNumber": "1234567890" },
+    "history": [
+      { "fromStatus": "ORDER_RECEIVED", "toStatus": "PAYMENT_COMPLETED", "changedBy": "SYSTEM", "createdAt": "2026-06-25 11:45" },
+      { "fromStatus": "PAYMENT_COMPLETED", "toStatus": "PREPARING", "changedBy": "VENDOR", "createdAt": "2026-06-25 15:00" },
+      { "fromStatus": "PREPARING", "toStatus": "PREPARING", "changedBy": "VENDOR", "createdAt": "2026-06-26 09:00" }
+    ],
+    "claims": [
+      { "claimId": "CLM-20260628-001", "claimType": "RETURN", "status": "INSPECTING", "refundAmount": 147000, "extraShippingFee": 5000, "extraShippingFeeStatus": "PAID", "receivedAt": "2026-06-28 10:30" }
+    ],
+    "inquiries": [
+      { "inquiryId": "INQ-001", "type": "배송문의", "status": "답변완료", "writer": "박*희", "createdAt": "2026-06-27 10:00" }
+    ],
+    "logs": [
+      { "at": "2026-06-26 09:00", "event": "배송중", "detail": "운송장 등록 (CJ대한통운 1234567890)" },
+      { "at": "2026-06-25 15:00", "event": "출고 처리", "detail": "입점사 확인" },
+      { "at": "2026-06-25 11:45", "event": "결제 완료", "detail": "PG 승인 성공" }
+    ]
+  }
+}

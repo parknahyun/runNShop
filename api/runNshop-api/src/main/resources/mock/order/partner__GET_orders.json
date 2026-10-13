@@ -1,0 +1,18 @@
+{
+  "code": "SUCCESS",
+  "data": {
+    "orders": [
+      { "orderId": "ord-001", "platformOrderNo": "ORD-20260626-001", "productName": "나이키 페가수스 41", "customerName": "홍*동", "quantity": 1, "amount": 152000, "status": "PAYMENT_COMPLETED", "orderDate": "2026-06-26" },
+      { "orderId": "ord-002", "platformOrderNo": "ORD-20260626-002", "productName": "나이키 보메로 18", "customerName": "김*수", "quantity": 1, "amount": 189000, "status": "PAYMENT_COMPLETED", "orderDate": "2026-06-26" },
+      { "orderId": "ord-003", "platformOrderNo": "ORD-20260625-014", "productName": "나이키 드라이핏 ADV 러닝 티셔츠", "customerName": "이*영", "quantity": 2, "amount": 118000, "status": "PREPARING", "orderDate": "2026-06-25" },
+      { "orderId": "ord-004", "platformOrderNo": "ORD-20260624-031", "productName": "나이키 런닝 캡 드라이핏", "customerName": "박*진", "quantity": 1, "amount": 35000, "status": "IN_DELIVERY", "orderDate": "2026-06-24" },
+      { "orderId": "ord-005", "platformOrderNo": "ORD-20260622-009", "productName": "나이키 에어 줌 스트럭쳐 25", "customerName": "최*민", "quantity": 1, "amount": 159000, "status": "DELIVERED", "orderDate": "2026-06-22" },
+      { "orderId": "ord-006", "platformOrderNo": "ORD-20260618-002", "productName": "나이키 페가수스 41", "customerName": "정*훈", "quantity": 1, "amount": 152000, "status": "CONFIRMED", "orderDate": "2026-06-18" },
+      { "orderId": "ord-007", "platformOrderNo": "ORD-20260620-021", "productName": "나이키 윈드러너 재킷", "customerName": "서*아", "quantity": 1, "amount": 149000, "status": "CANCELLED", "orderDate": "2026-06-20" },
+      { "orderId": "ord-008", "platformOrderNo": "ORD-20260626-003", "productName": "나이키 드라이핏 ADV 러닝 티셔츠", "customerName": "윤*서", "quantity": 1, "amount": 59000, "status": "PAYMENT_COMPLETED", "orderDate": "2026-06-26" },
+      { "orderId": "ord-009", "platformOrderNo": "ORD-20260623-018", "productName": "나이키 보메로 18", "customerName": "장*우", "quantity": 1, "amount": 189000, "status": "IN_DELIVERY", "orderDate": "2026-06-23" },
+      { "orderId": "ord-010", "platformOrderNo": "ORD-20260621-006", "productName": "나이키 런닝 캡 드라이핏", "customerName": "한*빈", "quantity": 2, "amount": 70000, "status": "DELIVERED", "orderDate": "2026-06-21" }
+    ],
+    "pagination": { "page": 1, "size": 10, "totalCount": 10, "totalPages": 1 }
+  }
+}

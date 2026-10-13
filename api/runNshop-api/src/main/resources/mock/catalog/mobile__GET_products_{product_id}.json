@@ -1,0 +1,48 @@
+{
+  "code": "SUCCESS",
+  "data": {
+    "product_id": 101,
+    "product_name": "나이키 페가수스 41",
+    "brand": "Nike",
+    "category_code": "CAT_001",
+    "category_name": "러닝화",
+    "status": "ON_SALE",
+    "vendor_id": 10,
+    "vendor_name": "나이키코리아",
+    "images": [
+      "https://placehold.co/360x360/f5f5f5/333?text=Pegasus+41+Front",
+      "https://placehold.co/360x360/f5f5f5/333?text=Pegasus+41+Side",
+      "https://placehold.co/360x360/f5f5f5/333?text=Pegasus+41+Back",
+      "https://placehold.co/360x360/f5f5f5/333?text=Pegasus+41+Sole"
+    ],
+    "price_original": 179000,
+    "price_sale": 152000,
+    "discount_rate": 15,
+    "description": "가장 대중적인 러닝화의 새로운 버전. 리액트 폼 쿠셔닝으로 부드러운 착지감과 반발력을 동시에 제공합니다.",
+    "detail_html": "<p>나이키 페가수스 41은 매일 달리는 러너를 위해 설계되었습니다.</p><ul><li>리액트 폼 미드솔</li><li>플라이와이어 케이블</li><li>와플 아웃솔</li></ul>",
+    "skus": [
+      { "sku_id": 1001, "color": "블랙", "size": "250", "stock": 5, "status": "ON_SALE" },
+      { "sku_id": 1002, "color": "블랙", "size": "255", "stock": 3, "status": "ON_SALE" },
+      { "sku_id": 1003, "color": "블랙", "size": "260", "stock": 0, "status": "SOLD_OUT" },
+      { "sku_id": 1004, "color": "블랙", "size": "265", "stock": 7, "status": "ON_SALE" },
+      { "sku_id": 1005, "color": "블랙", "size": "270", "stock": 2, "status": "ON_SALE" },
+      { "sku_id": 1006, "color": "화이트", "size": "250", "stock": 4, "status": "ON_SALE" },
+      { "sku_id": 1007, "color": "화이트", "size": "255", "stock": 6, "status": "ON_SALE" },
+      { "sku_id": 1008, "color": "화이트", "size": "260", "stock": 1, "status": "ON_SALE" },
+      { "sku_id": 1009, "color": "화이트", "size": "265", "stock": 0, "status": "SOLD_OUT" },
+      { "sku_id": 1010, "color": "화이트", "size": "270", "stock": 3, "status": "ON_SALE" }
+    ],
+    "review_summary": {
+      "average_rating": 4.7,
+      "total_count": 324,
+      "rating_distribution": { "5": 210, "4": 78, "3": 25, "2": 8, "1": 3 }
+    },
+    "qna_count": 42,
+    "shipping": {
+      "fee": 3000,
+      "free_threshold": 50000,
+      "delivery_days": "1~2 영업일"
+    },
+    "release_date": "2026-03-15"
+  }
+}
