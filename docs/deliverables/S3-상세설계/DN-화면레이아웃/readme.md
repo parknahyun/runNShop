@@ -151,7 +151,7 @@
 | 11 | 주문 현황 (OrderHistory) |
 | 12 | 클레임 관리 (ClaimPage) |
 
-### partner (입점사) — §13~15
+### partner (입점사) — §13~16
 
 | § | 화면 |
 |---|---|
@@ -159,6 +159,7 @@
 | 13-1 | 클레임 상세 (ClaimDetail MDI 탭) |
 | 14 | 배송 관리 (ShippingPage) — 출고+회수+재배송 통합 |
 | 15 | 클레임 현황 (ClaimStatusPage) — 취소/반품/교환 통합 |
+| 16 | 쿠폰 관리 (CouponPage) — 입점사 쿠폰 목록·등록·비활성화 (Promotion, 2차 파트, 이슈 #11) |
 
 
 ---
