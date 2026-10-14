@@ -124,4 +124,4 @@ DN-화면레이아웃 설계 문서를 읽고 admin/partner/mobile FE 코드로 
 ## 브랜치 / PR 상태
 
 - 작업 브랜치: `fepest` (개인 브랜치, `main` 대비 커밋 3개 포함: Order 코딩 패턴 리팩토링 + skill 2종 신설 + Spring Boot 업그레이드)
-- PR: 공유 후 16:00 진행 예정 (`fepest` → `main`)
+- PR: 10월 14일 16:00 진행 예정 (`fepest` → `main`)
