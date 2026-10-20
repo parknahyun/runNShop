@@ -43,5 +43,7 @@ services:
       PARTNER_HOST: partner
       DOCS_HOST: docs
       PLANTUML_HOST: plantuml
+      DOCS_USER: ${DOCS_USER:-docs}
+      DOCS_PASSWORD: ${DOCS_PASSWORD:-}  # 필수 (.env). 비어 있으면 게이트웨이가 기동하지 않음
     depends_on: [api, mobile, admin, partner, docs, plantuml]
     restart: unless-stopped

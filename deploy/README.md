@@ -37,4 +37,10 @@ docker compose down --rmi local     # 컨테이너·네트워크·로컬 빌드 
 - 문서를 수정하면 서버에서 `git pull && docker compose up -d --build docs` 로 반영한다.
 - 로컬에서 `npx docsify-cli serve docs` 로 볼 때는 먼저 `node scripts/gen-docs-sidebar.js` 를 실행하고,
   PlantUML 은 `docker run -p 8081:8080 plantuml/plantuml-server:jetty-v1.2026.8` 를 띄워 두면 보인다.
-- 인증이 없으므로 서버 IP를 아는 누구나 문서를 볼 수 있다.
+- **인증(basic auth)**: `/docs/`, `/plantuml/` 은 비밀번호가 필요하다. 계정은 저장소 루트의 `.env`(git 제외)에 둔다.
+  ```bash
+  cp .env.example .env && nano .env      # DOCS_USER, DOCS_PASSWORD 설정
+  docker compose up -d --build           # 게이트웨이 재생성되며 계정 반영
+  ```
+  `DOCS_PASSWORD` 가 비어 있으면 게이트웨이가 기동하지 않는다(인증 없이 열리지 않도록). 비밀번호 변경도 `.env` 수정 후 `docker compose up -d gateway`.
+- `/`, `/admin`, `/partner`, `/api` 는 인증 대상이 아니다.
