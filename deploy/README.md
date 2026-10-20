@@ -30,3 +30,11 @@ docker compose ps
 cd <기존 runNShop 디렉터리>
 docker compose down --rmi local     # 컨테이너·네트워크·로컬 빌드 이미지 제거
 ```
+
+## 문서 사이트 (docsify)
+- 주소: `http://<서버IP>/docs/` — `docs/` 마크다운을 docsify로 서빙. 사이드바는 빌드 시 `scripts/gen-docs-sidebar.js`가 디렉터리 트리로 생성한다 (`docs/_sidebar.md`, git 제외).
+- PlantUML 다이어그램은 외부(plantuml.com)로 보내지 않고 compose의 `plantuml` 컨테이너(`/plantuml/`)가 렌더링한다. 메모리 상한 512MB.
+- 문서를 수정하면 서버에서 `git pull && docker compose up -d --build docs` 로 반영한다.
+- 로컬에서 `npx docsify-cli serve docs` 로 볼 때는 먼저 `node scripts/gen-docs-sidebar.js` 를 실행하고,
+  PlantUML 은 `docker run -p 8081:8080 plantuml/plantuml-server:jetty-v1.2026.8` 를 띄워 두면 보인다.
+- 인증이 없으므로 서버 IP를 아는 누구나 문서를 볼 수 있다.

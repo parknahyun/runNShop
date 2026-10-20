@@ -43,3 +43,6 @@ apps/mobile_c/node_modules/
 apps/admin_c/node_modules/
 apps/mobile_c/.next/
 apps/admin_c/.next/
+
+# docsify 사이드바 (scripts/gen-docs-sidebar.js 로 생성)
+docs/_sidebar.md

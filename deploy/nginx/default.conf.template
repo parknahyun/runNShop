@@ -4,12 +4,24 @@
 server {
     listen 80;
     client_max_body_size 10m;
+    absolute_redirect off;  # 리다이렉트에 호스트·포트를 넣지 않음 (GATEWAY_PORT 변경 대응)
 
     location /api/ {
         proxy_pass http://${API_HOST}:8080;
     }
 
     # admin/partner 는 Next basePath 가 걸려 있어 경로를 그대로 전달한다
+    # docsify 문서 (경로 접두사를 떼고 전달)
+    location = /docs { return 301 /docs/; }
+    location /docs/ {
+        proxy_pass http://${DOCS_HOST}:80/;
+    }
+
+    # docsify-plantuml 렌더링 서버 (/plantuml/svg/<인코딩> → /svg/<인코딩>)
+    location /plantuml/ {
+        proxy_pass http://${PLANTUML_HOST}:8080/;
+    }
+
     location /admin {
         proxy_pass http://${ADMIN_HOST}:3001;
     }

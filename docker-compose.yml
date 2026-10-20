@@ -23,6 +23,16 @@ services:
       dockerfile: Dockerfile
       args: { APP: runNshop-partner, PORT: "3002", BASE_PATH: /partner }
     restart: unless-stopped
+  docs:
+    build:
+      context: .
+      dockerfile: deploy/docs/Dockerfile
+    restart: unless-stopped
+  plantuml:
+    # docsify 의 PlantUML 렌더링 (내부 문서를 외부 서버로 보내지 않기 위해 자체 호스팅)
+    image: plantuml/plantuml-server:jetty-v1.2026.8
+    mem_limit: 512m
+    restart: unless-stopped
   gateway:
     build: ./deploy/nginx
     ports: ["${GATEWAY_PORT:-80}:80"]
@@ -31,5 +41,7 @@ services:
       MOBILE_HOST: mobile
       ADMIN_HOST: admin
       PARTNER_HOST: partner
-    depends_on: [api, mobile, admin, partner]
+      DOCS_HOST: docs
+      PLANTUML_HOST: plantuml
+    depends_on: [api, mobile, admin, partner, docs, plantuml]
     restart: unless-stopped
