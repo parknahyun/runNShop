@@ -14,11 +14,15 @@ server {
     # docsify 문서 (경로 접두사를 떼고 전달)
     location = /docs { return 301 /docs/; }
     location /docs/ {
+        auth_basic "runNshop docs";
+        auth_basic_user_file /etc/nginx/docs.htpasswd;
         proxy_pass http://${DOCS_HOST}:80/;
     }
 
     # docsify-plantuml 렌더링 서버 (/plantuml/svg/<인코딩> → /svg/<인코딩>)
     location /plantuml/ {
+        auth_basic "runNshop docs";
+        auth_basic_user_file /etc/nginx/docs.htpasswd;
         proxy_pass http://${PLANTUML_HOST}:8080/;
     }
 
