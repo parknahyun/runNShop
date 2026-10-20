@@ -1,0 +1,29 @@
+# 로컬 검증용. Lightsail 배포는 deploy/lightsail/deploy.sh 참고.
+# 실행: docker compose up --build  →  http://localhost:8000
+services:
+  api:
+    build: ./api/runNshop-api
+  mobile:
+    build:
+      context: ./apps
+      dockerfile: Dockerfile
+      args: { APP: runNshop-mobile, PORT: "3000", BASE_PATH: "" }
+  admin:
+    build:
+      context: ./apps
+      dockerfile: Dockerfile
+      args: { APP: runNshop-admin, PORT: "3001", BASE_PATH: /admin }
+  partner:
+    build:
+      context: ./apps
+      dockerfile: Dockerfile
+      args: { APP: runNshop-partner, PORT: "3002", BASE_PATH: /partner }
+  gateway:
+    build: ./deploy/nginx
+    ports: ["8000:80"]
+    environment:
+      API_HOST: api
+      MOBILE_HOST: mobile
+      ADMIN_HOST: admin
+      PARTNER_HOST: partner
+    depends_on: [api, mobile, admin, partner]

@@ -1,0 +1,32 @@
+# 업스트림 호스트는 환경변수로 주입
+#  - Lightsail: 같은 배포 내 컨테이너끼리 localhost 로 통신 (127.0.0.1)
+#  - docker compose: 서비스명 (api, mobile, admin, partner)
+server {
+    listen 80;
+    client_max_body_size 10m;
+
+    location /api/ {
+        proxy_pass http://${API_HOST}:8080;
+    }
+
+    # admin/partner 는 Next basePath 가 걸려 있어 경로를 그대로 전달한다
+    location /admin {
+        proxy_pass http://${ADMIN_HOST}:3001;
+    }
+
+    location /partner {
+        proxy_pass http://${PARTNER_HOST}:3002;
+    }
+
+    location / {
+        proxy_pass http://${MOBILE_HOST}:3000;
+    }
+
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $http_x_forwarded_proto;
+    proxy_http_version 1.1;
+    proxy_set_header Upgrade $http_upgrade;
+    proxy_set_header Connection "upgrade";
+}
