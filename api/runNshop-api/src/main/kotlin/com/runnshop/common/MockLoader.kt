@@ -1,8 +1,8 @@
 package com.runnshop.common
 
-import com.fasterxml.jackson.databind.ObjectMapper
 import org.springframework.core.io.ClassPathResource
 import org.springframework.stereotype.Component
+import tools.jackson.databind.ObjectMapper
 
 @Component
 class MockLoader(private val objectMapper: ObjectMapper) {
